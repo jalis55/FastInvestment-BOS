@@ -1,0 +1,31 @@
+from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.mail import send_mail
+from .emailSerializers import EmailSerializer
+from rest_framework.permissions import IsAuthenticated,AllowAny
+
+class SendEmailView(generics.CreateAPIView):
+    serializer_class = EmailSerializer
+    permission_classes=[AllowAny]
+
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        subject = serializer.validated_data['subject']
+        message = serializer.validated_data['message']
+
+        try:
+            send_mail(
+                subject,
+                message,
+                'your-email@gmail.com',  # Sender email
+                [email],  # Recipient email(s)
+                fail_silently=False,
+            )
+            return Response({"status": "success", "message": "Email sent successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
