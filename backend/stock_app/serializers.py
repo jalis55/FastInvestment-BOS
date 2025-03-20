@@ -117,13 +117,9 @@ class TradeSerializer(serializers.ModelSerializer):
 
 
 
-
-
 class TradeDetailsSerializer(serializers.ModelSerializer):
 
     instrument=InstrumentSerializer(read_only=True)
-    
-
     class Meta:
         model = Trade
         fields = ['project','id','trade_date' ,'instrument', 'qty', 'unit_price', 'trns_type', 'total_commission','actual_unit_price']

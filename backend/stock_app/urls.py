@@ -2,14 +2,13 @@ from django.urls import path
 from .views import (
                      ProjectCreateView
                     ,ProjectBalanceView
-                    ,InstrumentListView,TradeCreateView,TradeDetailsRetriveView,TradeDetailsListAson
+                    ,InstrumentListView,TradeCreateView,TradeDetailsListView
 
                     ,BuyableInstrumentView,InvestmentCreateAPIView
                     ,InvestorContributionRetrieveApiView,
                     FinancialAdvisorListView,AddFinancialAdvisorListCreateView,
 
                     AccountReceivableCreateApiView,AccountRecivableDetailsListApiView,
-                    AccountReceivableDetailsAsonListApiView,
                     UpdateAccountReceivableView
                     )
 
@@ -19,8 +18,7 @@ urlpatterns = [
 
     path('instruments/', InstrumentListView.as_view(), name='instrument-list'),
     path('create-trade/', TradeCreateView.as_view(), name='create-trade'),
-    path('trade-details/',TradeDetailsRetriveView.as_view(),name='trade-details'),
-    path('trade-details-ason/',TradeDetailsListAson.as_view(),name='trade-details-ason'),
+    path('trade-details/',TradeDetailsListView.as_view(),name='trade-details-ason'),
 
     path('create-project/',ProjectCreateView.as_view(),name='create-project'),
     path('project-balance/<str:project_id>/', ProjectBalanceView.as_view(), name='project-balance'),
