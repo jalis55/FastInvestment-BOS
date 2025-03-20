@@ -192,14 +192,14 @@ JSON
 ```
 ### 12.Account Receivable Details
 + Endpoint: /api/stock/create-acc-recvable/
-+ Method: POST
++ Method: GET
 + Permissions: AllowAny
 #### Parameters
 
 projecet_id (optional)
 
 form_dt and to_dt (optional)
-disburse_st (optional
+disburse_st (optional)
 ```
 ```
 response
@@ -235,4 +235,18 @@ response
 ]
 ```
 GET /api/stock/acc-recvable-details/?project_id=55&from_dt=2025-03-18&to_dt=2025-03-18&disburse_st=1
+```
+### 13.Update Account Receivable
++ Endpoint: /api/stock/update-acc-recvable/
++ Method: PUT
++ Permissions: AllowAny
+
+```
+json
+{
+"project_id":4,
+"from_dt":"2025-02-02"
+"to_dt":"2025-03-02"
+"user_ids":[1,2,3]
+}
 ```

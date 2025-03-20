@@ -21,7 +21,7 @@ const SellInstruments = () => {
       return;
     }
     try {
-      const response = await api.get(`/api/stock/buyable-instruments/${searchId}/`);
+      const response = await api.get(`/api/stock/sellable-instruments/${searchId}/`);
       if (response.data.length === 0) {
         Swal.fire({ icon: 'info', title: 'No Saleable Instrument', text: 'No available instruments for this project.' });
         return;
