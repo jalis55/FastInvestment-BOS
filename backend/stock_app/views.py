@@ -132,6 +132,29 @@ class TradeDetailsRetriveView(generics.ListAPIView):
     serializer_class=TradeDetailsSerializer
     permission_classes=[AllowAny]
 
+class TradeDetailsListAson(generics.ListAPIView):
+    serializer_class = TradeDetailsSerializer
+    permission_classes=[AllowAny]
+
+    def get_queryset(self):
+        # Extract query parameters
+        from_dt = self.request.query_params.get('from_dt')
+        to_dt = self.request.query_params.get('to_dt')
+        project_id = self.request.query_params.get('project_id')
+
+        # Start with the base queryset
+        queryset = Trade.objects.all()
+
+        # Apply date range filter
+        if from_dt and to_dt and project_id:
+            queryset = queryset.filter(trade_date__gte=from_dt, trade_date__lte=to_dt)
+
+        # Apply project filter
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
+
+        return queryset
+
 class InvestmentCreateAPIView(generics.CreateAPIView):
     queryset = Investment.objects.all()
     serializer_class = InvestmentSerializer
@@ -215,8 +238,20 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
     permission_classes=[AllowAny]
 
     def get_queryset(self):
-        project_id = self.kwargs.get('project_id')
-        return AccountReceivable.objects.filter(project=project_id)
+        project_id = self.request.query_params.get('project_id')
+        from_dt=self.request.query_params.get('from_dt')
+        to_dt=self.request.query_params.get('to_dt')
+        disburse_st=self.request.query_params.get('disburse_st')
+        
+
+        queryset=AccountReceivable.objects.filter(project=project_id)
+        if from_dt and to_dt:
+            queryset=queryset.filter(trade__trade_date__gte=from_dt, trade__trade_date__lte=to_dt)
+
+        if disburse_st:
+            queryset=queryset.filter(disburse_st=disburse_st)
+
+        return queryset
     
 class AccountReceivableDetailsAsonListApiView(generics.ListAPIView):
     serializer_class = AccountReceivableDetailsSerializer
@@ -225,7 +260,7 @@ class AccountReceivableDetailsAsonListApiView(generics.ListAPIView):
     def get_queryset(self):
 
         # Extract parameters from the request body
-        project_id = self.kwargs.get('project_id')
+        project_id = self.request.get('project_id')
         from_dt = self.request.data.get('from_dt')
         to_dt = self.request.data.get('to_dt')
         disburse_st = self.request.data.get('disburse_st')
@@ -255,11 +290,7 @@ class AccountReceivableDetailsAsonListApiView(generics.ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-from django.utils import timezone
-from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from django.db.models import Q
+
 
 class UpdateAccountReceivableView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
