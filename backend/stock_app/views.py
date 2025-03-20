@@ -127,12 +127,9 @@ class TradeCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(authorized_by=self.request.user)
 
-class TradeDetailsRetriveView(generics.ListAPIView):
-    queryset=Trade.objects.all()
-    serializer_class=TradeDetailsSerializer
-    permission_classes=[AllowAny]
 
-class TradeDetailsListAson(generics.ListAPIView):
+
+class TradeDetailsListView(generics.ListAPIView):
     serializer_class = TradeDetailsSerializer
     permission_classes=[AllowAny]
 
@@ -253,44 +250,6 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
         return queryset
     
-class AccountReceivableDetailsAsonListApiView(generics.ListAPIView):
-    serializer_class = AccountReceivableDetailsSerializer
-    permission_classes=[AllowAny]
-
-    def get_queryset(self):
-
-        # Extract parameters from the request body
-        project_id = self.request.get('project_id')
-        from_dt = self.request.data.get('from_dt')
-        to_dt = self.request.data.get('to_dt')
-        disburse_st = self.request.data.get('disburse_st')
-        # Validate required parameters
-        if not from_dt or not to_dt:
-            return AccountReceivable.objects.none()  # Return an empty queryset if dates are missing
-
-        # Convert date strings to date objects
-        try:
-            from_dt = timezone.datetime.strptime(from_dt, '%Y-%m-%d').date()
-            to_dt = timezone.datetime.strptime(to_dt, '%Y-%m-%d').date()
-        except ValueError:
-            return AccountReceivable.objects.none()  # Return an empty queryset if date format is invalid
-
-        queryset=AccountReceivable.objects.filter(project=project_id
-                        ,trade__trade_date__range=(from_dt,to_dt),
-                        disburse_st=disburse_st)
-
-
-        return queryset
-
-    def post(self, request, *args, **kwargs):
-        """
-        Handles POST requests to filter and return AccountReceivable records.
-        """
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-
 
 class UpdateAccountReceivableView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
