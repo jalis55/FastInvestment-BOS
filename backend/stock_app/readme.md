@@ -200,7 +200,7 @@ projecet_id (optional)
 
 form_dt and to_dt (optional)
 disburse_st (optional
-```
+
 ```
 response
 [
@@ -233,6 +233,8 @@ response
     "is_advisor": false
   }
 ]
+```
+
 ```
 GET /api/stock/acc-recvable-details/?project_id=55&from_dt=2025-03-18&to_dt=2025-03-18&disburse_st=1
 ```
