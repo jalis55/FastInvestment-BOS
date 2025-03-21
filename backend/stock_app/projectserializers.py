@@ -25,6 +25,11 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
 
 
     
-class ProjectBalanceSerializer(serializers.Serializer):
+class ProjectBalanceDetailsSerializer(serializers.Serializer):
     project_id = serializers.CharField()
+    total_investment=serializers.DecimalField(max_digits=10,decimal_places=2)
+    total_buy_amount=serializers.DecimalField(max_digits=10,decimal_places=2)
     available_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_sell_amount=serializers.DecimalField(max_digits=10,decimal_places=2)
+    total_gain_loss=serializers.DecimalField(max_digits=10,decimal_places=2)
+    total_sell_balance=serializers.DecimalField(max_digits=10,decimal_places=2)

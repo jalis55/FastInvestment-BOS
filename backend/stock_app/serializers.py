@@ -102,6 +102,11 @@ class InvestmentContributionSerializer(serializers.Serializer):
     contribute_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     contribution_percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
 
+# Add the InstrumentSerializer
+class InstrumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Instrument
+        fields = ['id', 'name'] 
 
 
 class TradeSerializer(serializers.ModelSerializer):
@@ -112,26 +117,19 @@ class TradeSerializer(serializers.ModelSerializer):
 
 
 
-# Add the InstrumentSerializer
-class InstrumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Instrument
-        fields = ['id', 'name'] 
-
 class TradeDetailsSerializer(serializers.ModelSerializer):
 
     instrument=InstrumentSerializer(read_only=True)
-
     class Meta:
         model = Trade
-        fields = ['project','id', 'instrument', 'qty', 'unit_price', 'trns_type', 'total_commission','actual_unit_price']
+        fields = ['project','id','trade_date' ,'instrument', 'qty', 'unit_price', 'trns_type', 'total_commission','actual_unit_price']
 
 
-class BuyableInstrumentSerializer(serializers.Serializer):
-    instrument_id = serializers.IntegerField()
-    name = serializers.CharField()
+class SellableInstrumentSerializer(serializers.Serializer):
+    instrument = InstrumentSerializer(read_only=True)
     available_quantity = serializers.IntegerField()
     average_buy_unit_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+
 
 
 class AccountReceivableSerializer(serializers.ModelSerializer):
