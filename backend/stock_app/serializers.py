@@ -126,10 +126,10 @@ class TradeDetailsSerializer(serializers.ModelSerializer):
 
 
 class SellableInstrumentSerializer(serializers.Serializer):
-    instrument_id = serializers.IntegerField()
-    name = serializers.CharField()
+    instrument = InstrumentSerializer(read_only=True)
     available_quantity = serializers.IntegerField()
     average_buy_unit_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+
 
 
 class AccountReceivableSerializer(serializers.ModelSerializer):

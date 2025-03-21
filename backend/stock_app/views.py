@@ -78,57 +78,59 @@ class InstrumentListView(generics.ListAPIView):
     serializer_class = InstrumentSerializer
     permission_classes = [AllowAny]  # Allow any user to view instruments
 
+
 class SellableInstrumentView(generics.GenericAPIView):
     serializer_class = SellableInstrumentSerializer
     permission_classes = [AllowAny]
 
+    def get_object(self):
+        """Fetch the project based on project_id."""
+        project_id = self.kwargs['project_id']
+        try:
+            return Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            raise NotFound("Project not found.")
+
     def get(self, request, project_id):
         """Returns available instrument quantity after buy/sell for a project, including the average actual buy unit price."""
-        try:
-            # Ensure the project exists
-            project = Project.objects.get(pk=project_id)
+        project = self.get_object()  # Fetch the project using get_object
 
-            # Aggregate total buy and sell quantities per instrument
-            trades = Trade.objects.filter(project=project).values('instrument_id').annotate(
-                total_buy=Sum(Case(When(trns_type='buy', then='qty'), default=0, output_field=IntegerField())),
-                total_sell=Sum(Case(When(trns_type='sell', then='qty'), default=0, output_field=IntegerField()))
-            )
+        # Aggregate total buy and sell quantities per instrument
+        trades = Trade.objects.filter(project=project).values('instrument_id').annotate(
+            total_buy=Sum(Case(When(trns_type='buy', then='qty'), default=0, output_field=IntegerField())),
+            total_sell=Sum(Case(When(trns_type='sell', then='qty'), default=0, output_field=IntegerField()))
+        )
 
-            # Construct response data
-            results = [
-                {
-                    'instrument_id': trade['instrument_id'],
-                    'name': Instrument.objects.get(id=trade['instrument_id']).name,
-                    'available_quantity': trade['total_buy'] - trade['total_sell'],
-                    'average_buy_unit_price': self.get_average_buy_unit_price(trade['instrument_id'])
-                }
-                for trade in trades if trade['total_buy'] - trade['total_sell'] > 0
-            ]
+        # Prefetch instrument names to reduce database queries
+        instruments = Instrument.objects.in_bulk([trade['instrument_id'] for trade in trades])
 
-            return Response(results, status=status.HTTP_200_OK)
+        # Construct response data
+        results = [
+            {
+                'instrument': instruments[trade['instrument_id']],  # Pass the Instrument object
+                'available_quantity': trade['total_buy'] - trade['total_sell'],
+                'average_buy_unit_price': self.get_average_buy_unit_price(trade['instrument_id'])
+            }
+            for trade in trades if trade['total_buy'] - trade['total_sell'] > 0
+        ]
 
-        except Project.DoesNotExist:
-            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Serialize the results
+        serializer = self.get_serializer(results, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def get_average_buy_unit_price(self, instrument_id):
         """Fetches the average buy unit price for a given instrument."""
-        # Filter buy trades for the instrument
-        buy_trades = Trade.objects.filter(instrument_id=instrument_id, trns_type=Trade.BUY)
-
-        total_qty = 0
-        total_cost = 0
+        # Filter buy trades for the instrument and calculate total quantity and cost in a single query
+        buy_trades = Trade.objects.filter(instrument_id=instrument_id, trns_type=Trade.BUY, actual_unit_price__isnull=False)
         
-        for trade in buy_trades:
-            # Ensure actual_unit_price is not None
-            if trade.actual_unit_price is not None:
-                total_qty += trade.qty
-                total_cost += trade.qty * trade.actual_unit_price
+        total_qty_cost = buy_trades.aggregate(
+            total_qty=Sum('qty'),
+            total_cost=Sum(F('qty') * F('actual_unit_price'))
+        )
 
-
-        if total_qty > 0:
-            return round(total_cost / total_qty, 2)  
-        return None  
-
+        if total_qty_cost['total_qty'] and total_qty_cost['total_qty'] > 0:
+            return round(total_qty_cost['total_cost'] / total_qty_cost['total_qty'], 2)
+        return None
 
 class TradeCreateView(generics.CreateAPIView):
     queryset = Trade.objects.all()
