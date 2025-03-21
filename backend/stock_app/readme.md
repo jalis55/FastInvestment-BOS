@@ -83,8 +83,8 @@ response
   "created_by": 1
 }
 ```
-### 5. Project Balance
-+ Endpoint: /api/stock/project-balance/<project-id>/
+### 5. Project Balance Details
++ Endpoint: /api/stock/project-balance-details/<project-id>/
 + Method: GET
 + Permissions: AllowAny
 
@@ -92,7 +92,12 @@ response
 response
 {
   "project_id": "55",
-  "available_balance": "620.44"
+  "total_investment": "1000.00",
+  "total_buy_amount": "379.56",
+  "available_balance": "620.44",
+  "total_sell_amount": "270.88",
+  "total_gain_loss": "-108.68",
+  "total_sell_balance": "270.88"
 }
 ```
 ### 6. Sellable Instrument

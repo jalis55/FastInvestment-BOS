@@ -1,10 +1,10 @@
 from django.urls import path
 from .views import (
                      ProjectCreateView
-                    ,ProjectBalanceView
+                    ,ProjectBalanceDetailsView
                     ,InstrumentListView,TradeCreateView,TradeDetailsListView
 
-                    ,BuyableInstrumentView,InvestmentCreateAPIView
+                    ,SellableInstrumentView,InvestmentCreateAPIView
                     ,InvestorContributionRetrieveApiView,
                     FinancialAdvisorListView,AddFinancialAdvisorListCreateView,
 
@@ -19,10 +19,10 @@ urlpatterns = [
     path('instruments/', InstrumentListView.as_view(), name='instrument-list'),
     path('create-trade/', TradeCreateView.as_view(), name='create-trade'),
     path('trade-details/',TradeDetailsListView.as_view(),name='trade-details-ason'),
-    path('sellable-instruments/<str:project_id>/',BuyableInstrumentView.as_view(),name='buyable-instruments'),
+    path('sellable-instruments/<str:project_id>/',SellableInstrumentView.as_view(),name='buyable-instruments'),
 
     path('create-project/',ProjectCreateView.as_view(),name='create-project'),
-    path('project-balance/<str:project_id>/', ProjectBalanceView.as_view(), name='project-balance'),
+    path('project-balance-details/<str:project_id>/', ProjectBalanceDetailsView.as_view(), name='project-balance'),
     
     
     path('add-investment/',InvestmentCreateAPIView.as_view(),name='add-investment'),

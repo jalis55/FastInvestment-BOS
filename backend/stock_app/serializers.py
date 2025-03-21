@@ -125,7 +125,7 @@ class TradeDetailsSerializer(serializers.ModelSerializer):
         fields = ['project','id','trade_date' ,'instrument', 'qty', 'unit_price', 'trns_type', 'total_commission','actual_unit_price']
 
 
-class BuyableInstrumentSerializer(serializers.Serializer):
+class SellableInstrumentSerializer(serializers.Serializer):
     instrument_id = serializers.IntegerField()
     name = serializers.CharField()
     available_quantity = serializers.IntegerField()

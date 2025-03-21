@@ -2,9 +2,9 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,AccountReceivable
 from accounting.models import Account,Transaction
-from .projectserializers import ProjectCreateSerializer,ProjectBalanceSerializer
+from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer
 
-from .serializers import (InstrumentSerializer,TradeSerializer,TradeDetailsSerializer,BuyableInstrumentSerializer,
+from .serializers import (InstrumentSerializer,TradeSerializer,TradeDetailsSerializer,SellableInstrumentSerializer,
                           InvestmentSerializer,InvestmentContributionSerializer,
                           FinancialAdvisorSerializer,FinancialAdvisorAddSerializer
                           ,AccountReceivableSerializer,AccountReceivableDetailsSerializer
@@ -14,11 +14,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from decimal import Decimal
 from django.shortcuts import get_object_or_404
-from django.db.models import Sum, F,Case, When, IntegerField,Q
+from django.db.models import Sum, F,Case, When, IntegerField,Q,DecimalField
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 from django.utils import timezone
 from django.core.mail import send_mail
+from django.db.models.functions import Coalesce
 
 
 class ProjectCreateView(generics.CreateAPIView):
@@ -30,45 +31,55 @@ class ProjectCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
-class ProjectBalanceView(generics.RetrieveAPIView):
-    serializer_class = ProjectBalanceSerializer
+class ProjectBalanceDetailsView(generics.RetrieveAPIView):
+    serializer_class = ProjectBalanceDetailsSerializer
     permission_classes = [AllowAny]
 
 
     def get_object(self):
         project_id = self.kwargs['project_id']
-        project = get_object_or_404(Project, project_id=project_id)
+        try:
+            project = Project.objects.get(project_id=project_id)
+        except Project.DoesNotExist:
+            raise NotFound("Project not found.")
 
-        # Fetch total investment
+            # Fetch total investment
         total_investment = Investment.objects.filter(project=project).aggregate(
-                total=Sum('amount')
-            )['total'] or 0  # Default to 0 if no investment
+            total=Coalesce(Sum('amount'), 0, output_field=DecimalField())
+        )['total']
 
         # Calculate total buy
         total_buy = Trade.objects.filter(project=project, trns_type=Trade.BUY).aggregate(
-            total=Sum(F('qty') * F('actual_unit_price'))
-        )['total'] or Decimal('0.00')
+            total=Coalesce(Sum(F('qty') * F('actual_unit_price')), 0, output_field=DecimalField())
+        )['total']
 
         # Calculate total sell
-        # total_sell = Trade.objects.filter(project=project, trns_type=Trade.SELL).aggregate(
-        #     total=Sum(F('qty') * F('actual_unit_price'))
-        # )['total'] or Decimal('0.00')
+        total_sell = Trade.objects.filter(project=project, trns_type=Trade.SELL).aggregate(
+            total=Coalesce(Sum(F('qty') * F('actual_unit_price')), 0, output_field=DecimalField())
+        )['total']
 
-        # Compute available balance
-        available_balance = total_investment  - total_buy
+        # Compute available balance and gain/loss
+        available_balance = total_investment - total_buy
+        total_gain_loss = total_sell - total_buy
+        total_sell_balance = total_sell - max(total_gain_loss, 0)
 
         return {
             "project_id": project.project_id,
-            "available_balance": available_balance
-        }
+            "total_investment": total_investment,
+            "total_buy_amount": total_buy,
+            "available_balance": available_balance,
+            "total_sell_amount": total_sell,
+            "total_gain_loss": total_gain_loss,
+            "total_sell_balance": total_sell_balance,
+    }
 
 class InstrumentListView(generics.ListAPIView):
     queryset = Instrument.objects.all()
     serializer_class = InstrumentSerializer
     permission_classes = [AllowAny]  # Allow any user to view instruments
 
-class BuyableInstrumentView(generics.GenericAPIView):
-    serializer_class = BuyableInstrumentSerializer
+class SellableInstrumentView(generics.GenericAPIView):
+    serializer_class = SellableInstrumentSerializer
     permission_classes = [AllowAny]
 
     def get(self, request, project_id):
