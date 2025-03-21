@@ -31,6 +31,31 @@ class ProjectCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
+class ProjectUpdateView(generics.UpdateAPIView):
+    permission_classes = [AllowAny]
+
+    def update(self, request, *args, **kwargs):
+        project_id = request.data.get("project_id")
+        total_investment = request.data.get("total_investment")
+        total_collection = request.data.get("total_collection")
+        gain_loss = request.data.get("gain_lose")  # Corrected field name
+
+        try:
+            project = Project.objects.get(project_id=project_id)
+            project.total_investment = total_investment
+            project.total_collection = total_collection
+            project.gain_loss = gain_loss
+            project.project_status = False
+            project.save()
+
+            return Response({"message": f"Project {project_id}({project.project_title}) records updated successfully"}, status=status.HTTP_200_OK)
+        except Project.DoesNotExist:
+            return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 class ProjectBalanceDetailsView(generics.RetrieveAPIView):
     serializer_class = ProjectBalanceDetailsSerializer
     permission_classes = [AllowAny]
