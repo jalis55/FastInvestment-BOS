@@ -26,7 +26,7 @@ const BuyInstruments = () => {
         }
 
         try {
-            const response = await api.get(`/api/stock/project-balance/${searchId}/`);
+            const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
             setProjectId(response.data.project_id);
             const availableBal = parseFloat(response.data.available_balance);
             setAvailableBalance(availableBal);

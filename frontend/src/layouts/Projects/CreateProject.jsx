@@ -61,6 +61,7 @@ const CreateProjects = () => {
             const response = await api.post("/api/stock/create-project/", {
                 project_title: formData.projectTitle,
                 project_description: formData.projectDescription,
+                project_responsible_mail:formData.responsibleMail
             });
 
             if (response.status === 201) {
