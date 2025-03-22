@@ -23,7 +23,7 @@ const AddInvestments = () => {
         }
 
         try {
-            const response = await api.get(`/api/stock/project-balance/${searchId}/`);
+            const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
             console.log("Project Balance Response:", response.data); // Debugging log
             setProjectId(response.data.project_id);
             setProjectBalance(response.data.available_balance);
