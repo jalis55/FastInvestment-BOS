@@ -22,7 +22,7 @@ class SendEmailView(generics.CreateAPIView):
             send_mail(
                 subject,
                 message,
-                'your-email@gmail.com',  # Sender email
+                'info@trial-r83ql3pw29vgzw1j.mlsender.net ',  # Sender email
                 [email],  # Recipient email(s)
                 fail_silently=False,
             )
