@@ -1,5 +1,5 @@
 from django.contrib import admin
-from stock_app.models import Project,Instrument,Investment,Trade,FinancialAdvisor,AccountReceivable
+from stock_app.models import (Project,Instrument,Investment,Trade,FinancialAdvisor,AccountReceivable)
 
 # Register your models here.
 

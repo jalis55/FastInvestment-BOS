@@ -38,14 +38,15 @@ class ProjectUpdateView(generics.UpdateAPIView):
         project_id = request.data.get("project_id")
         total_investment = request.data.get("total_investment")
         total_collection = request.data.get("total_collection")
-        gain_loss = request.data.get("gain_lose")  # Corrected field name
+        gain_or_loss = request.data.get("gain_or_lose")  # Corrected field name
 
         try:
             project = Project.objects.get(project_id=project_id)
             project.total_investment = total_investment
             project.total_collection = total_collection
-            project.gain_loss = gain_loss
-            project.project_status = False
+            project.gain_or_loss = gain_or_loss
+            project.project_closing_dt=timezone.now()
+            project.project_active_status = False
             project.save()
 
             return Response({"message": f"Project {project_id}({project.project_title}) records updated successfully"}, status=status.HTTP_200_OK)
