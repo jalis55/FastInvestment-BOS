@@ -22,11 +22,13 @@ const SellInstruments = () => {
     }
     try {
       const response = await api.get(`/api/stock/sellable-instruments/${searchId}/`);
+      
       if (response.data.length === 0) {
         Swal.fire({ icon: 'info', title: 'No Saleable Instrument', text: 'No available instruments for this project.' });
         return;
       }
       setInstruments(response.data);
+      
       setProjectId(searchId);
       setSearchId('');
       setSelectedInstrument(null);
@@ -43,12 +45,13 @@ const SellInstruments = () => {
   // Handle instrument selection
   const handleInstrumentChange = useCallback((e) => {
     const instrumentId = parseInt(e.target.value, 10);
-    const instrument = instruments.find(inst => inst.instrument_id === instrumentId);
+    const instrument = instruments.find(inst => inst.instrument.id === instrumentId);
     setSelectedInstrument(instrument || null);
+    
     setQty('');
     setUnitPrice('');
-
   }, [instruments]);
+
   // validation check
   const validateInputs = () => {
     // Validation checks
@@ -66,10 +69,10 @@ const SellInstruments = () => {
     }
     return true;
   }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-
 
     if (!validateInputs()) {
       return;
@@ -79,18 +82,17 @@ const SellInstruments = () => {
 
     const tradeData = {
       project: projectId,
-      instrument: selectedInstrument.instrument_id,
+      instrument: selectedInstrument.instrument.id,
       qty: parseInt(qty, 10),
       unit_price: parseFloat(unitPrice),
       trns_type: 'sell'
-
     };
+   
 
     try {
       // Step 1: Create the trade
       const response = await api.post('/api/stock/create-trade/', tradeData);
-
-      console.log(response.data)
+     
 
       // Step 2: Handle account receivable
       await handleAccountReceivable(response.data);
@@ -101,7 +103,7 @@ const SellInstruments = () => {
       // Update instruments list
       setInstruments(prevInstruments =>
         prevInstruments
-          .map(inst => inst.instrument_id === selectedInstrument.instrument_id
+          .map(inst => inst.instrument.id === selectedInstrument.instrument.id
             ? { ...inst, available_quantity: inst.available_quantity - qty }
             : inst
           )
@@ -128,9 +130,7 @@ const SellInstruments = () => {
       const { id: trdId, project: proId, qty, unit_price, instrument: instrumentId } = data;
       const totalCommission = getTotalCom();
       const sellAmt = qty * unit_price - totalCommission;
-      const instrument = instruments.find(inst => inst.instrument_id === instrumentId);
-
-
+      const instrument = instruments.find(inst => inst.instrument.id === instrumentId);
 
       if (!instrument) {
         throw new Error("Instrument not found in list.");
@@ -177,7 +177,7 @@ const SellInstruments = () => {
         const loss = sellAmt - buyAmt;
         investorContributions.forEach(investor => {
           const investorShare = (loss * investor.contribution_percentage) / 100;
-          console.log(investor);
+          
           disbursement.push({
             project: proId,
             investor: investor.investor.toString(),
@@ -191,7 +191,6 @@ const SellInstruments = () => {
       }
 
       // Process gain/loss
-      // console.log(disbursement);
       await processGainLose(disbursement);
       console.log("Gain/Loss Processed Successfully for all Advisors and Investors");
     } catch (error) {
@@ -202,18 +201,14 @@ const SellInstruments = () => {
 
   // Fetch financial advisors
   const getFinAdvisor = async () => {
-
     const response = await api.get(`/api/stock/fin-advisor-commission/${projectId}/`);
-
-    response.data.forEach(d => console.log(d.advisor.id));
     return response.data;
   };
 
   const getInvestorContrib = async () => {
     try {
       const response = await api.get(`/api/stock/investor-contrib-percent/${projectId}/`);
-      // console.log("API Response:", response.data);
-      // response.data.forEach(d => console.log(d.investor.id));
+      
       return response.data;
     } catch (error) {
       console.error("Error fetching investor contributions:", error);
@@ -222,8 +217,7 @@ const SellInstruments = () => {
 
   // Process gain/loss
   const processGainLose = async (obj) => {
-    console.log(obj)
-
+    
     await api.post('/api/stock/create-acc-recvable/', obj);
   };
 
@@ -249,7 +243,6 @@ const SellInstruments = () => {
           />
           <button
             type="submit"
-
             className="absolute right-2.5 bottom-2.5 bg-blue-700 text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
           >
             Search
@@ -267,14 +260,14 @@ const SellInstruments = () => {
             <label htmlFor="instDropdown" className="block text-sm font-medium text-gray-900 dark:text-white">Select Instrument</label>
             <select
               id="instDropdown"
-              value={selectedInstrument?.instrument_id || ''}
+              value={selectedInstrument?.instrument.id || ''}
               onChange={handleInstrumentChange}
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             >
-              <option>Select Instrument</option>
+              <option value="">Select Instrument</option>
               {instruments.map((instrument) => (
-                <option key={instrument.instrument_id} value={instrument.instrument_id}>
-                  {instrument.name}
+                <option key={instrument.instrument.id} value={instrument.instrument.id}>
+                  {instrument.instrument.name}
                 </option>
               ))}
             </select>
@@ -329,7 +322,6 @@ const SellInstruments = () => {
                   type="number"
                   id="comm"
                   value={((qty * unitPrice * .4) / 100).toFixed(2)}
-
                   min="0"
                   step="0.01"
                   aria-describedby="commission-helper"
