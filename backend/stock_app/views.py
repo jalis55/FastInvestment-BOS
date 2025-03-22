@@ -2,7 +2,7 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,AccountReceivable
 from accounting.models import Account,Transaction
-from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer
+from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer,ProjectStatusSerializer
 
 from .serializers import (InstrumentSerializer,TradeSerializer,TradeDetailsSerializer,SellableInstrumentSerializer,
                           InvestmentSerializer,InvestmentContributionSerializer,
@@ -55,7 +55,11 @@ class ProjectUpdateView(generics.UpdateAPIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+class ProjectStatusRetriveView(generics.RetrieveAPIView):
+    queryset=Project.objects.all()
+    serializer_class=ProjectStatusSerializer
+    permission_classes=[AllowAny]
+    lookup_field = 'project_id'
 
 class ProjectBalanceDetailsView(generics.RetrieveAPIView):
     serializer_class = ProjectBalanceDetailsSerializer

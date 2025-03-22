@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
                      ProjectCreateView
-                    ,ProjectBalanceDetailsView,ProjectUpdateView
+                    ,ProjectBalanceDetailsView,ProjectUpdateView,ProjectStatusRetriveView
                     ,InstrumentListView,TradeCreateView,TradeDetailsListView
 
                     ,SellableInstrumentView,InvestmentCreateAPIView
@@ -23,6 +23,7 @@ urlpatterns = [
 
     path('create-project/',ProjectCreateView.as_view(),name='create-project'),
     path('update-project/',ProjectUpdateView.as_view(),name='update-project'),
+    path('project-status/<str:project_id>/',ProjectStatusRetriveView.as_view(),name='project-status'),
     path('project-balance-details/<str:project_id>/', ProjectBalanceDetailsView.as_view(), name='project-balance'),
     
     

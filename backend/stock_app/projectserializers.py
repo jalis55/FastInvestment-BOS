@@ -21,10 +21,10 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
             validated_data.pop('project_id', None)  
         return super().create(validated_data)
     
-# class ProjectUpadeSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         fields=['project_id','']
-
+class ProjectStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Project
+        fields=('project_id','project_active_status')
 
     
 class ProjectBalanceDetailsSerializer(serializers.Serializer):
