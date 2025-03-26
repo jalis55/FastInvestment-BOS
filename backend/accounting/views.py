@@ -113,31 +113,22 @@ class TransactionApproveView(generics.UpdateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class FundTransferView(generics.CreateAPIView):
-    serializer_class=FundTransferSerializer
-    permission_classes=[IsAdminUser]
+    serializer_class = FundTransferSerializer
+    permission_classes = [IsAdminUser]
 
-    @db_transaction.atomic  # Ensure atomicity
+    @db_transaction.atomic
     def perform_create(self, serializer):
-        
-        transaction=serializer.save(issued_by=self.request.user)
-
-        transfer_to=transaction.transfer_to
-        transfer_form=transaction.transfer_from
-        transfer_to_account,created=Account.objects.get_or_create(user=transfer_to)
-        if created:
-            transfer_to_account.balance=Decimal(0.00)
-            transfer_to_account.save()
-
-        transfee=transfer_to.account
-        transferor=transfer_form.account
-        
-        # Try to update their balances and catch any errors
         try:
-            transferor.update_balance(transaction.amount,'payment')
-            transfee.update_balance(transaction.amount,'deposit')
-            
-        except ValidationError as e:
-            # This will raise a proper response if there's insufficient balance
-            Response(e)
+            transaction = serializer.save(issued_by=self.request.user)
+            transfer_to = transaction.transfer_to
+            transfer_from = transaction.transfer_from
 
+            transfer_to_account, created = Account.objects.get_or_create(user=transfer_to)
+            transfer_from_account = Account.objects.get(user=transfer_from)
+
+            transfer_from_account.update_balance(transaction.amount, 'payment')
+            transfer_to_account.update_balance(transaction.amount, 'deposit')
+
+        except ValidationError as e:
+            raise serializers.ValidationError("Insufficient balance for this transfer.")
 
