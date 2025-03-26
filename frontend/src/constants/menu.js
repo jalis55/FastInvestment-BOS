@@ -29,6 +29,14 @@ const menu = [
   }
   ,
   {
+    menuName: "Fund Transfer",
+    url: "/fund-transfer",
+    role: "admin",
+    icon: ArrowRightLeft,
+  }
+  ,
+  
+  {
     menuName: "Pending Payments",
     url: "/pending-payments",
     role: "admin",
