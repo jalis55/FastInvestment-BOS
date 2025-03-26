@@ -6,8 +6,6 @@ from .serializers import FinancialAdvisorSerializer,InvestmentDetailsSerializer
 from .models import Project,FinancialAdvisor,Investment
 
 
-
-
 class ProjectCreateSerializer(serializers.ModelSerializer):
     project_id = serializers.CharField(max_length=8, required=False)
 
@@ -22,7 +20,11 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
         if 'project_id' not in validated_data or not validated_data['project_id']:
             validated_data.pop('project_id', None)  
         return super().create(validated_data)
-
+    
+class ProjectStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Project
+        fields=('project_id','project_active_status')
 
     
 class ProjectBalanceDetailsSerializer(serializers.Serializer):

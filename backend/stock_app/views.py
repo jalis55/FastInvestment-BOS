@@ -2,7 +2,7 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,AccountReceivable
 from accounting.models import Account,Transaction
-from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer
+from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer,ProjectStatusSerializer
 
 from .serializers import (InstrumentSerializer,TradeSerializer,TradeDetailsSerializer,SellableInstrumentSerializer,
                           InvestmentSerializer,InvestmentContributionSerializer,
@@ -30,6 +30,36 @@ class ProjectCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+class ProjectUpdateView(generics.UpdateAPIView):
+    permission_classes = [AllowAny]
+
+    def update(self, request, *args, **kwargs):
+        project_id = request.data.get("project_id")
+        total_investment = request.data.get("total_investment")
+        total_collection = request.data.get("total_collection")
+        gain_or_loss = request.data.get("gain_or_lose")  # Corrected field name
+
+        try:
+            project = Project.objects.get(project_id=project_id)
+            project.total_investment = total_investment
+            project.total_collection = total_collection
+            project.gain_or_loss = gain_or_loss
+            project.project_closing_dt=timezone.now()
+            project.project_active_status = False
+            project.save()
+
+            return Response({"message": f"Project {project_id}({project.project_title}) records updated successfully"}, status=status.HTTP_200_OK)
+        except Project.DoesNotExist:
+            return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ProjectStatusRetriveView(generics.RetrieveAPIView):
+    queryset=Project.objects.all()
+    serializer_class=ProjectStatusSerializer
+    permission_classes=[AllowAny]
+    lookup_field = 'project_id'
 
 class ProjectBalanceDetailsView(generics.RetrieveAPIView):
     serializer_class = ProjectBalanceDetailsSerializer

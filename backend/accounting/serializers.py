@@ -36,6 +36,12 @@ class TransactionApproveSerializer(serializers.ModelSerializer):
 
 class FundTransferSerializer(serializers.ModelSerializer):
     class Meta:
-        model=FundTransfer
-        fields=['transfer_to','transfer_from','amount']
-        read_only_fields=['issued_by','issued_date']
+        model = FundTransfer
+        fields = ['transfer_to', 'transfer_from', 'amount']
+        read_only_fields = ['issued_by', 'issued_date']
+
+    def validate(self, data):
+        transferor_account = Account.objects.get(user=data['transfer_from'])
+        if transferor_account.balance < data['amount']:
+            raise serializers.ValidationError({'error': 'Insufficient balance for this transfer.'})
+        return data

@@ -51,4 +51,9 @@ class FundTransfer(models.Model):
 
     def __str__(self) -> str:
         return f"{self.transfer_from } trnasfer fund to {self.transfer_to}"
+    
+    def clean(self):
+        transferor_account = Account.objects.get(user=self.transfer_from)
+        if transferor_account.balance < self.amount:
+            raise ValidationError("Insufficient balance for this transfer.")
 

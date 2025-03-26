@@ -11,6 +11,8 @@
 + Endpoint: /api/stock/create-trade/
 + Method: POST
 + Permissions: AllowAny
+
+#### Request body
 ```
 JSON
 {
@@ -67,6 +69,8 @@ Response
 + Permissions: AllowAny
 
 ```
+
+#### Request body
 json
 {
 "project_title":"test",
@@ -126,6 +130,8 @@ response
 + Endpoint: /api/stock/add-investment/
 + Method: POST
 + Permissions: AllowAny
+
+#### Request body
 ```
 json
 {
@@ -154,6 +160,7 @@ response
 + Method: POST
 + Permissions: AllowAny
 ```
+#### Request body
 json
 {
   "project":55,
@@ -184,6 +191,8 @@ response
 + Endpoint: /api/stock/create-acc-recvable/
 + Method: POST
 + Permissions: AllowAny
+
+#### Request body
 ```
 JSON
 {
@@ -245,13 +254,31 @@ GET /api/stock/acc-recvable-details/?project_id=55&from_dt=2025-03-18&to_dt=2025
 + Endpoint: /api/stock/update-acc-recvable/
 + Method: PUT
 + Permissions: AllowAny
-
+####Request body
 ```
 json
 {
-"project_id":4,
-"from_dt":"2025-02-02"
-"to_dt":"2025-03-02"
-"user_ids":[1,2,3]
+
+  "project_id":4,
+  "from_dt":"2025-02-02"
+  "to_dt":"2025-03-02"
+  "user_ids":[1,2,3]
+}
+```
+
+### 14.Update Project
++ Endpoint: /api/stock/update-project/
++ Method: PUT
++ Permissions: AllowAny
+
+#### Request body
+```
+json
+
+{
+  "project_id":55,
+  "total_investment":10000,
+  "total_collection":9000,
+  "gain_lose":1000
 }
 ```

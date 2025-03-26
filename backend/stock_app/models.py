@@ -3,6 +3,7 @@ from django.conf import settings
 import random
 import uuid
 from decimal import Decimal
+from django.utils import timezone
 
 
 # Create your models here.
@@ -21,7 +22,11 @@ class Project(models.Model):
     project_description = models.TextField()
     total_investment = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_collection = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    gain_or_lose = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    gain_or_loss = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    project_active_status=models.BooleanField(default=True)
+    project_responsible_mail=models.EmailField(max_length=100)
+    project_opening_dt=models.DateTimeField(default=timezone.now)
+    project_closing_dt=models.DateTimeField(blank=True,null=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

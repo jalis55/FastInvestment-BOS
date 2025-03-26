@@ -21,6 +21,8 @@ import FinancialAdvisor from "./layouts/financialAdvisor/FinancialAdvisor";
 import AccountReceivableDetails from "./layouts/AccountReceivableDetails/AccountReceivableDetails";
 import { Trapezoid } from "recharts";
 import TradeDetails from "./layouts/trade/TradeDetails";
+import CloseProject from "./layouts/Projects/CloseProject";
+import FundTransfer from "./layouts/transaction/FundTransfer";
 
 const router = createBrowserRouter([
     {
@@ -40,8 +42,18 @@ const router = createBrowserRouter([
                         path: "sell-instruments",
                         element: <SellInstruments />
                     },
-                    { path: "users", element: <Users /> },
-                    { path: "transaction", element: <Transaction /> },
+                    {
+                        path: "users",
+                        element: <Users />
+                    },
+                    {
+                        path: "transaction",
+                        element: <Transaction />
+                    },
+                    {
+                        path: "fund-transfer",
+                        element: <FundTransfer />
+                    },
                     {
                         path: "pending-payments",
                         element: <PendingPayments />
@@ -62,6 +74,11 @@ const router = createBrowserRouter([
                         path: "create-project",
                         element: <CreateProject />
                     },
+                    {
+                        path: "close-project",
+                        element: <CloseProject />
+                    },
+
                     {
                         path: "acc-rec-details",
                         element: <AccountReceivableDetails />

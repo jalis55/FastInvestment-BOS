@@ -26,7 +26,7 @@ const BuyInstruments = () => {
         }
 
         try {
-            const response = await api.get(`/api/stock/project-balance/${searchId}/`);
+            const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
             setProjectId(response.data.project_id);
             const availableBal = parseFloat(response.data.available_balance);
             setAvailableBalance(availableBal);
@@ -178,7 +178,7 @@ const BuyInstruments = () => {
                     <form className="max-w-md mx-auto space-y-6" onSubmit={handleSubmit}>
                         <div className="border p-4 flex justify-between items-center mb-4">
                             <h6 className="text-sm font-medium text-gray-900 dark:text-white">Project Id: {projectId}</h6>
-                            <h6 className="text-sm font-medium text-gray-900 dark:text-white">Balance: {availableBalance} BDT</h6>
+                            <h6 className="text-sm font-medium text-gray-900 dark:text-white">Balance: {availableBalance.toFixed(2)} BDT</h6>
                         </div>
                         {/* Instrument Dropdown */}
                         <div className="mb-4">

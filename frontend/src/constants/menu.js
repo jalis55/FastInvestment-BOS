@@ -3,7 +3,7 @@ import {
   Home, TrendingUp, ShoppingCart, DollarSign,
   Users, BadgeDollarSign, ArrowRightLeft, BriefcaseBusiness,
   BadgePercent,FileSpreadsheet,FolderKanban,Wallet,Landmark
-  ,UsersRound,SquarePercent,ChartCandlestick
+  ,UsersRound,SquarePercent,ChartCandlestick,BookOpenCheck
 } from 'lucide-react';
 
 const menu = [
@@ -29,6 +29,14 @@ const menu = [
   }
   ,
   {
+    menuName: "Fund Transfer",
+    url: "/fund-transfer",
+    role: "admin",
+    icon: ArrowRightLeft,
+  }
+  ,
+  
+  {
     menuName: "Pending Payments",
     url: "/pending-payments",
     role: "admin",
@@ -40,6 +48,13 @@ const menu = [
     url: "/create-project",
     role: "admin",
     icon: FolderKanban,
+  }
+  ,
+  {
+    menuName: "Close Project",
+    url: "/close-project",
+    role: "admin",
+    icon: BookOpenCheck,
   }
   ,
   {

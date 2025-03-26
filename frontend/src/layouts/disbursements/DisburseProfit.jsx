@@ -17,10 +17,13 @@ const DisburseProfit = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const response = await api.post(`/api/stock/acc-recvable-details-ason/${searchId}/`, {
-                from_dt: fromDt,
-                to_dt: toDate,
-                disburse_st: 0,
+            const response = await api.get(`/api/stock/acc-recvable-details/`, {
+                params:{
+                    project_id:searchId,
+                    from_dt:fromDt,
+                    to_dt:toDate,
+                    disburse_st:0
+                }
             });
 
             if (response.data.length === 0) {
@@ -199,9 +202,9 @@ const DisburseProfit = () => {
                                             </div>
                                         </td>
                                         <td className="py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.email}</td>
-                                        <td className="py-4 px-6 text-sm font-medium text-gray-500 whitespace-nowrap dark:text-white">{item.profit}</td>
-                                        <td className="py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.loss}</td>
-                                        <td className="py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.total_profit}</td>
+                                        <td className="py-4 px-6 text-sm font-medium text-gray-500 whitespace-nowrap dark:text-white">{item.profit.toFixed(2)}</td>
+                                        <td className="py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.loss.toFixed(2)}</td>
+                                        <td className="py-4 px-6 text-sm font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.total_profit.toFixed(2)}</td>
 
                                     </tr>
                                 ))}

@@ -53,12 +53,14 @@ INSTALLED_APPS = [
 
 # jwt configuration
 REST_FRAMEWORK = {
+    'NON_FIELD_ERRORS_KEY': 'error',
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+
 }
 
 SIMPLE_JWT = {
@@ -151,11 +153,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = 'smtp.mailersend.net'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER ="fastinvestment786@gmail.com"
-EMAIL_HOST_PASSWORD ="vbbf ckog zque peif"
+EMAIL_HOST_USER ="MS_7ADGEt@trial-r83ql3pw29vgzw1j.mlsender.net"
+EMAIL_HOST_PASSWORD ="mssp.aG4dmbr.3zxk54vn2epljy6v.5Irdr13"
 
 # media files
 MEDIA_ROO=[MEDIA_DIR,]
