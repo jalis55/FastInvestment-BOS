@@ -6,7 +6,7 @@ from .views import (
 
                     ,SellableInstrumentView,InvestmentCreateAPIView
                     ,InvestorContributionRetrieveApiView,
-                    FinancialAdvisorListView,AddFinancialAdvisorListCreateView,
+                    FinancialAdvisorListView,AddFinancialAdvisorListCreateView,FinAdvisorCommissionListCreateView,
 
                     AccountReceivableCreateApiView,AccountRecivableDetailsListApiView,
                     UpdateAccountReceivableView
@@ -32,6 +32,7 @@ urlpatterns = [
     
     path('add-financial-advisor/',AddFinancialAdvisorListCreateView.as_view(),name='add-fin-advisor'),
     path('fin-advisor-commission/<str:project_id>/',FinancialAdvisorListView.as_view(),name='fin-advisor-commission'),
+    path('add-fin-advisor-commission/',FinAdvisorCommissionListCreateView.as_view(),name='add-fin-adv-commission'),
     
     path('create-acc-recvable/',AccountReceivableCreateApiView.as_view(),name='create-acc_rcvable'),
     path('acc-recvable-details/',AccountRecivableDetailsListApiView.as_view(),name='acc_rcvable-details'),

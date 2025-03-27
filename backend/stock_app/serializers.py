@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, Investment, FinancialAdvisor, Trade, Instrument,AccountReceivable  
+from .models import Project, Investment, FinancialAdvisor, FinAdvisorCommission,Trade, Instrument,AccountReceivable 
 from accounting.models import Account,Transaction
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -30,7 +30,10 @@ class FinancialAdvisorSerializer(serializers.ModelSerializer):
         model = FinancialAdvisor
         fields = ('project','advisor', 'com_percentage')
 
-
+class FinAdvisorCommissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=FinAdvisorCommission
+        fields=('advisor','project','trade','com_percent','com_amount')
 
 class InvestmentSerailizer(serializers.ModelField):
     investor=UserDetailsSerializer(read_only=True)

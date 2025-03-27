@@ -1,12 +1,12 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated,AllowAny
-from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,AccountReceivable
+from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,FinAdvisorCommission,AccountReceivable
 from accounting.models import Account,Transaction
 from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer,ProjectStatusSerializer
 
 from .serializers import (InstrumentSerializer,TradeSerializer,TradeDetailsSerializer,SellableInstrumentSerializer,
                           InvestmentSerializer,InvestmentContributionSerializer,
-                          FinancialAdvisorSerializer,FinancialAdvisorAddSerializer
+                          FinancialAdvisorSerializer,FinancialAdvisorAddSerializer,FinAdvisorCommissionSerializer
                           ,AccountReceivableSerializer,AccountReceivableDetailsSerializer
                           )
 from django.db import transaction
@@ -242,6 +242,23 @@ class AddFinancialAdvisorListCreateView(generics.ListCreateAPIView):
     queryset = FinancialAdvisor.objects.all()
     serializer_class = FinancialAdvisorAddSerializer
     permission_classes=[AllowAny]
+
+class FinAdvisorCommissionListCreateView(generics.GenericAPIView):
+    queryset=FinAdvisorCommission.objects.all()
+    serializer_class=FinAdvisorCommissionSerializer
+    permission_classes=[AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        # Use 'many=True' to allow handling of a list of objects
+        serializer = FinAdvisorCommissionSerializer(data=request.data, many=True)
+
+        if serializer.is_valid():
+            # Save all objects
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        # If validation fails, return the errors
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class FinancialAdvisorListView(generics.ListAPIView):
     serializer_class = FinancialAdvisorSerializer
