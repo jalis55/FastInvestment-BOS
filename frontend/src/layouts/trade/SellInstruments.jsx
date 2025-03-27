@@ -22,55 +22,151 @@ const SellInstruments = () => {
     }
     try {
       const response = await api.get(`/api/stock/sellable-instruments/${searchId}/`);
-      
+
       if (response.data.length === 0) {
         Swal.fire({ icon: 'info', title: 'No Saleable Instrument', text: 'No available instruments for this project.' });
         return;
       }
       setInstruments(response.data);
-      
       setProjectId(searchId);
       setSearchId('');
       setSelectedInstrument(null);
     } catch (error) {
       console.error("Error fetching project data:", error);
-      Swal.fire({ icon: 'error', title: 'API Error', text: error.response?.data?.message || 'Something went wrong.' });
+      Swal.fire({
+        icon: 'error',
+        title: 'API Error',
+        text: error.response?.data?.message || 'Something went wrong.'
+      });
     }
   };
 
   const getTotalCom = () => {
     return parseFloat((qty * unitPrice * 0.4) / 100).toFixed(2);
-  }
+  };
 
   // Handle instrument selection
   const handleInstrumentChange = useCallback((e) => {
     const instrumentId = parseInt(e.target.value, 10);
     const instrument = instruments.find(inst => inst.instrument.id === instrumentId);
     setSelectedInstrument(instrument || null);
-    
     setQty('');
     setUnitPrice('');
   }, [instruments]);
 
-  // validation check
+  // Validation check
   const validateInputs = () => {
-    // Validation checks
     if (!selectedInstrument) {
       Swal.fire({ icon: 'warning', title: 'Selection Required', text: 'Please select an instrument.' });
-      return;
+      return false;
     }
     if (!qty || isNaN(qty) || qty <= 0 || qty > selectedInstrument.available_quantity) {
-      Swal.fire({ icon: 'warning', title: 'Invalid Quantity', text: 'Enter a valid quantity within the available range.' });
-      return;
+      Swal.fire({
+        icon: 'warning',
+        title: 'Invalid Quantity',
+        text: `Enter a valid quantity (1-${selectedInstrument.available_quantity}).`
+      });
+      return false;
     }
     if (!unitPrice || isNaN(unitPrice) || unitPrice <= 0) {
       Swal.fire({ icon: 'warning', title: 'Invalid Price', text: 'Enter a valid unit price.' });
-      return;
+      return false;
     }
     return true;
-  }
+  };
 
-  // Handle form submission
+  // Fetch financial advisors
+  const getFinAdvisor = async () => {
+    try {
+      const response = await api.get(`/api/stock/fin-advisor-commission/${projectId}/`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching financial advisors:", error);
+      throw error;
+    }
+  };
+
+  const getInvestorContrib = async () => {
+    try {
+      const response = await api.get(`/api/stock/investor-contrib-percent/${projectId}/`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching investor contributions:", error);
+      throw error;
+    }
+  };
+
+  // Handle account receivable logic
+  const prepareAccountReceivableData = async (data) => {
+    try {
+      const { id: trdId, project: proId, qty, unit_price, instrument: instrumentId } = data;
+      const totalCommission = getTotalCom();
+      const sellAmt = qty * unit_price - totalCommission;
+      const instrument = instruments.find(inst => inst.instrument.id === instrumentId);
+
+      if (!instrument) {
+        throw new Error("Instrument not found in list.");
+      }
+
+      const buyAmt = qty * instrument.average_buy_unit_price;
+      const investorContributions = await getInvestorContrib();
+      const advisorCommission = [];
+      const investorProfit = [];
+
+      if (buyAmt < sellAmt) {
+        const advisors = await getFinAdvisor();
+        const gain = sellAmt - buyAmt;
+        let totalAdvisorCommission = 0;
+
+        advisors.forEach(advisor => {
+          const commission = (gain * advisor.com_percentage) / 100;
+          totalAdvisorCommission += commission;
+          advisorCommission.push({
+            project: proId,
+            trade: trdId,
+            advisor: advisor.advisor.id,
+            com_percent: advisor.com_percentage,
+            com_amount: commission.toFixed(2),
+          });
+        });
+
+        let remainingGain = gain - totalAdvisorCommission;
+        investorContributions.forEach(investor => {
+          const investorShare = (remainingGain * investor.contribution_percentage) / 100;
+          investorProfit.push({
+            project: proId,
+            investor: investor.investor,
+            trade: trdId,
+            contribute_amount: investor.contribute_amount,
+            percentage: investor.contribution_percentage,
+            gain_lose: investorShare.toFixed(2),
+            is_advisor: 0
+          });
+        });
+      } else {
+        const loss = sellAmt - buyAmt;
+        investorContributions.forEach(investor => {
+          const investorShare = (loss * investor.contribution_percentage) / 100;
+          investorProfit.push({
+            project: proId,
+            investor: investor.investor.toString(),
+            trade: trdId,
+            contribute_amount: investor.contribute_amount,
+            percentage: investor.contribution_percentage,
+            gain_lose: investorShare.toFixed(2),
+            is_advisor: false
+          });
+        });
+      }
+
+      return { advisorCommission, investorProfit };
+    } catch (error) {
+      console.error("Error in prepareAccountReceivableData:", error);
+      throw error;
+    }
+  };
+
+  // Handle form submission with transaction management
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -87,138 +183,61 @@ const SellInstruments = () => {
       unit_price: parseFloat(unitPrice),
       trns_type: 'sell'
     };
-   
+
+    let tradeId = null;
 
     try {
       // Step 1: Create the trade
-      const response = await api.post('/api/stock/create-trade/', tradeData);
-     
+      const tradeResponse = await api.post('/api/stock/create-trade/', tradeData);
+      tradeId = tradeResponse.data.id;
 
-      // Step 2: Handle account receivable
-      await handleAccountReceivable(response.data);
+      // Step 2: Prepare account receivable data
+      const { advisorCommission, investorProfit } = await prepareAccountReceivableData(tradeResponse.data);
 
-      // If both steps succeed, show success message and update UI
-      Swal.fire({ icon: 'success', title: 'Success', text: 'Instrument sold successfully!' });
+      try {
+        // Step 3: Add financial advisor commission if applicable
+        if (advisorCommission.length > 0) {
+          await api.post('/api/stock/add-fin-advisor-commission/', advisorCommission);
+        }
 
-      // Update instruments list
-      setInstruments(prevInstruments =>
-        prevInstruments
-          .map(inst => inst.instrument.id === selectedInstrument.instrument.id
-            ? { ...inst, available_quantity: inst.available_quantity - qty }
-            : inst
-          )
-          .filter(inst => inst.available_quantity > 0)
-      );
+        // Step 4: Create account receivable
+        await api.post('/api/stock/create-acc-recvable/', investorProfit);
 
-      // Reset form fields
-      setSelectedInstrument(null);
-      setQty('');
-      setUnitPrice('');
+        // Success - update UI
+        Swal.fire({ icon: 'success', title: 'Success', text: 'Instrument sold successfully!' });
 
-      document.getElementById('instDropdown').value = '';
+        // Update instruments list
+        setInstruments(prevInstruments =>
+          prevInstruments
+            .map(inst => inst.instrument.id === selectedInstrument.instrument.id
+              ? { ...inst, available_quantity: inst.available_quantity - qty }
+              : inst
+            )
+            .filter(inst => inst.available_quantity > 0)
+        );
+
+        // Reset form
+        setSelectedInstrument(null);
+        setQty('');
+        setUnitPrice('');
+        document.getElementById('instDropdown').value = '';
+      } catch (error) {
+        // Rollback trade if subsequent steps fail
+        if (tradeId) {
+          await api.delete(`/api/stock/delete-trade/${tradeId}/`);
+        }
+        throw error;
+      }
     } catch (error) {
-      console.error("Error in transaction:", error);
-      Swal.fire({ icon: 'error', title: 'Transaction Failed', text: error.response?.data?.message || 'Something went wrong.' });
+      console.error("Transaction error:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Transaction Failed',
+        text: error.response?.data?.message || 'Something went wrong during the transaction.'
+      });
     } finally {
       setLoading(false);
     }
-  };
-
-  // Handle account receivable logic
-  const handleAccountReceivable = async (data) => {
-    try {
-      const { id: trdId, project: proId, qty, unit_price, instrument: instrumentId } = data;
-      const totalCommission = getTotalCom();
-      const sellAmt = qty * unit_price - totalCommission;
-      const instrument = instruments.find(inst => inst.instrument.id === instrumentId);
-
-      if (!instrument) {
-        throw new Error("Instrument not found in list.");
-      }
-
-      const buyAmt = qty * instrument.average_buy_unit_price;
-      const investorContributions = await getInvestorContrib();
-      const disbursement = [];
-
-      if (buyAmt < sellAmt) {
-        const advisors = await getFinAdvisor();
-        const gain = sellAmt - buyAmt;
-        let totalAdvisorCommission = 0;
-
-        advisors.forEach(advisor => {
-          const commission = (gain * advisor.com_percentage) / 100;
-          totalAdvisorCommission += commission;
-          disbursement.push({
-            project: proId,
-            trade: trdId,
-            investor: advisor.advisor.id,
-            contribute_amount: 0,
-            percentage: advisor.com_percentage,
-            gain_lose: commission.toFixed(2),
-            is_advisor: 1
-          });
-        });
-
-        let remainingGain = gain - totalAdvisorCommission;
-        investorContributions.forEach(investor => {
-          const investorShare = (remainingGain * investor.contribution_percentage) / 100;
-
-          disbursement.push({
-            project: proId,
-            investor: investor.investor,
-            trade: trdId,
-            contribute_amount: investor.contribute_amount,
-            percentage: investor.contribution_percentage,
-            gain_lose: investorShare.toFixed(2),
-            is_advisor: 0
-          });
-        });
-      } else {
-        const loss = sellAmt - buyAmt;
-        investorContributions.forEach(investor => {
-          const investorShare = (loss * investor.contribution_percentage) / 100;
-          
-          disbursement.push({
-            project: proId,
-            investor: investor.investor.toString(),
-            trade: trdId,
-            contribute_amount: investor.contribute_amount,
-            percentage: investor.contribution_percentage,
-            gain_lose: investorShare.toFixed(2),
-            is_advisor: false
-          });
-        });
-      }
-
-      // Process gain/loss
-      await processGainLose(disbursement);
-      console.log("Gain/Loss Processed Successfully for all Advisors and Investors");
-    } catch (error) {
-      console.error("Error in handleAccountReceivable:", error);
-      throw error; // Propagate the error to handleSubmit
-    }
-  };
-
-  // Fetch financial advisors
-  const getFinAdvisor = async () => {
-    const response = await api.get(`/api/stock/fin-advisor-commission/${projectId}/`);
-    return response.data;
-  };
-
-  const getInvestorContrib = async () => {
-    try {
-      const response = await api.get(`/api/stock/investor-contrib-percent/${projectId}/`);
-      
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching investor contributions:", error);
-    }
-  };
-
-  // Process gain/loss
-  const processGainLose = async (obj) => {
-    
-    await api.post('/api/stock/create-acc-recvable/', obj);
   };
 
   return (

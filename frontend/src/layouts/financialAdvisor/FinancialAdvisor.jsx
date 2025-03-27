@@ -78,12 +78,12 @@ const FinancialAdvisor = () => {
                     subject: "Project Opening",
                     message: `You have added as Financial Advisor on ${response.data.project_id} and commison percentage is:${commPercentage}`,
                 };
-                await api.post("/api/mail/send-email/", mailData);
+                // await api.post("/api/mail/send-email/", mailData);
 
             }
 
  
-            Swal.fire({ icon: 'success', title: 'ADvisor Added', text: 'Financial Advisor has been successfully added!' });
+            Swal.fire({ icon: 'success', title: 'Advisor Added', text: 'Financial Advisor has been successfully added!' });
 
             setSelectedCustomer(null);
 

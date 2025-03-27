@@ -95,7 +95,7 @@ const AddInvestments = () => {
                                     subject: "Project Opening",
                                     message: `You have added bdt ${amount} as an investment on Project :${projectId}`,
                                 };
-                                await api.post("/api/mail/send-email/", mailData);
+                                // await api.post("/api/mail/send-email/", mailData);
             }
             Swal.fire({ icon: 'success', title: 'Investment Added', text: 'Investment has been successfully added!' });
             setProjectBalance((prevBal)=>parseFloat(prevBal)+parseFloat(amount));
