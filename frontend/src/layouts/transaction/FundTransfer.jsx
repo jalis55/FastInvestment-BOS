@@ -57,11 +57,11 @@ const FundTransfer = () => {
             });
             return; // Prevent further execution
         }
-        // Check if the amount is less than 100
+        // Check if the amount is less than available balance
         if (parseFloat(amount) > parseFloat(fromUserBal)) {
             await Swal.fire({
                 title: 'Invalid Amount',
-                text: 'Available balance exceed',
+                text: 'Available balance exceeds',
                 icon: 'warning',
                 confirmButtonText: 'OK',
             });
