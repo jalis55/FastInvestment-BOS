@@ -11,7 +11,6 @@ const AccountReceivableDetails = () => {
   const [searchId, setSearchId] = useState('');
   const [fromDt, setFromDt] = useState('');
   const [toDate, setToDate] = useState('');
-  const [isDisbursed, setIsDisbursed] = useState(false);
   const [recvableData, setRecvableData] = useState([]);
 
   const searchProject = async (e) => {
@@ -21,8 +20,7 @@ const AccountReceivableDetails = () => {
         params: {
           project_id: searchId,
           from_dt: fromDt,
-          to_dt: toDate,
-          disburse_st: isDisbursed ? 1 : 0,
+          to_dt: toDate
         }
 
       });

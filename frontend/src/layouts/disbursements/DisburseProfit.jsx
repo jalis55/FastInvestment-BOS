@@ -37,7 +37,7 @@ const DisburseProfit = () => {
                     project_id: formData.searchId,
                     from_dt: formData.fromDt,
                     to_dt: formData.toDate,
-                    disburse_st: 0
+                    is_disbursed: 0
                 }
             });
 
@@ -81,8 +81,8 @@ const DisburseProfit = () => {
                     trade: profit.trade,
                     advisor: advisor.advisor.id,
                     advisor_email: advisor.advisor.email,
-                    com_percentage: comPercentage,
-                    amount: comAmt.toFixed(2)
+                    com_percent: comPercentage,
+                    com_amount: comAmt.toFixed(2)
                 });
 
                 remainingProfit -= comAmt;
@@ -99,7 +99,7 @@ const DisburseProfit = () => {
                     investor: investor.investor.id,
                     investor_email: investor.investor.email,
                     contribute_amount: investor.contribute_amount,
-                    contribute_percentage: percentage,
+                    percentage: percentage,
                     profit_amount: profitAmt.toFixed(2)
                 });
             });
@@ -111,33 +111,92 @@ const DisburseProfit = () => {
 
     const handleDisburse = async () => {
         if (!isDataLoaded) return;
-
+      
+        setIsLoading(true);
+      
+        // Prepare data
+        const AdvisorCommissionData = advCommission.map(({ advisor_email, ...rest }) => rest);
+        const InvestorProfitData = invProfit.map(({ investor_email, ...rest }) => rest);
+        const profitUpdateData = {
+          from_dt: formData.fromDt,
+          to_dt: formData.toDate,
+          project: projectId,
+        };
+        const transactionData = processTransactionData();
+      
         try {
-            setIsLoading(true);
-            // Prepare data for API
-            const disbursementData = {
-                project_id: projectId,
-                from_date: formData.fromDt,
-                to_date: formData.toDate,
-                advisor_commissions: advCommission,
-                investor_profits: invProfit
-            };
-
-            const response = await api.post('/api/stock/disburse-profits/', disbursementData);
-            Swal.fire("Success", "Profits disbursed successfully", "success");
-            
-            // Reset form
-            setFormData({ searchId: '', fromDt: '', toDate: '' });
-            setAdvCommission([]);
-            setInvProfit([]);
-            setIsDataLoaded(false);
+          // Execute all APIs in parallel
+          const results = await Promise.all([
+            api.post('/api/stock/add-fin-advisor-commission/', AdvisorCommissionData),
+            api.post('/api/stock/add-investor-profit/', InvestorProfitData),
+            api.put('/api/stock/update-profit/', profitUpdateData),
+            api.post('/api/acc/user/create-transaction/', transactionData),
+          ]);
+      
+          // All succeeded
+          Swal.fire("Success", "All operations completed successfully!", "success");
+          resetForm();
         } catch (error) {
-            console.error("Error disbursing profits:", error);
-            Swal.fire("Error", "Failed to disburse profits", "error");
+          // At least one API failed
+          console.error("Failed API:", error.config?.url); // Log which API failed
+          Swal.fire(
+            "Partial Failure",
+            `Operation failed: ${error.message}\n\nPlease check and retry.`,
+            "error"
+          );
         } finally {
-            setIsLoading(false);
+          setIsLoading(false);
         }
-    };
+      };
+      
+      // Helper to reset form
+      const resetForm = () => {
+        setFormData({ searchId: '', fromDt: '', toDate: '' });
+        setAdvCommission([]);
+        setInvProfit([]);
+        setIsDataLoaded(false);
+      };
+    const processTransactionData=()=>{
+
+        
+        // Function to sum amounts by user (advisor/investor)
+        const aggregateAmounts = (data, idKey, amountKey) => {
+            return data.reduce((acc, item) => {
+                let user = item[idKey];
+                let amount = parseFloat(item[amountKey]);
+        
+                acc[user] = (acc[user] || 0) + amount;
+                return acc;
+            }, {});
+        };
+        
+        // Aggregate advisor commissions
+        const advisorSums = aggregateAmounts(advCommission, "advisor", "com_amount");
+        
+        // Aggregate investor profits
+        const investorSums = aggregateAmounts(invProfit, "investor", "profit_amount");
+        
+        // Merge results into final format with fixed keys
+        const user = [
+            ...Object.entries(advisorSums).map(([user, amount]) => ({
+                user:user,
+                amount:amount.toFixed(2),
+                transaction_type: "deposit",
+                trans_mode: "online",
+                narration: `Profit bonus ${amount.toFixed(2)} from Project ${projectId}`
+            })),
+            ...Object.entries(investorSums).map(([user, amount]) => ({
+                user: user,
+                amount:amount.toFixed(2),
+                transaction_type: "deposit",
+                trans_mode: "online",
+                narration: `Profit bonus ${amount.toFixed(2)} from Project ${projectId}`
+            }))
+        ];
+      
+        return user;
+        
+    }
 
     return (
         <div className="container mx-auto p-4">
@@ -215,8 +274,8 @@ const DisburseProfit = () => {
                                         <tr key={`advisor-${index}`} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{advCom.advisor_email}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{advCom.trade}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{advCom.com_percentage}%</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${advCom.amount}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{advCom.com_percent}%</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${advCom.com_amount}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -246,7 +305,7 @@ const DisburseProfit = () => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{investor.investor_email}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{investor.trade}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${investor.contribute_amount}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{investor.contribute_percentage}%</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{investor.percentage}%</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${investor.profit_amount}</td>
                                         </tr>
                                     ))}
