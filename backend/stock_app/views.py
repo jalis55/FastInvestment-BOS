@@ -266,7 +266,7 @@ class InvestorProfitCreateView(generics.GenericAPIView):
         serializer=InvestorProfitSerializer(data=request.data,many=True)
 
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(authorized_by=self.request.user,disburse_dt=timezone.now())
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -290,7 +290,7 @@ class FinAdvisorCommissionListCreateView(generics.GenericAPIView):
 
         if serializer.is_valid():
             # Save all objects
-            serializer.save()
+            serializer.save(authorized_by=self.request.user,disburse_dt=timezone.now())
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         # If validation fails, return the errors
@@ -329,8 +329,6 @@ class ProjectProfitTotalListApiView(generics.ListAPIView):
         # Initialize the queryset
         queryset = Profit.objects.all()
 
-        if is_disbursed:
-            queryset=Profit.objects.filter(disburse_st=is_disbursed)
 
         # Apply date range filtering if both from_dt and to_dt are provided
         if from_dt and to_dt:
@@ -338,7 +336,10 @@ class ProjectProfitTotalListApiView(generics.ListAPIView):
 
         # If project_id is provided, filter by project_id and calculate the total profit for that project
         if project_id:
-            queryset=Profit.objects.filter(project=project_id)
+            queryset=queryset.filter(project=project_id)
+        if is_disbursed:
+            queryset=queryset.filter(disburse_st=is_disbursed)
+
         
         return queryset
 
@@ -366,8 +367,33 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
     
 
-class UpdateAccountReceivableView(generics.UpdateAPIView):
+class UpdateProfitView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
+
+    def update(self,request,*args,**kwargs):
+        from_dt = request.data.get("from_dt")
+        to_dt = request.data.get("to_dt")
+        project_id = request.data.get("project")
+        print(from_dt,to_dt,project_id)
+        if not from_dt or not to_dt or not project_id:
+            return Response({"error": "from_dt, to_dt, and project are required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            filters = Q(project=project_id, trade__trade_date__range=(from_dt, to_dt))
+
+            update_count = Profit.objects.filter(filters).update(
+                disburse_st=1,
+                disburse_dt=timezone.now(),
+                authorized_by=request.user
+            )
+
+            return Response({"message": f"{update_count} records updated successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class UpdateAccountReceivableView(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         """Update disburse_st, disburse_dt, and authorized_by for a given date range, project, and user IDs."""

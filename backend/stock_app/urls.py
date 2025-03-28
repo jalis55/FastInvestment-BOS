@@ -5,7 +5,7 @@ from .views import (
                     ,InstrumentListView,TradeCreateView,TradeDeleteView,TradeDetailsListView
 
                     ,SellableInstrumentView,InvestmentCreateAPIView
-                    ,InvestorContributionRetrieveApiView,
+                    ,InvestorContributionRetrieveApiView,InvestorProfitCreateView,UpdateProfitView,
                     FinancialAdvisorListView,AddFinancialAdvisorListCreateView,FinAdvisorCommissionListCreateView,
 
                     AccountReceivableCreateApiView,AccountRecivableDetailsListApiView,
@@ -31,7 +31,7 @@ urlpatterns = [
     
     path('add-investment/',InvestmentCreateAPIView.as_view(),name='add-investment'),
     path('investor-contrib-percent/<str:project_id>/',InvestorContributionRetrieveApiView.as_view(),name='inv-cont-percent'),
-    # path('add-investor-profit')
+    path('add-investor-profit/',InvestorProfitCreateView.as_view(),name='add-investor-profit'),
     
     path('add-financial-advisor/',AddFinancialAdvisorListCreateView.as_view(),name='add-fin-advisor'),
     path('fin-advisor-commission/<str:project_id>/',FinancialAdvisorListView.as_view(),name='fin-advisor-commission'),
@@ -43,6 +43,7 @@ urlpatterns = [
     path('create-acc-recvable/',AccountReceivableCreateApiView.as_view(),name='create-acc_rcvable'),
     path('acc-recvable-details/',AccountRecivableDetailsListApiView.as_view(),name='acc_rcvable-details'),
     path('update-acc-recvable/',UpdateAccountReceivableView.as_view(),name='update-acc_rcvable'),
+    path('update-profit/',UpdateProfitView.as_view(),name='update-update'),
     
 
 ]
