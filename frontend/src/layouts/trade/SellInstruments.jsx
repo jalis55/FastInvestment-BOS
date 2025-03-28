@@ -75,26 +75,6 @@ const SellInstruments = () => {
     return true;
   };
 
-  // Fetch financial advisors
-  const getFinAdvisor = async () => {
-    try {
-      const response = await api.get(`/api/stock/fin-advisor-commission/${projectId}/`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching financial advisors:", error);
-      throw error;
-    }
-  };
-
-  const getInvestorContrib = async () => {
-    try {
-      const response = await api.get(`/api/stock/investor-contrib-percent/${projectId}/`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching investor contributions:", error);
-      throw error;
-    }
-  };
 
   // Handle account receivable logic
   const prepareAccountReceivableData = async (data) => {
@@ -109,57 +89,18 @@ const SellInstruments = () => {
       }
 
       const buyAmt = qty * instrument.average_buy_unit_price;
-      const investorContributions = await getInvestorContrib();
-      const advisorCommission = [];
-      const investorProfit = [];
+      // const investorContributions = await getInvestorContrib();
+      // const advisorCommission = [];
+      // const investorProfit = [];
+      const gain=sellAmt-buyAmt;
 
-      if (buyAmt < sellAmt) {
-        const advisors = await getFinAdvisor();
-        const gain = sellAmt - buyAmt;
-        let totalAdvisorCommission = 0;
-
-        advisors.forEach(advisor => {
-          const commission = (gain * advisor.com_percentage) / 100;
-          totalAdvisorCommission += commission;
-          advisorCommission.push({
-            project: proId,
-            trade: trdId,
-            advisor: advisor.advisor.id,
-            com_percent: advisor.com_percentage,
-            com_amount: commission.toFixed(2),
-          });
-        });
-
-        let remainingGain = gain - totalAdvisorCommission;
-        investorContributions.forEach(investor => {
-          const investorShare = (remainingGain * investor.contribution_percentage) / 100;
-          investorProfit.push({
-            project: proId,
-            investor: investor.investor,
-            trade: trdId,
-            contribute_amount: investor.contribute_amount,
-            percentage: investor.contribution_percentage,
-            gain_lose: investorShare.toFixed(2),
-            is_advisor: 0
-          });
-        });
-      } else {
-        const loss = sellAmt - buyAmt;
-        investorContributions.forEach(investor => {
-          const investorShare = (loss * investor.contribution_percentage) / 100;
-          investorProfit.push({
-            project: proId,
-            investor: investor.investor.toString(),
-            trade: trdId,
-            contribute_amount: investor.contribute_amount,
-            percentage: investor.contribution_percentage,
-            gain_lose: investorShare.toFixed(2),
-            is_advisor: false
-          });
-        });
+      const gainDetails={
+        project:proId,
+        trade:trdId,
+        gain_lose:gain.toFixed(2)
       }
 
-      return { advisorCommission, investorProfit };
+      return gainDetails;
     } catch (error) {
       console.error("Error in prepareAccountReceivableData:", error);
       throw error;
@@ -192,16 +133,21 @@ const SellInstruments = () => {
       tradeId = tradeResponse.data.id;
 
       // Step 2: Prepare account receivable data
-      const { advisorCommission, investorProfit } = await prepareAccountReceivableData(tradeResponse.data);
+      const data = await prepareAccountReceivableData(tradeResponse.data);
+      console.log(data)
 
       try {
         // Step 3: Add financial advisor commission if applicable
-        if (advisorCommission.length > 0) {
-          await api.post('/api/stock/add-fin-advisor-commission/', advisorCommission);
+        if (data.gain_lose > 0) {
+          await api.post('/api/stock/add-profit/', {
+            project:data.project,
+            trade:data.trade,
+            amount:data.gain_lose
+          });
         }
 
         // Step 4: Create account receivable
-        await api.post('/api/stock/create-acc-recvable/', investorProfit);
+        await api.post('/api/stock/create-acc-recvable/', data);
 
         // Success - update UI
         Swal.fire({ icon: 'success', title: 'Success', text: 'Instrument sold successfully!' });

@@ -45,14 +45,10 @@ const AccountReceivableDetails = () => {
     }
 
     const csvData = recvableData.map(item => ({
-      Investor_Email: item.investor.email,
-      Investor_Name: item.investor.name,
       Instrument: item.trade.instrument.name,
       Sell_Qty: item.trade.qty,
       Unit_Price: item.trade.actual_unit_price,
       Trade_Date: item.trade.trade_date,
-      Contribute_Amount: parseFloat(item.contribute_amount) !== 0 ? item.contribute_amount : 'Advisor',
-      Percentage: `${item.percentage}%`,
       Gain_Loss: item.gain_lose
     }));
 
@@ -87,20 +83,16 @@ const AccountReceivableDetails = () => {
 
     // Prepare table data
     const tableData = recvableData.map(item => [
-        item.investor.email,
-        item.investor.name,
         item.trade.instrument.name,
         item.trade.qty,
         item.trade.actual_unit_price,
         item.trade.trade_date,
-        parseFloat(item.contribute_amount) !== 0 ? item.contribute_amount : 'Advisor',
-        `${item.percentage}%`,
         item.gain_lose
     ]);
 
     // Use autoTable directly
     autoTable(doc, {
-        head: [["Investor Email", "Investor Name", "Instrument", "Sell Qty", "Unit Price", "Trade Date", "Contribute Amount", "Percentage", "Gain/Loss"]],
+        head: [["Instrument", "Sell Qty", "Unit Price", "Trade Date", "Gain/Loss"]],
         body: tableData,
         startY: 25,
         theme: "grid",
@@ -126,6 +118,7 @@ const AccountReceivableDetails = () => {
 };
   return (
     <>
+    <BannerTitle title="Account Receivable Details"/>
       <form className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-lg" onSubmit={searchProject}>
         <div className="space-y-6">
           <div className="form-group">
@@ -157,16 +150,7 @@ const AccountReceivableDetails = () => {
               />
             </div>
           </div>
-          <div className="form-group flex items-center">
-            <input
-              type="checkbox"
-              className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-              id="isDisbursed"
-              checked={isDisbursed}
-              onChange={(e) => setIsDisbursed(e.target.checked)}
-            />
-            <label className="ml-2 text-sm text-gray-700" htmlFor="isDisbursed">Is Disbursed</label>
-          </div>
+
           <button
             type="submit"
             className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
