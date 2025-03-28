@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, Investment, FinancialAdvisor, FinAdvisorCommission,Trade, Instrument,AccountReceivable 
+from .models import Project, Investment, FinancialAdvisor, FinAdvisorCommission,Trade, Instrument,AccountReceivable,Profit,InvestorProfit
 from accounting.models import Account,Transaction
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -35,6 +35,12 @@ class FinAdvisorCommissionSerializer(serializers.ModelSerializer):
         model=FinAdvisorCommission
         fields=('advisor','project','trade','com_percent','com_amount')
 
+class InvestorProfitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=InvestorProfit
+        fields=('investor','project','trade','contribute_amount','percentage','profit_amount')
+
+        
 class InvestmentSerailizer(serializers.ModelField):
     investor=UserDetailsSerializer(read_only=True)
     class Meta:
@@ -101,7 +107,7 @@ class InvestmentSerializer(serializers.ModelSerializer):
         return investment
 
 class InvestmentContributionSerializer(serializers.Serializer):
-    investor = serializers.IntegerField()
+    investor = UserDetailsSerializer()
     contribute_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     contribution_percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
 
@@ -128,22 +134,6 @@ class TradeDetailsSerializer(serializers.ModelSerializer):
         fields = ['project','id','trade_date' ,'instrument', 'qty', 'unit_price', 'trns_type', 'total_commission','actual_unit_price']
 
 
-class SellableInstrumentSerializer(serializers.Serializer):
-    instrument = InstrumentSerializer(read_only=True)
-    available_quantity = serializers.IntegerField()
-    average_buy_unit_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
-
-
-
-class AccountReceivableSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=AccountReceivable
-        fields=['project','investor','trade','contribute_amount','percentage','gain_lose','is_advisor']
-
-
-
-
-
 class SimplifiedTradeDetailsSerializer(serializers.ModelSerializer):
     instrument=InstrumentSerializer(read_only=True)
     authorized_by=UserDetailsSerializer(read_only=True)
@@ -156,18 +146,35 @@ class SimplifiedTradeDetailsSerializer(serializers.ModelSerializer):
                  'actual_unit_price',
                  'trade_date',
                  'authorized_by')
+
+class SellableInstrumentSerializer(serializers.Serializer):
+    instrument = InstrumentSerializer(read_only=True)
+    available_quantity = serializers.IntegerField()
+    average_buy_unit_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+
+
+
+class AccountReceivableSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=AccountReceivable
+        fields=['project','trade','gain_lose']
+
+
+
+
+
+class ProfitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Profit
+        fields=('project','trade','amount')       
+
         
 class AccountReceivableDetailsSerializer(serializers.ModelSerializer):
     trade=SimplifiedTradeDetailsSerializer(read_only=True)
-    investor=UserDetailsSerializer()
     class Meta:
         model=AccountReceivable
         fields=(
             'project',
-            'investor',
             'trade',
-            'contribute_amount',
-            'percentage',
             'gain_lose',
-            'is_advisor'
         )

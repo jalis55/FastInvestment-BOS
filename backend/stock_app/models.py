@@ -121,28 +121,41 @@ class Trade(models.Model):
         return str(self.id)
     
 
+
+
+class Profit(models.Model):
+    project=models.ForeignKey(Project,on_delete=models.CASCADE,related_name='profit_project_details')
+    trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name="profit_trade_details")
+    amount=models.DecimalField(max_digits=100,decimal_places=2)
+    accrued_dt=models.DateTimeField(auto_now_add=True)
+    disburse_st=models.BooleanField(default=False)
+    disburse_dt = models.DateTimeField(null=True, blank=True)
+    authorized_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='profit_authorizer_details')
+
+
 class FinAdvisorCommission(models.Model):
     advisor=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='fin_advisor_com')
     project=models.ForeignKey(Project,on_delete=models.CASCADE,related_name='fin_project')
     trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name='com_trade_details')
     com_percent=models.DecimalField(max_digits=10,decimal_places=2)
     com_amount=models.DecimalField(max_digits=100,decimal_places=2)
-    accrued_dt=models.DateTimeField(auto_now_add=True)
-    disburse_st=models.BooleanField(default=False)
     disburse_dt = models.DateTimeField(null=True, blank=True)
     authorized_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='commission_authorizer_details')
+
+class InvestorProfit(models.Model):
+    project=models.ForeignKey(Project,on_delete=models.CASCADE,related_name="inv_profit_project_details")
+    investor=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="ben_investor_details")
+    trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name='inv_profit_trade_details')
+    contribute_amount=models.DecimalField(max_digits=10,decimal_places=2)
+    percentage=models.DecimalField(max_digits=5,decimal_places=2)
+    profit_amount=models.DecimalField(max_digits=5,decimal_places=2)
+    disburse_dt = models.DateTimeField(null=True, blank=True)
+    authorized_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='inv_profit_authorizer_details')
 
     
 class AccountReceivable(models.Model):
     project=models.ForeignKey(Project,on_delete=models.CASCADE,related_name='receivable_project_details')
-    investor=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='receivable_investor_details')
     trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name='receivable_trade_details')
-    contribute_amount=models.DecimalField(max_digits=10,decimal_places=2)
-    percentage=models.DecimalField(max_digits=5,decimal_places=2)
     gain_lose=models.DecimalField(max_digits=10,decimal_places=2)
-    is_advisor=models.BooleanField(default=False)
-    disburse_st=models.BooleanField(default=False)
-    disburse_dt = models.DateTimeField(null=True, blank=True)
-    accr_dt=models.DateTimeField(auto_now_add=True)
-    authorized_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='receivable_authorizer_details')
+    authorized_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='receivable_authorizer_details')
 

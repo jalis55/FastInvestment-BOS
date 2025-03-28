@@ -1,13 +1,14 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated,AllowAny
-from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,FinAdvisorCommission,AccountReceivable
+from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,FinAdvisorCommission,AccountReceivable,Profit,InvestorProfit
 from accounting.models import Account,Transaction
 from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer,ProjectStatusSerializer
 
 from .serializers import (InstrumentSerializer,TradeSerializer,TradeDetailsSerializer,SellableInstrumentSerializer,
                           InvestmentSerializer,InvestmentContributionSerializer,
                           FinancialAdvisorSerializer,FinancialAdvisorAddSerializer,FinAdvisorCommissionSerializer
-                          ,AccountReceivableSerializer,AccountReceivableDetailsSerializer
+                          ,AccountReceivableSerializer,AccountReceivableDetailsSerializer,ProfitSerializer
+                          ,InvestorProfitSerializer
                           )
 from django.db import transaction
 from rest_framework.response import Response
@@ -20,6 +21,9 @@ from rest_framework.views import APIView
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.db.models.functions import Coalesce
+from django.contrib.auth import get_user_model
+
+User=get_user_model()
 
 
 class ProjectCreateView(generics.CreateAPIView):
@@ -170,6 +174,12 @@ class TradeCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(authorized_by=self.request.user)
 
+class TradeDeleteView(generics.DestroyAPIView):
+    queryset=Trade.objects.all()
+    serializer_class=TradeSerializer
+    permission_classes=[IsAuthenticated]
+    lookup_url_kwarg = 'trade_id'
+
 
 
 class TradeDetailsListView(generics.ListAPIView):
@@ -195,6 +205,13 @@ class TradeDetailsListView(generics.ListAPIView):
 
         return queryset
 
+class ProfitCreateView(generics.CreateAPIView):
+    queryset=Profit.objects.all()
+    serializer_class=ProfitSerializer
+    permission_classes=[IsAuthenticated]
+
+    
+
 class InvestmentCreateAPIView(generics.CreateAPIView):
     queryset = Investment.objects.all()
     serializer_class = InvestmentSerializer
@@ -205,10 +222,11 @@ class InvestmentCreateAPIView(generics.CreateAPIView):
 
     
 class InvestorContributionRetrieveApiView(generics.RetrieveAPIView):
-    permission_classes=[AllowAny]
+    permission_classes = [AllowAny]
+
     def get(self, request, project_id):
         try:
-            # Get the project
+            # Fetch the project
             project = Project.objects.get(project_id=project_id)
         except Project.DoesNotExist:
             return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -221,27 +239,45 @@ class InvestorContributionRetrieveApiView(generics.RetrieveAPIView):
 
         # Group investments by investor and calculate their total contribution and percentage
         investor_data = []
-        for investor in investments.values('investor').distinct():
-            investor_id = investor['investor']
-            investor_investments = investments.filter(investor_id=investor_id)
+        for investor in investments.values_list('investor', flat=True).distinct():  # Get unique investor IDs
+            investor_instance = User.objects.get(id=investor)  # Fetch full User object
+            investor_investments = investments.filter(investor=investor_instance)
             total_investor_contribution = investor_investments.aggregate(total=Sum('amount'))['total'] or 0
 
             # Calculate percentage
             percentage = (total_investor_contribution / total_project_investment) * 100 if total_project_investment > 0 else 0
 
             investor_data.append({
-                'investor': investor_id,
+                'investor': investor_instance,  # Pass full User object
                 'contribute_amount': total_investor_contribution,
-                'contribution_percentage': round(percentage, 2),  # Round to 2 decimal places
+                'contribution_percentage': round(percentage, 2),
             })
 
         # Serialize the data
         serializer = InvestmentContributionSerializer(investor_data, many=True)
         return Response(serializer.data)
+
+class InvestorProfitCreateView(generics.GenericAPIView):
+    queryset=InvestorProfit.objects.all()
+    serializer_class=InvestorProfitSerializer
+    permission_classes=[AllowAny]
+
+    def post(self,request,*args,**kwargs):
+        serializer=InvestorProfitSerializer(data=request.data,many=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 class AddFinancialAdvisorListCreateView(generics.ListCreateAPIView):
     queryset = FinancialAdvisor.objects.all()
     serializer_class = FinancialAdvisorAddSerializer
     permission_classes=[AllowAny]
+
+
 
 class FinAdvisorCommissionListCreateView(generics.GenericAPIView):
     queryset=FinAdvisorCommission.objects.all()
@@ -271,22 +307,42 @@ class FinancialAdvisorListView(generics.ListAPIView):
 
 
     
-class AccountReceivableCreateApiView(generics.GenericAPIView):
-    queryset = AccountReceivable.objects.all()
+class AccountReceivableCreateApiView(generics.CreateAPIView):
+    queryset = Trade.objects.all()
     serializer_class = AccountReceivableSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(authorized_by=self.request.user)
+    
+
+class ProjectProfitTotalListApiView(generics.ListAPIView):
+    serializer_class=ProfitSerializer
     permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
-        # Use 'many=True' to allow handling of a list of objects
-        serializer = AccountReceivableSerializer(data=request.data, many=True)
+    def get_queryset(self):
+        project_id = self.request.query_params.get('project_id')
+        from_dt = self.request.query_params.get('from_dt')
+        to_dt = self.request.query_params.get('to_dt')
+        is_disbursed=self.request.query_params.get('is_disbursed')
 
-        if serializer.is_valid():
-            # Save all objects
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Initialize the queryset
+        queryset = Profit.objects.all()
+
+        if is_disbursed:
+            queryset=Profit.objects.filter(disburse_st=is_disbursed)
+
+        # Apply date range filtering if both from_dt and to_dt are provided
+        if from_dt and to_dt:
+            queryset = queryset.filter(trade__trade_date__gte=from_dt, trade__trade_date__lte=to_dt)
+
+        # If project_id is provided, filter by project_id and calculate the total profit for that project
+        if project_id:
+            queryset=Profit.objects.filter(project=project_id)
         
-        # If validation fails, return the errors
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return queryset
+
+
     
 
 class AccountRecivableDetailsListApiView(generics.ListAPIView):
@@ -298,17 +354,16 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
         project_id = self.request.query_params.get('project_id')
         from_dt=self.request.query_params.get('from_dt')
         to_dt=self.request.query_params.get('to_dt')
-        disburse_st=self.request.query_params.get('disburse_st')
+
         
 
         queryset=AccountReceivable.objects.filter(project=project_id)
         if from_dt and to_dt:
             queryset=queryset.filter(trade__trade_date__gte=from_dt, trade__trade_date__lte=to_dt)
 
-        if disburse_st:
-            queryset=queryset.filter(disburse_st=disburse_st)
-
         return queryset
+
+
     
 
 class UpdateAccountReceivableView(generics.UpdateAPIView):
