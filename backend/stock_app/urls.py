@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-                     ProjectCreateView
+                     ProjectCreateView,ProjectCloseView
                     ,ProjectBalanceDetailsView,ProjectUpdateView,ProjectStatusRetriveView
                     ,InstrumentListView,TradeCreateView,TradeDeleteView,TradeDetailsListView
 
@@ -44,6 +44,7 @@ urlpatterns = [
     path('acc-recvable-details/',AccountRecivableDetailsListApiView.as_view(),name='acc_rcvable-details'),
     path('update-acc-recvable/',UpdateAccountReceivableView.as_view(),name='update-acc_rcvable'),
     path('update-profit/',UpdateProfitView.as_view(),name='update-update'),
+    path('close-project/',ProjectCloseView.as_view(),name='close-project')
     
 
 ]

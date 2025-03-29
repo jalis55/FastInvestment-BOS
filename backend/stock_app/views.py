@@ -92,10 +92,11 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
             total=Coalesce(Sum(F('qty') * F('actual_unit_price')), 0, output_field=DecimalField())
         )['total']
 
+        accrued_profit = Profit.objects.filter(project=project_id).aggregate(total_amount=Sum('amount'))['total_amount']
+
         # Compute available balance and gain/loss
         available_balance = total_investment - total_buy
-        total_gain_loss = total_sell - total_buy
-        total_sell_balance = total_sell - max(total_gain_loss, 0)
+        
 
         return {
             "project_id": project.project_id,
@@ -103,8 +104,8 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
             "total_buy_amount": total_buy,
             "available_balance": available_balance,
             "total_sell_amount": total_sell,
-            "total_gain_loss": total_gain_loss,
-            "total_sell_balance": total_sell_balance,
+            "accrued_profit":accrued_profit
+            
     }
 
 class InstrumentListView(generics.ListAPIView):
@@ -366,6 +367,38 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
 
     
+class ProjectCloseView(generics.UpdateAPIView):
+    permission_classes=[IsAuthenticated]
+
+    def update(self,request,*args,**kwargs):
+        project_id=request.data.get("project_id")
+        total_investment=request.data.get("total_investment")
+        total_buy=request.data.get("total_buy")
+        total_sell=request.data.get("total_sell")
+        total_sell_profit=request.data.get("total_sell_profit")
+        gain_or_loss=request.data.get("gain_or_loss")
+        closing_balance=request.data.get("closing_balance")
+
+        if not project_id:
+            return Response({"error": "project id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            
+            update_count = Project.objects.filter(project_id=project_id).update(
+                
+                total_investment=total_investment,
+                total_buy=total_buy,
+                total_sell=total_sell,
+                total_sell_profit=total_sell_profit,
+                gain_or_loss=gain_or_loss,
+                closing_balance=closing_balance,
+                project_active_status=0,
+                project_closing_dt=timezone.now(),
+                closed_by=request.user
+            )
+
+            return Response({"message": f"{update_count} records updated successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UpdateProfitView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
@@ -374,7 +407,6 @@ class UpdateProfitView(generics.UpdateAPIView):
         from_dt = request.data.get("from_dt")
         to_dt = request.data.get("to_dt")
         project_id = request.data.get("project")
-        print(from_dt,to_dt,project_id)
         if not from_dt or not to_dt or not project_id:
             return Response({"error": "from_dt, to_dt, and project are required."}, status=status.HTTP_400_BAD_REQUEST)
         
