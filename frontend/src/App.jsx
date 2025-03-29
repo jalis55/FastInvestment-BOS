@@ -23,6 +23,7 @@ import { Trapezoid } from "recharts";
 import TradeDetails from "./layouts/trade/TradeDetails";
 import CloseProject from "./layouts/Projects/CloseProject";
 import FundTransfer from "./layouts/transaction/FundTransfer";
+import NotFound from "./layouts/NotFound";
 
 const router = createBrowserRouter([
     {
@@ -95,12 +96,16 @@ const router = createBrowserRouter([
         element: <RedirectRoute />, // Redirect if already logged in
         children: [
             { path: "login", element: <Login /> },
-            { path: "register", element: <Registration /> },
+            // { path: "register", element: <Registration /> },
         ],
     },
     {
         path: "logout",
         element: <Logout />
+    },
+    {
+        path: '*',
+        element: <NotFound/>,
     }
 ]);
 

@@ -1,65 +1,106 @@
-import { Mail, Phone} from "lucide-react";
+import { useState, useEffect, useRef } from 'react';
 import UserImage from "./UserImage";
 
-const UserCard = ({ user ,toggleAdminStatus,toggleActiveStatus}) => {
+const UserCard = ({ user, toggleAdminStatus, toggleActiveStatus }) => {
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+    const buttonRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    const handleClickOutside = (e) => {
+        if (
+            dropdownRef.current &&
+            !dropdownRef.current.contains(e.target) &&
+            buttonRef.current &&
+            !buttonRef.current.contains(e.target)
+        ) {
+            setIsDropdownOpen(false);
+        }
+    };
+
+    // Add event listener when dropdown is open
+    useEffect(() => {
+        if (isDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isDropdownOpen]);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
-            <div className="flex flex-col sm:flex-row sm:space-x-6 items-center sm:items-start">
-                {/* User Avatar */}
+        <div className="w-full max-w-sm bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 relative">
+            {/* Dropdown button and menu */}
+            <div className="flex justify-end px-4 pt-4">
+                <button
+                    ref={buttonRef}
+                    id="dropdown-button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="inline-block text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-4 focus:outline-none focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-1.5"
+                    type="button"
+                    aria-expanded={isDropdownOpen}
+                    aria-haspopup="true"
+                >
+                    <span className="sr-only">Open dropdown</span>
+                    <svg className="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 3">
+                        <path d="M2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.041 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM14 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />
+                    </svg>
+                </button>
+
+                {/* Dropdown menu */}
+                {isDropdownOpen && (
+                    <div
+                        ref={dropdownRef}
+                        className="z-10 absolute right-4 top-12 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+                        role="menu"
+                    >
+                        <ul className="py-2">
+                            <li>
+                                <button
+                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                                    role="menuitem"
+                                >
+                                    Edit
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                                    role="menuitem"
+                                >
+                                    Export Data
+                                </button>
+                            </li>
+                            <li>
+                                <button
+                                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                                    role="menuitem"
+                                >
+                                    Delete
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                )}
+            </div>
+
+            {/* User content */}
+            <div className="flex flex-col items-center pb-10">
                 <UserImage image_url={user.profile_image} name={user.name} sex={user.sex} />
-
-                {/* User Details */}
-                <div className="flex-grow text-center sm:text-left">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{user.name}</h2>
-
-                    <div className="flex items-center justify-center sm:justify-start mt-2">
-                        <Mail className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" />
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
-                    </div>
-
-                    <div className="flex items-center justify-center sm:justify-start mt-1">
-                        <Phone className="w-4 h-4 text-gray-500 dark:text-gray-400 mr-2" />
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{user.phone}</p>
-                    </div>
-
-                    {/* Social Links */}
-
+                <h5 className="mb-1 text-xl font-medium text-gray-900 dark:text-white">
+                    {user.name.toUpperCase()}
+                </h5>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {user.email}
+                </span>
+                <div className="flex mt-4 md:mt-6">
+                    <button className="py-2 px-4 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
+                        Send Mail
+                    </button>
                 </div>
             </div>
-
-            {/* Footer Buttons */}
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {user.is_active ?
-                    <button type='button' 
-                    onClick={() => toggleActiveStatus(user.id, user.is_active)}
-                    className='py-1.5 px-3.5 text-xs max-h-max bg-red-500 text-white rounded-full cursor-pointer font-medium leading-5 text-center shadow-xs transition-all duration-500 hover:bg-red-700'>
-                        Make Inactive
-                    </button>
-                    :
-                    <button type='button' 
-                    onClick={() => toggleActiveStatus(user.id, user.is_active)}
-                    className='py-1.5 px-3.5 text-xs max-h-max bg-green-500 text-white rounded-full cursor-pointer font-medium leading-5 text-center shadow-xs transition-all duration-500 hover:bg-green-700'>
-                        Make Active
-                    </button>
-                }
-                {
-                    user.is_staff ?
-                        <button type='button' 
-                        onClick={() => toggleAdminStatus(user.id, user.is_staff)}
-                        className='py-1.5 px-3.5 text-xs max-h-max bg-red-500 text-white rounded-full cursor-pointer font-medium leading-5 text-center shadow-xs transition-all duration-500 hover:bg-red-700'>
-                            Remove Admin
-                        </button>
-                        :
-                        <button type='button' 
-                        onClick={() => toggleAdminStatus(user.id, user.is_staff)}
-                        className='py-1.5 px-3.5 text-xs max-h-max bg-green-500 text-white rounded-full cursor-pointer font-medium leading-5 text-center shadow-xs transition-all duration-500 hover:bg-green-700'>
-                            Make Admin
-                        </button>
-                }
-            </div>
         </div>
-    )
-}
+    );
+};
 
 export default UserCard;

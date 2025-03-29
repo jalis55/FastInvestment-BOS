@@ -1,9 +1,6 @@
 import { useContext, useState } from "react";
 import { useTheme } from "../hooks/use-theme";
 import { Bell, ChevronsLeft, Moon, Search, Sun, LogOut } from "lucide-react";
-
-
-
 import profileImg from "../assets/profile-image.jpg";
 import PropTypes from "prop-types";
 import { AuthContext } from "../contexts/AuthContext";

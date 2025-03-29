@@ -1,124 +1,109 @@
-// src/menu.js
 import {
   Home, TrendingUp, ShoppingCart, DollarSign,
   Users, BadgeDollarSign, ArrowRightLeft, BriefcaseBusiness,
-  BadgePercent,FileSpreadsheet,FolderKanban,Wallet,Landmark
-  ,UsersRound,SquarePercent,ChartCandlestick,BookOpenCheck
+  BadgePercent, FileSpreadsheet, FolderKanban, Wallet, Landmark,
+  UsersRound, SquarePercent, ChartCandlestick, BookOpenCheck
 } from 'lucide-react';
 
 const menu = [
   {
     menuName: "Dashboard",
     url: "/",
-    role: "admin",
+    roles: ["admin", "super_admin", "user"], // Available to all roles
     icon: Home,
-  }
-  ,
+  },
   {
     menuName: "Users",
     url: "/users",
-    role: "admin",
+    roles: ["super_admin"],
     icon: Users,
-  }
-  ,
+  },
   {
     menuName: "Transaction",
     url: "/transaction",
-    role: "admin",
+    roles: ["admin", "super_admin"],
     icon: Landmark,
-  }
-  ,
+  },
   {
     menuName: "Fund Transfer",
     url: "/fund-transfer",
-    role: "admin",
+    roles: ["admin", "super_admin"],
     icon: ArrowRightLeft,
-  }
-  ,
-  
+  },
   {
     menuName: "Pending Payments",
     url: "/pending-payments",
-    role: "admin",
+    roles: ["super_admin"], // Only for super_admin
     icon: Wallet,
-  }
-  ,
+  },
   {
     menuName: "Create Project",
     url: "/create-project",
-    role: "admin",
+    roles: ["admin", "super_admin"],
     icon: FolderKanban,
-  }
-  ,
+  },
   {
     menuName: "Close Project",
     url: "/close-project",
-    role: "admin",
+    roles: ["admin", "super_admin"],
     icon: BookOpenCheck,
-  }
-  ,
+  },
   {
     menuName: "Add Advisor",
     url: "/add-advisor",
-    role: "admin",
+    roles: ["admin", "super_admin"],
     icon: UsersRound,
-  }
-  ,
+  },
   {
     menuName: "Add Investments",
     url: "/add-investments",
-    role: "admin",
+    roles: ["admin", "super_admin"],
     icon: BriefcaseBusiness,
-  }
-  ,
+  },
   {
     menuName: "Trade",
-    role: "user",
+    roles: ["admin", "super_admin"], // Available to all but different access
     icon: TrendingUp,
     children: [
       {
         menuName: "Buy Instruments",
         url: "/buy-instruments",
-        role: "user",
+        roles: ["admin", "super_admin"],
         icon: ShoppingCart,
       },
       {
         menuName: "Sell Instruments",
         url: "/sell-instruments",
-        role: "user",
+        roles: ["admin", "super_admin"],
         icon: DollarSign,
       },
-
     ],
   },
   {
     menuName: "Disburse Profit",
     url: "/disburse-profit",
-    role: "admin",
+    roles: ["admin", "super_admin"],
     icon: BadgePercent,
-  }
-  ,
+  },
   {
     menuName: "Reports",
-    role: "user",
+    roles: ["user", "admin", "super_admin"],
     icon: FileSpreadsheet,
     children: [
       {
-        menuName: "Acc Receiable Details",
+        menuName: "Acc Receivable Details",
         url: "/acc-rec-details",
-        role: "user",
+        roles: ["user", "admin", "super_admin"],
         icon: SquarePercent,
       },
       {
         menuName: "Trade Details",
         url: "/trade-details",
-        role: "user",
+        roles: ["user", "admin", "super_admin"],
         icon: ChartCandlestick,
       },
-
     ],
   },
-
 ];
 
 export default menu;

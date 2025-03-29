@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useEffect } from "react";
+import React, { forwardRef, useState, useEffect, useContext } from "react";
 import { NavLink } from "react-router-dom";
 import menu from "../constants/menu.js";
 import logoLight from "../assets/logo-light.svg";
@@ -6,9 +6,11 @@ import logoDark from "../assets/logo-dark.svg";
 import { cn } from "../utils/cn";
 import PropTypes from "prop-types";
 import { ChevronDown } from "lucide-react";
+import { AuthContext } from "../contexts/AuthContext";
 
 const Sidebar = forwardRef(({ collapsed }, ref) => {
   const [openMenus, setOpenMenus] = useState({});
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     if (collapsed) {
@@ -19,6 +21,36 @@ const Sidebar = forwardRef(({ collapsed }, ref) => {
   const toggleMenu = (menuName) => {
     setOpenMenus((prev) => ({ ...prev, [menuName]: !prev[menuName] }));
   };
+
+  // Function to check if user has access to a menu item
+  const hasAccess = (roles) => {
+    if (!roles) return true;
+    if (!user) return false;
+    
+    if (user.is_super_admin) return true;
+    if (user.is_admin && roles.includes("admin")) return true;
+    if (!user.is_admin && roles.includes("user")) return true;
+    
+    return false;
+  };
+
+  // Filter menu items based on user role
+  const filteredMenu = menu.filter(item => {
+    // Check if user has access to this item
+    if (!hasAccess(item.roles)) return false;
+    
+    // If item has children, check if any child is accessible
+    if (item.children) {
+      const accessibleChildren = item.children.filter(child => hasAccess(child.roles));
+      return accessibleChildren.length > 0;
+    }
+    
+    return true;
+  }).map(item => ({
+    ...item,
+    // Filter children if they exist
+    children: item.children ? item.children.filter(child => hasAccess(child.roles)) : null
+  }));
 
   return (
     <aside
@@ -39,14 +71,12 @@ const Sidebar = forwardRef(({ collapsed }, ref) => {
         )}
       </div>
       <div className="flex w-full flex-col gap-y-4 overflow-y-auto overflow-x-hidden p-3 [scrollbar-width:_thin]">
-        {menu.map((menuItem) => (
+        {filteredMenu.map((menuItem) => (
           <nav
             key={menuItem.menuName}
             className={cn("sidebar-group", collapsed && "md:items-center")}
           >
-            {/* Check if the menuItem has children */}
             {menuItem.children ? (
-              // Render button with toggle functionality if there are children
               <button
                 type="button"
                 onClick={() => toggleMenu(menuItem.menuName)}
@@ -66,7 +96,6 @@ const Sidebar = forwardRef(({ collapsed }, ref) => {
                 />
               </button>
             ) : (
-              // If no children, render NavLink for navigation
               <NavLink
                 to={menuItem.url}
                 className="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
@@ -96,7 +125,7 @@ const Sidebar = forwardRef(({ collapsed }, ref) => {
                     )}
                   >
                     <child.icon size={22} className="flex-shrink-0" />
-                    {!collapsed && <p className="whitespace-nowrap ms-3">{child.menuName}</p>}
+                    {!collapsed && <p className="text-balance ms-3">{child.menuName}</p>}
                   </NavLink>
                 ))}
               </div>
