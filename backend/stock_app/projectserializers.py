@@ -33,5 +33,4 @@ class ProjectBalanceDetailsSerializer(serializers.Serializer):
     total_buy_amount=serializers.DecimalField(max_digits=10,decimal_places=2)
     available_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
     total_sell_amount=serializers.DecimalField(max_digits=10,decimal_places=2)
-    total_gain_loss=serializers.DecimalField(max_digits=10,decimal_places=2)
-    total_sell_balance=serializers.DecimalField(max_digits=10,decimal_places=2)
+    accrued_profit=serializers.DecimalField(max_digits=10,decimal_places=2)

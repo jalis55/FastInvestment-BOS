@@ -3,6 +3,7 @@ import BannerTitle from "../../components/BannerTitle";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
 import api from "../../api.js";
 import Swal from "sweetalert2";
+import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
 
 const AddInvestments = () => {
     const [searchId, setSearchId] = useState('');
@@ -23,8 +24,11 @@ const AddInvestments = () => {
         }
 
         try {
+
+            const isActive = await checkProjectStatus(searchId);
+            if (!isActive) return;
+
             const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
-            console.log("Project Balance Response:", response.data); // Debugging log
             setProjectId(response.data.project_id);
             setProjectBalance(response.data.available_balance);
             getCustomers();
