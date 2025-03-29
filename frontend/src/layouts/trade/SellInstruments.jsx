@@ -89,9 +89,7 @@ const SellInstruments = () => {
       }
 
       const buyAmt = qty * instrument.average_buy_unit_price;
-      // const investorContributions = await getInvestorContrib();
-      // const advisorCommission = [];
-      // const investorProfit = [];
+
       const gain=sellAmt-buyAmt;
 
       const gainDetails={
@@ -134,7 +132,7 @@ const SellInstruments = () => {
 
       // Step 2: Prepare account receivable data
       const data = await prepareAccountReceivableData(tradeResponse.data);
-      console.log(data)
+  
 
       try {
         // Step 3: Add financial advisor commission if applicable

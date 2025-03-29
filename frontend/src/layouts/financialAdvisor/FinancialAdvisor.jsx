@@ -3,13 +3,14 @@ import BannerTitle from "../../components/BannerTitle";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
 import api from "../../api.js";
 import Swal from "sweetalert2";
+import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
 
 const FinancialAdvisor = () => {
     const [searchId, setSearchId] = useState('');
     const [customers, setCustomers] = useState([]);
     const [projectId, setProjectId] = useState(0);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
-    const [commPercentage,setComPercentage]=useState(0);
+    const [commPercentage, setComPercentage] = useState(0);
     const [loading, setLoading] = useState(false);
 
     const searchProject = async (e) => {
@@ -21,8 +22,11 @@ const FinancialAdvisor = () => {
         }
 
         try {
+
+            const isActive = await checkProjectStatus(searchId);
+            if (!isActive) return;
+
             const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
-            console.log("Project Balance Response:", response.data); // Debugging log
             setProjectId(response.data.project_id);
             getCustomers();
         } catch (error) {
@@ -72,7 +76,7 @@ const FinancialAdvisor = () => {
         try {
             const response = await api.post(`/api/stock/add-financial-advisor/`, data);
 
-            if(response.status==201){
+            if (response.status == 201) {
                 const mailData = {
                     email: selectedCustomer.email,
                     subject: "Project Opening",
@@ -82,7 +86,7 @@ const FinancialAdvisor = () => {
 
             }
 
- 
+
             Swal.fire({ icon: 'success', title: 'Advisor Added', text: 'Financial Advisor has been successfully added!' });
 
             setSelectedCustomer(null);

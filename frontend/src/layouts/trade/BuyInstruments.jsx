@@ -3,6 +3,7 @@ import BannerTitle from "../../components/BannerTitle";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
 import api from "../../api.js";
 import Swal from "sweetalert2";
+import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
 
 
 const BuyInstruments = () => {
@@ -13,7 +14,7 @@ const BuyInstruments = () => {
     const [selectedInstrument, setSelectedInstrument] = useState('');
     const [qty, setQty] = useState('');
     const [unitPrice, setUnitPrice] = useState('');
-    
+
     const [loading, setLoading] = useState(false);
 
     // Fetch Project Balance
@@ -26,6 +27,9 @@ const BuyInstruments = () => {
         }
 
         try {
+            const isActive = await checkProjectStatus(searchId);
+            if (!isActive) return;
+
             const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
             setProjectId(response.data.project_id);
             const availableBal = parseFloat(response.data.available_balance);
@@ -57,8 +61,8 @@ const BuyInstruments = () => {
         }
     };
 
-    const getTotalCom=()=>{
-        const comm=((qty*unitPrice*0.4)/100).toFixed(2)
+    const getTotalCom = () => {
+        const comm = ((qty * unitPrice * 0.4) / 100).toFixed(2)
         return Number(comm)
     }
 
@@ -66,7 +70,7 @@ const BuyInstruments = () => {
     const validateInputs = () => {
         const parsedQty = parseInt(qty);
         const parsedUnitPrice = parseFloat(unitPrice);
-        
+
 
         if (!selectedInstrument) {
             Swal.fire({ icon: 'warning', title: 'Selection Required', text: 'Please select an instrument.' });
@@ -83,8 +87,8 @@ const BuyInstruments = () => {
             return false;
         }
 
-        const totalCommission=getTotalCom();
-        const totalCost=(parsedQty*unitPrice)+totalCommission;
+        const totalCommission = getTotalCom();
+        const totalCost = (parsedQty * unitPrice) + totalCommission;
 
         if (totalCost > availableBalance) {
             Swal.fire({ icon: 'error', title: 'Insufficient Funds', text: 'Your balance is not enough to complete this purchase.' });
@@ -101,7 +105,7 @@ const BuyInstruments = () => {
         if (!validateInputs()) {
             return;
         }
-        
+
 
         setLoading(true);
 
@@ -111,14 +115,14 @@ const BuyInstruments = () => {
             qty: parseInt(qty),
             unit_price: parseFloat(unitPrice),
             trns_type: 'buy',
-            
+
         };
 
         try {
             await api.post('/api/stock/create-trade/', tradeData);
 
             setAvailableBalance((prevBalance) => {
-                const totalCommission=getTotalCom();
+                const totalCommission = getTotalCom();
                 const buyAmt = (parseInt(qty) * parseFloat(unitPrice)) + totalCommission;
                 return prevBalance - buyAmt;
             });
@@ -129,7 +133,7 @@ const BuyInstruments = () => {
             setSelectedInstrument('');
             setQty('');
             setUnitPrice('');
-           
+
             document.getElementById('instDropdown').value = '';
         } catch (error) {
             console.error("Error purchasing instrument:", error);
@@ -234,8 +238,8 @@ const BuyInstruments = () => {
                             <input
                                 type="number"
                                 id="comm"
-                                value={((qty*unitPrice*.4)/100).toFixed(2)}
-                                
+                                value={((qty * unitPrice * .4) / 100).toFixed(2)}
+
                                 min="0"
                                 step="0.01"
                                 aria-describedby="commission-helper"
