@@ -1,3 +1,4 @@
+// src/App.jsx
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "./contexts/theme-context";
 import AuthProvider from "./contexts/AuthContext";
@@ -19,104 +20,157 @@ import DisburseProfit from "./layouts/disbursements/DisburseProfit";
 import CreateProject from "./layouts/Projects/CreateProject";
 import FinancialAdvisor from "./layouts/financialAdvisor/FinancialAdvisor";
 import AccountReceivableDetails from "./layouts/AccountReceivableDetails/AccountReceivableDetails";
-import { Trapezoid } from "recharts";
 import TradeDetails from "./layouts/trade/TradeDetails";
 import CloseProject from "./layouts/Projects/CloseProject";
 import FundTransfer from "./layouts/transaction/FundTransfer";
 import NotFound from "./layouts/NotFound";
+import Forbidden from "./layouts/Forbidden";
 
 const router = createBrowserRouter([
-    {
-        path: "/",
-        element: <ProtectedRoute />, // Protect all "/" and its children
-        children: [
-            {
-                path: "/",
-                element: <Layout />,
-                children: [
-                    { index: true, element: <Dashboard /> },
-                    {
-                        path: "buy-instruments",
-                        element: <BuyInstruments />
-                    },
-                    {
-                        path: "sell-instruments",
-                        element: <SellInstruments />
-                    },
-                    {
-                        path: "users",
-                        element: <Users />
-                    },
-                    {
-                        path: "transaction",
-                        element: <Transaction />
-                    },
-                    {
-                        path: "fund-transfer",
-                        element: <FundTransfer />
-                    },
-                    {
-                        path: "pending-payments",
-                        element: <PendingPayments />
-                    },
-                    {
-                        path: "add-advisor",
-                        element: <FinancialAdvisor />
-                    },
-                    {
-                        path: "add-investments",
-                        element: <AddInvestments />
-                    },
-                    {
-                        path: "disburse-profit",
-                        element: <DisburseProfit />
-                    },
-                    {
-                        path: "create-project",
-                        element: <CreateProject />
-                    },
-                    {
-                        path: "close-project",
-                        element: <CloseProject />
-                    },
-
-                    {
-                        path: "acc-rec-details",
-                        element: <AccountReceivableDetails />
-                    },
-                    {
-                        path: "trade-details",
-                        element: <TradeDetails />
-                    },
-                ],
-            },
-        ],
-    },
-    {
-        element: <RedirectRoute />, // Redirect if already logged in
-        children: [
-            { path: "login", element: <Login /> },
-            // { path: "register", element: <Registration /> },
-        ],
-    },
-    {
-        path: "logout",
-        element: <Logout />
-    },
-    {
-        path: '*',
-        element: <NotFound/>,
-    }
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <Dashboard /> },
+      {
+        path: "buy-instruments",
+        element: (
+          <ProtectedRoute roles={["user", "admin"]}>
+            <BuyInstruments />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "sell-instruments",
+        element: (
+          <ProtectedRoute roles={["user", "admin"]}>
+            <SellInstruments />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "users",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <Users />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "transaction",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <Transaction />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "fund-transfer",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <FundTransfer />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "pending-payments",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <PendingPayments />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "add-advisor",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <FinancialAdvisor />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "add-investments",
+        element: (
+          <ProtectedRoute roles={["user", "admin"]}>
+            <AddInvestments />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "disburse-profit",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <DisburseProfit />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "create-project",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <CreateProject />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "close-project",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <CloseProject />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "acc-rec-details",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <AccountReceivableDetails />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "trade-details",
+        element: (
+          <ProtectedRoute roles={["user", "admin"]}>
+            <TradeDetails />
+          </ProtectedRoute>
+        )
+      },
+    ],
+  },
+  {
+    element: <RedirectRoute />,
+    children: [
+      { path: "login", element: <Login /> },
+      { path: "register", element: <Registration /> },
+    ],
+  },
+  {
+    path: "logout",
+    element: <Logout />
+  },
+  {
+    path: "forbidden",
+    element: <Forbidden/>
+  },
+  {
+    path: '*',
+    element: <NotFound />,
+  }
 ]);
 
 function App() {
-    return (
-        <AuthProvider>
-            <ThemeProvider storageKey="theme">
-                <RouterProvider router={router} />
-            </ThemeProvider>
-        </AuthProvider>
-    );
+  return (
+    <AuthProvider>
+      <ThemeProvider storageKey="theme">
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </AuthProvider>
+  );
 }
 
 export default App;

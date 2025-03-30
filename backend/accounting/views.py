@@ -1,13 +1,12 @@
 from rest_framework import generics
 from .models import Account,Transaction,FundTransfer
 from .serializers import (AccountSerializer
-                          ,TransactionSerializer
+                          ,TransactionSerializer,TransactionDetailsSerializer
                           ,TransactionApproveSerializer
                           ,FundTransferSerializer
                           ,PendingPaymentsSerializer
                         )
-from .permissions import IsAdminUser
-from user_app.permissions import IsSuperUser
+from user_app.permissions import IsSuperUser,IsAdminUser
 from rest_framework.permissions import AllowAny,IsAuthenticated  
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
@@ -41,7 +40,11 @@ class CheckBalanceView(generics.RetrieveAPIView):
             # If not allowed, raise a permission denied error
             raise PermissionDenied("You do not have permission to view this balance.")
         
-
+class TransactionDetailsView(generics.ListAPIView):
+    serializer_class=TransactionDetailsSerializer
+    permission_classes=[IsAuthenticated]
+    def get_queryset(self):
+        return Transaction.objects.filter(user=self.request.user,status='completed')
 
 class TransactionCreateView(generics.ListCreateAPIView):  # Change to ListCreateAPIView
     queryset = Transaction.objects.all()
@@ -73,7 +76,7 @@ class TransactionCreateView(generics.ListCreateAPIView):  # Change to ListCreate
 class PendingPaymentsView(generics.ListAPIView):
     queryset=Transaction.objects.filter(transaction_type='payment',status='pending')
     serializer_class=PendingPaymentsSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsSuperUser]
 
 class TransactionApproveView(generics.UpdateAPIView):
     queryset = Transaction.objects.all()

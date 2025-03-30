@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 
 export const checkProjectStatus = async (projectId) => {
   try {
-    const response = await api.get(`/api/stock/project-status/${projectId}/`);
+    const response = await api.get(`/api/stock/project/status/${projectId}/`);
     
     if (response.data.project_active_status === false) {
       await Swal.fire({

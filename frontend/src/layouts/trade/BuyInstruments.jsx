@@ -30,7 +30,7 @@ const BuyInstruments = () => {
             const isActive = await checkProjectStatus(searchId);
             if (!isActive) return;
 
-            const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
+            const response = await api.get(`/api/stock/project/balance/details/${searchId}/`);
             setProjectId(response.data.project_id);
             const availableBal = parseFloat(response.data.available_balance);
             setAvailableBalance(availableBal);
@@ -119,7 +119,7 @@ const BuyInstruments = () => {
         };
 
         try {
-            await api.post('/api/stock/create-trade/', tradeData);
+            await api.post('/api/stock/create/trade/', tradeData);
 
             setAvailableBalance((prevBalance) => {
                 const totalCommission = getTotalCom();
@@ -176,7 +176,7 @@ const BuyInstruments = () => {
                     </button>
                 </div>
             </form>
-            {projectId && availableBalance &&
+            {projectId && availableBalance>0 &&
                 <>
 
                     <form className="max-w-md mx-auto space-y-6" onSubmit={handleSubmit}>

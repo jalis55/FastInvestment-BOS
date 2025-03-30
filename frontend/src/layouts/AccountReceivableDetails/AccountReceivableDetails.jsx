@@ -16,7 +16,7 @@ const AccountReceivableDetails = () => {
   const searchProject = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.get(`/api/stock/acc-recvable-details/`, {
+      const response = await api.get(`/api/stock/acc/recvable/details/`, {
         params: {
           project_id: searchId,
           from_dt: fromDt,

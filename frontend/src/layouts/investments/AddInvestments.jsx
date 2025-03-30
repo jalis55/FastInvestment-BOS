@@ -28,7 +28,7 @@ const AddInvestments = () => {
             const isActive = await checkProjectStatus(searchId);
             if (!isActive) return;
 
-            const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
+            const response = await api.get(`/api/stock/project/balance/details/${searchId}/`);
             setProjectId(response.data.project_id);
             setProjectBalance(response.data.available_balance);
             getCustomers();
@@ -92,17 +92,17 @@ const AddInvestments = () => {
         };
 
         try {
-            const response = await api.post(`/api/stock/add-investment/`, data);
-            if(response.status==201){
-                                const mailData = {
-                                    email: selectedCustomer.email,
-                                    subject: "Project Opening",
-                                    message: `You have added bdt ${amount} as an investment on Project :${projectId}`,
-                                };
-                                // await api.post("/api/mail/send-email/", mailData);
+            const response = await api.post(`/api/stock/add/investment/`, data);
+            if (response.status == 201) {
+                const mailData = {
+                    email: selectedCustomer.email,
+                    subject: "Project Opening",
+                    message: `You have added bdt ${amount} as an investment on Project :${projectId}`,
+                };
+                // await api.post("/api/mail/send-email/", mailData);
             }
             Swal.fire({ icon: 'success', title: 'Investment Added', text: 'Investment has been successfully added!' });
-            setProjectBalance((prevBal)=>parseFloat(prevBal)+parseFloat(amount));
+            setProjectBalance((prevBal) => parseFloat(prevBal) + parseFloat(amount));
             // Reset form after successful submission
             setAmount(0);
             setSelectedCustomer(null);
@@ -199,15 +199,17 @@ const AddInvestments = () => {
                                     placeholder="Enter Amount"
                                 />
                             </div>
-                            <div className="flex justify-center">
-                                <button
-                                    type="submit"
-                                    className="w-full bg-blue-700 text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                                    disabled={loading}
-                                >
-                                    {loading ? <ButtonSpinner /> : 'Submit'}
-                                </button>
-                            </div>
+                            {selectedCustomerBal > 0 &&
+                                <div className="flex justify-center">
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-blue-700 text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                                        disabled={loading}
+                                    >
+                                        {loading ? <ButtonSpinner /> : 'Submit'}
+                                    </button>
+                                </div>
+                            }
                         </form>
                     )}
                 </div>

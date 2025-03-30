@@ -26,8 +26,8 @@ const FinancialAdvisor = () => {
             const isActive = await checkProjectStatus(searchId);
             if (!isActive) return;
 
-            const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
-            setProjectId(response.data.project_id);
+
+            setProjectId(searchId);
             getCustomers();
         } catch (error) {
             console.error("Error fetching project data:", error);
@@ -74,7 +74,7 @@ const FinancialAdvisor = () => {
 
 
         try {
-            const response = await api.post(`/api/stock/add-financial-advisor/`, data);
+            const response = await api.post(`/api/stock/add/financial/advisor/`, data);
 
             if (response.status == 201) {
                 const mailData = {
@@ -185,4 +185,4 @@ const FinancialAdvisor = () => {
     );
 }
 
-export default FinancialAdvisor
+export default FinancialAdvisor;

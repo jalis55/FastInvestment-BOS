@@ -32,7 +32,7 @@ const DisburseProfit = () => {
 
         setIsLoading(true);
         try {
-            const profits = await api.get(`/api/stock/project-total-profit/`, {
+            const profits = await api.get(`/api/stock/project/total/profit/`, {
                 params: {
                     project_id: formData.searchId,
                     from_dt: formData.fromDt,
@@ -47,8 +47,8 @@ const DisburseProfit = () => {
                 return;
             }
 
-            const advisors = await api.get(`api/stock/fin-advisor-commission/${formData.searchId}/`);
-            const investors = await api.get(`api/stock/investor-contrib-percent/${formData.searchId}/`);
+            const advisors = await api.get(`api/stock/fin/advisor/commission/${formData.searchId}/`);
+            const investors = await api.get(`api/stock/investor/contrib/percent/${formData.searchId}/`);
             
             setProjectId(formData.searchId);
             processDisburseData(profits.data, advisors.data, investors.data);
@@ -127,10 +127,10 @@ const DisburseProfit = () => {
         try {
           // Execute all APIs in parallel
           const results = await Promise.all([
-            api.post('/api/stock/add-fin-advisor-commission/', AdvisorCommissionData),
-            api.post('/api/stock/add-investor-profit/', InvestorProfitData),
-            api.put('/api/stock/update-profit/', profitUpdateData),
-            api.post('/api/acc/user/create-transaction/', transactionData),
+            api.post('/api/stock/add/fin/advisor/commission/', AdvisorCommissionData),
+            api.post('/api/stock/add/investor/profit/', InvestorProfitData),
+            api.put('/api/stock/update/profit/', profitUpdateData),
+            api.post('/api/acc/user/create/transaction/', transactionData),
           ]);
       
           // All succeeded
