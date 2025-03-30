@@ -1,7 +1,7 @@
 from rest_framework import generics
 from .models import Account,Transaction,FundTransfer
 from .serializers import (AccountSerializer
-                          ,TransactionSerializer
+                          ,TransactionSerializer,TransactionDetailsSerializer
                           ,TransactionApproveSerializer
                           ,FundTransferSerializer
                           ,PendingPaymentsSerializer
@@ -40,7 +40,11 @@ class CheckBalanceView(generics.RetrieveAPIView):
             # If not allowed, raise a permission denied error
             raise PermissionDenied("You do not have permission to view this balance.")
         
-
+class TransactionDetailsView(generics.ListAPIView):
+    serializer_class=TransactionDetailsSerializer
+    permission_classes=[IsAuthenticated]
+    def get_queryset(self):
+        return Transaction.objects.filter(user=self.request.user,status='completed')
 
 class TransactionCreateView(generics.ListCreateAPIView):  # Change to ListCreateAPIView
     queryset = Transaction.objects.all()
