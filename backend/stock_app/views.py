@@ -1,5 +1,6 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated,AllowAny
+from user_app.permissions import IsAdminUser,IsSuperUser
 from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,FinAdvisorCommission,AccountReceivable,Profit,InvestorProfit
 from accounting.models import Account,Transaction
 from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer,ProjectStatusSerializer
@@ -30,13 +31,13 @@ class ProjectCreateView(generics.CreateAPIView):
 
     queryset = Project.objects.all()
     serializer_class = ProjectCreateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
 class ProjectUpdateView(generics.UpdateAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminUser]
 
     def update(self, request, *args, **kwargs):
         project_id = request.data.get("project_id")
@@ -62,12 +63,12 @@ class ProjectUpdateView(generics.UpdateAPIView):
 class ProjectStatusRetriveView(generics.RetrieveAPIView):
     queryset=Project.objects.all()
     serializer_class=ProjectStatusSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsAdminUser]
     lookup_field = 'project_id'
 
 class ProjectBalanceDetailsView(generics.RetrieveAPIView):
     serializer_class = ProjectBalanceDetailsSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminUser]
 
 
     def get_object(self):
@@ -111,12 +112,12 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
 class InstrumentListView(generics.ListAPIView):
     queryset = Instrument.objects.all()
     serializer_class = InstrumentSerializer
-    permission_classes = [AllowAny]  # Allow any user to view instruments
+    permission_classes = [IsAdminUser]  # Allow any user to view instruments
 
 
 class SellableInstrumentView(generics.GenericAPIView):
     serializer_class = SellableInstrumentSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminUser]
 
     def get_object(self):
         """Fetch the project based on project_id."""
@@ -170,7 +171,7 @@ class SellableInstrumentView(generics.GenericAPIView):
 class TradeCreateView(generics.CreateAPIView):
     queryset = Trade.objects.all()
     serializer_class = TradeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def perform_create(self, serializer):
         serializer.save(authorized_by=self.request.user)
@@ -178,14 +179,14 @@ class TradeCreateView(generics.CreateAPIView):
 class TradeDeleteView(generics.DestroyAPIView):
     queryset=Trade.objects.all()
     serializer_class=TradeSerializer
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAdminUser]
     lookup_url_kwarg = 'trade_id'
 
 
 
 class TradeDetailsListView(generics.ListAPIView):
     serializer_class = TradeDetailsSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsAdminUser]
 
     def get_queryset(self):
         # Extract query parameters
@@ -209,21 +210,21 @@ class TradeDetailsListView(generics.ListAPIView):
 class ProfitCreateView(generics.CreateAPIView):
     queryset=Profit.objects.all()
     serializer_class=ProfitSerializer
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAdminUser]
 
     
 
 class InvestmentCreateAPIView(generics.CreateAPIView):
     queryset = Investment.objects.all()
     serializer_class = InvestmentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def perform_create(self, serializer):
         serializer.save(authorized_by=self.request.user)
 
     
 class InvestorContributionRetrieveApiView(generics.RetrieveAPIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminUser]
 
     def get(self, request, project_id):
         try:
@@ -261,7 +262,7 @@ class InvestorContributionRetrieveApiView(generics.RetrieveAPIView):
 class InvestorProfitCreateView(generics.GenericAPIView):
     queryset=InvestorProfit.objects.all()
     serializer_class=InvestorProfitSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsAdminUser]
 
     def post(self,request,*args,**kwargs):
         serializer=InvestorProfitSerializer(data=request.data,many=True)
@@ -276,14 +277,14 @@ class InvestorProfitCreateView(generics.GenericAPIView):
 class AddFinancialAdvisorListCreateView(generics.ListCreateAPIView):
     queryset = FinancialAdvisor.objects.all()
     serializer_class = FinancialAdvisorAddSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsAdminUser]
 
 
 
 class FinAdvisorCommissionListCreateView(generics.GenericAPIView):
     queryset=FinAdvisorCommission.objects.all()
     serializer_class=FinAdvisorCommissionSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsAdminUser]
 
     def post(self, request, *args, **kwargs):
         # Use 'many=True' to allow handling of a list of objects
@@ -299,7 +300,7 @@ class FinAdvisorCommissionListCreateView(generics.GenericAPIView):
 
 class FinancialAdvisorListView(generics.ListAPIView):
     serializer_class = FinancialAdvisorSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
         project_id = self.kwargs.get('project_id')
@@ -311,7 +312,7 @@ class FinancialAdvisorListView(generics.ListAPIView):
 class AccountReceivableCreateApiView(generics.CreateAPIView):
     queryset = Trade.objects.all()
     serializer_class = AccountReceivableSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def perform_create(self, serializer):
         serializer.save(authorized_by=self.request.user)
@@ -319,7 +320,7 @@ class AccountReceivableCreateApiView(generics.CreateAPIView):
 
 class ProjectProfitTotalListApiView(generics.ListAPIView):
     serializer_class=ProfitSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
         project_id = self.request.query_params.get('project_id')
@@ -350,7 +351,7 @@ class ProjectProfitTotalListApiView(generics.ListAPIView):
 class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
     serializer_class=AccountReceivableDetailsSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsAdminUser]
 
     def get_queryset(self):
         project_id = self.request.query_params.get('project_id')
@@ -368,7 +369,7 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
     
 class ProjectCloseView(generics.UpdateAPIView):
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAdminUser]
 
     def update(self,request,*args,**kwargs):
         project_id=request.data.get("project_id")
@@ -401,7 +402,7 @@ class ProjectCloseView(generics.UpdateAPIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UpdateProfitView(generics.UpdateAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def update(self,request,*args,**kwargs):
         from_dt = request.data.get("from_dt")
@@ -423,36 +424,4 @@ class UpdateProfitView(generics.UpdateAPIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-
-class UpdateAccountReceivableView(generics.UpdateAPIView):
-
-    def update(self, request, *args, **kwargs):
-        """Update disburse_st, disburse_dt, and authorized_by for a given date range, project, and user IDs."""
-        from_dt = request.data.get("from_dt")
-        to_dt = request.data.get("to_dt")
-        project_id = request.data.get("project")
-        user_ids = request.data.get("user_ids", [])
-
-        if not from_dt or not to_dt or not project_id:
-            return Response({"error": "from_dt, to_dt, and project are required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not isinstance(user_ids, list) or not all(isinstance(uid, int) for uid in user_ids):
-            return Response({"error": "user_ids must be a list of integers."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            filters = Q(project=project_id, accr_dt__date__range=(from_dt, to_dt))
-            if user_ids:
-                filters &= Q(investor_id__in=user_ids)
-
-            update_count = AccountReceivable.objects.filter(filters).update(
-                disburse_st=1,
-                disburse_dt=timezone.now(),
-                authorized_by=request.user
-            )
-
-            return Response({"message": f"{update_count} records updated successfully"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
 

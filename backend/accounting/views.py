@@ -6,8 +6,7 @@ from .serializers import (AccountSerializer
                           ,FundTransferSerializer
                           ,PendingPaymentsSerializer
                         )
-from .permissions import IsAdminUser
-from user_app.permissions import IsSuperUser
+from user_app.permissions import IsSuperUser,IsAdminUser
 from rest_framework.permissions import AllowAny,IsAuthenticated  
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
@@ -73,7 +72,7 @@ class TransactionCreateView(generics.ListCreateAPIView):  # Change to ListCreate
 class PendingPaymentsView(generics.ListAPIView):
     queryset=Transaction.objects.filter(transaction_type='payment',status='pending')
     serializer_class=PendingPaymentsSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsSuperUser]
 
 class TransactionApproveView(generics.UpdateAPIView):
     queryset = Transaction.objects.all()
