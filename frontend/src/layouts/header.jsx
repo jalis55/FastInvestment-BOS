@@ -10,6 +10,7 @@ const Header = ({ collapsed, setCollapsed }) => {
     const { theme, setTheme } = useTheme();
     const { user } = useContext(AuthContext);
 
+
     // Retrieve the base URL from environment variables
     const baseURL = process.env.REACT_APP_API_URL;
 

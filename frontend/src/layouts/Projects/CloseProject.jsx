@@ -27,7 +27,7 @@ const CloseProject = () => {
       const isActive = await checkProjectStatus(searchId);
       if (!isActive) return;
 
-      const response = await api.get(`/api/stock/project-balance-details/${searchId}/`);
+      const response = await api.get(`/api/stock/project/balance/details/${searchId}/`);
       setProjectFinDetails(response.data);
     } catch (error) {
       console.error("Error fetching project data:", error);
@@ -59,7 +59,7 @@ const CloseProject = () => {
     try {
       // Check for sellable instruments
       const sellInst = await api.get(
-        `/api/stock/sellable-instruments/${projectFinDetails.project_id}/`
+        `/api/stock/sellable/instruments/${projectFinDetails.project_id}/`
       );
 
       if (sellInst.data.length !== 0) {
@@ -73,7 +73,7 @@ const CloseProject = () => {
       }
 
       // Check for undisbursed profits
-      const profits = await api.get(`/api/stock/project-total-profit/`, {
+      const profits = await api.get(`/api/stock/project/total/profit/`, {
         params: {
           project_id: projectFinDetails.project_id,
           is_disbursed: 0
@@ -115,7 +115,7 @@ const CloseProject = () => {
           closing_balance: calculateClosingBalance(),
         }
 
-        const investors = await api.get(`/api/stock/investor-contrib-percent/${projectFinDetails.project_id}/`);
+        const investors = await api.get(`/api/stock/investor/contrib/percent/${projectFinDetails.project_id}/`);
         const investorsDetails = investors.data;
 
         const transactionData = [];
@@ -144,7 +144,7 @@ const CloseProject = () => {
 
 
         await Promise.all([
-          api.put('/api/stock/close-project/', proData),
+          api.put('/api/stock/close/project/', proData),
           api.post('/api/acc/user/create-transaction/', transactionData),
         ]);
 

@@ -21,7 +21,7 @@ const SellInstruments = () => {
       return;
     }
     try {
-      const response = await api.get(`/api/stock/sellable-instruments/${searchId}/`);
+      const response = await api.get(`/api/stock/sellable/instruments/${searchId}/`);
 
       if (response.data.length === 0) {
         Swal.fire({ icon: 'info', title: 'No Saleable Instrument', text: 'No available instruments for this project.' });
@@ -127,7 +127,7 @@ const SellInstruments = () => {
 
     try {
       // Step 1: Create the trade
-      const tradeResponse = await api.post('/api/stock/create-trade/', tradeData);
+      const tradeResponse = await api.post('/api/stock/create/trade/', tradeData);
       tradeId = tradeResponse.data.id;
 
       // Step 2: Prepare account receivable data
@@ -137,7 +137,7 @@ const SellInstruments = () => {
       try {
         // Step 3: Add financial advisor commission if applicable
         if (data.gain_lose > 0) {
-          await api.post('/api/stock/add-profit/', {
+          await api.post('api/stock/add/profit/', {
             project:data.project,
             trade:data.trade,
             amount:data.gain_lose
@@ -145,7 +145,7 @@ const SellInstruments = () => {
         }
 
         // Step 4: Create account receivable
-        await api.post('/api/stock/create-acc-recvable/', data);
+        await api.post('/api/stock/create/acc/recvable/', data);
 
         // Success - update UI
         Swal.fire({ icon: 'success', title: 'Success', text: 'Instrument sold successfully!' });
@@ -168,7 +168,7 @@ const SellInstruments = () => {
       } catch (error) {
         // Rollback trade if subsequent steps fail
         if (tradeId) {
-          await api.delete(`/api/stock/delete-trade/${tradeId}/`);
+          await api.delete(`/api/stock/delete/trade/${tradeId}/`);
         }
         throw error;
       }
