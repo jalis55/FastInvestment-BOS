@@ -207,12 +207,12 @@ class TradeDetailsListView(generics.ListAPIView):
 
         return queryset
 
-class ProfitCreateView(generics.CreateAPIView):
-    queryset=Profit.objects.all()
-    serializer_class=ProfitSerializer
-    permission_classes=[IsAdminUser]
 
-    
+
+class ProfitCreateView(generics.CreateAPIView):
+    queryset = Profit.objects.all()
+    serializer_class = ProfitSerializer
+    permission_classes=[IsAdminUser]
 
 class InvestmentCreateAPIView(generics.CreateAPIView):
     queryset = Investment.objects.all()
