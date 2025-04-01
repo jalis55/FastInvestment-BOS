@@ -60,13 +60,21 @@ class TransactionCreateView(generics.ListCreateAPIView):  # Change to ListCreate
             transactions = serializer.save(issued_by=self.request.user, status="pending", issued_date=timezone.now())
 
             for transaction in transactions if is_bulk else [transactions]:
-                if transaction.transaction_type == "deposit":
+                if transaction.transaction_type == "deposit" and transaction.trans_mode !='internal':
                     account, created = Account.objects.get_or_create(user=transaction.user)
                     amount = Decimal(transaction.amount)
                     account.update_balance(amount, "deposit")
                     transaction.status = "completed"
                     if transaction.narration is None:
                         transaction.narration=f"Deposit of {amount} is completed"
+
+                    transaction.save()
+                if transaction.trans_mode == "internal":
+                    account, created = Account.objects.get_or_create(user=transaction.user)
+                    amount = Decimal(transaction.amount)
+                    transaction.status = "completed"
+                    if transaction.narration is None:
+                        transaction.narration=f"{transaction.trans_mode} of {amount} is completed"
 
                     transaction.save()
 
