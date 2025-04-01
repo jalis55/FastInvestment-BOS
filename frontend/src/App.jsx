@@ -80,7 +80,7 @@ const router = createBrowserRouter([
       {
         path: "pending-payments",
         element: (
-          <ProtectedRoute roles={["admin"]}>
+          <ProtectedRoute roles={["super_admin"]}>
             <PendingPayments />
           </ProtectedRoute>
         )

@@ -183,14 +183,14 @@ const DisburseProfit = () => {
                 amount:amount.toFixed(2),
                 transaction_type: "deposit",
                 trans_mode:`Project Profit:${projectId}`,
-                narration: `Deposit bonus ${amount.toFixed(2)} from Project ${projectId}`
+                narration: `Commission ${amount.toFixed(2)} from Project ${projectId}`
             })),
             ...Object.entries(investorSums).map(([user, amount]) => ({
                 user: user,
                 amount:amount.toFixed(2),
                 transaction_type: "deposit",
-                trans_mode: "online",
-                narration: `Profit bonus ${amount.toFixed(2)} from Project ${projectId}`
+                trans_mode: `Project Profit:${projectId}`, 
+                narration: `Profit from Project ${projectId}`
             }))
         ];
       

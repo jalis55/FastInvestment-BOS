@@ -86,8 +86,26 @@ const FundTransfer = () => {
                 transfer_to: toUser,
                 amount: parseFloat(amount),
             };
+            const transactionData = [
+                {
+                    user: fromUser,
+                    amount: parseFloat(amount),
+                    transaction_type: 'payment',
+                    trans_mode:'internal',
+                    narration:`Internal fund transfer to ${getUserName(toUser)}`
+                },
+                {
+                    user: toUser,
+                    amount: parseFloat(amount),
+                    transaction_type: 'deposit',
+                    trans_mode:'internal',
+                    narration:`Internal fund receive from ${getUserName(fromUser)}`
+                }
+            ]
             try {
                 const response = await api.post('/api/acc/user/fund-transfer/', fundTransferData);
+                console.log(transactionData);
+                await api.post('/api/acc/user/create-transaction/', transactionData);
                 Swal.fire({
                     title: 'Success!',
                     text: 'Transaction has been created successfully.',
@@ -132,7 +150,7 @@ const FundTransfer = () => {
                             ))}
                     </select>
                 </div>
-                {fromUser && (
+                {fromUser && fromUserBal>0 ? (
                     <div className="mb-2">
                         <label htmlFor="website-admin" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Balance</label>
                         <div className="flex">
@@ -149,8 +167,10 @@ const FundTransfer = () => {
                                 disabled />
                         </div>
                     </div>
-                )}
-                {fromUser && fromUserBal && (
+                ): 
+                <h1>Available balance not found</h1>
+                }
+                {fromUser && fromUserBal>0 && (
 
                     <>
                         <div className="mb-2">

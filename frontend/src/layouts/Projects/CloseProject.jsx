@@ -132,7 +132,7 @@ const CloseProject = () => {
               amount: amt.toFixed(2),
               transaction_type: "deposit",
               trans_mode: `Project Return:${projectFinDetails.project_id}`,
-              narration: `Deposit amount ${amt.toFixed(2)} from Project ${projectFinDetails.project_id} as project return`
+              narration: `Deposit as project return from Project ${projectFinDetails.project_id} `
             }
           )
           closingBal -= amt;
