@@ -25,6 +25,7 @@ import CloseProject from "./layouts/Projects/CloseProject";
 import FundTransfer from "./layouts/transaction/FundTransfer";
 import NotFound from "./layouts/NotFound";
 import Forbidden from "./layouts/Forbidden";
+import TransactionHistory from "./layouts/transaction/TransactionHistory";
 
 const router = createBrowserRouter([
   {
@@ -95,7 +96,7 @@ const router = createBrowserRouter([
       {
         path: "add-investments",
         element: (
-          <ProtectedRoute roles={["user", "admin"]}>
+          <ProtectedRoute roles={["admin"]}>
             <AddInvestments />
           </ProtectedRoute>
         )
@@ -137,6 +138,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute roles={["user", "admin"]}>
             <TradeDetails />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "trans-history",
+        element: (
+          <ProtectedRoute roles={["user"]}>
+            <TransactionHistory/>
           </ProtectedRoute>
         )
       },

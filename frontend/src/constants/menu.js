@@ -99,7 +99,13 @@ const menu = [
       {
         menuName: "Trade Details",
         url: "/trade-details",
-        roles: ["user", "admin", "super_admin"],
+        roles: ["admin", "super_admin"],
+        icon: ChartCandlestick,
+      },
+      {
+        menuName: "Transaction History",
+        url: "/trans-history",
+        roles: ["user"],
         icon: ChartCandlestick,
       },
     ],

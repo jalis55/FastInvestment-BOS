@@ -67,16 +67,20 @@ const AuthProvider = ({ children }) => {
     checkUser();
   }, [refreshToken, logout]);
 
-  const hasRole = (requiredRoles) => {
+  const hasRole = useCallback((requiredRoles = []) => {
     if (!user) return false;
     if (user.is_super_admin) return true;
     if (!requiredRoles || requiredRoles.length === 0) return true;
     
-    return requiredRoles.some(role => {
-      if (role === 'admin') return user.is_admin;
-      return user.roles.includes(role);
-    });
-  };
+    // Check admin flag
+    if (requiredRoles.includes('admin') && user.is_admin) return true;
+    
+    // Check user role (non-admin)
+    if (requiredRoles.includes('user') && !user.is_admin) return true;
+    
+    // Check custom roles
+    return requiredRoles.some(role => user.roles?.includes(role));
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ 
