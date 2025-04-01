@@ -130,7 +130,7 @@ const DisburseProfit = () => {
             api.post('/api/stock/add/fin/advisor/commission/', AdvisorCommissionData),
             api.post('/api/stock/add/investor/profit/', InvestorProfitData),
             api.put('/api/stock/update/profit/', profitUpdateData),
-            api.post('/api/acc/user/create/transaction/', transactionData),
+            api.post('/api/acc/user/create-transaction/', transactionData),
           ]);
       
           // All succeeded
