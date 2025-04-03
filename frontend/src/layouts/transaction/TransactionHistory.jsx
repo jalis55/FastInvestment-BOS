@@ -24,7 +24,6 @@ const TransactionHistory = () => {
       try {
         setIsLoading(true);
         const response = await api.get(`/api/acc/user/transaction-details/`);
-        console.log(response.data);
         setAllTransactions(response.data || []);
       } catch (error) {
         console.error("Error fetching transaction data:", error);

@@ -2,7 +2,8 @@ import {
   Home, TrendingUp, ShoppingCart, DollarSign,
   Users, BadgeDollarSign, ArrowRightLeft, BriefcaseBusiness,
   BadgePercent, FileSpreadsheet, FolderKanban, Wallet, Landmark,
-  UsersRound, SquarePercent, ChartCandlestick, BookOpenCheck
+  UsersRound, SquarePercent, ChartCandlestick, BookOpenCheck,
+  BanknoteIcon
 } from 'lucide-react';
 
 const menu = [
@@ -93,7 +94,7 @@ const menu = [
       {
         menuName: "Acc Receivable Details",
         url: "/acc-rec-details",
-        roles: ["user", "admin", "super_admin"],
+        roles: ["admin", "super_admin"],
         icon: SquarePercent,
       },
       {
@@ -106,7 +107,7 @@ const menu = [
         menuName: "Transaction History",
         url: "/trans-history",
         roles: ["user"],
-        icon: ChartCandlestick,
+        icon: BanknoteIcon,
       },
     ],
   },
