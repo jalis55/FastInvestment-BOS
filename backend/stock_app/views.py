@@ -1,6 +1,6 @@
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated,AllowAny
-from user_app.permissions import IsAdminUser,IsSuperUser
+from rest_framework.permissions import IsAuthenticated,AllowAny,IsAdminUser
+from user_app.permissions import IsSuperUser
 from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,FinAdvisorCommission,AccountReceivable,Profit,InvestorProfit
 from accounting.models import Account,Transaction
 from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer,ProjectStatusSerializer
@@ -186,7 +186,7 @@ class TradeDeleteView(generics.DestroyAPIView):
 
 class TradeDetailsListView(generics.ListAPIView):
     serializer_class = TradeDetailsSerializer
-    permission_classes=[IsAdminUser]
+    permission_classes=[AllowAny]
 
     def get_queryset(self):
         # Extract query parameters

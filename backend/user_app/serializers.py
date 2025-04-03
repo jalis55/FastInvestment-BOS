@@ -16,9 +16,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['profile_image'] = user.profile_image.url if user.profile_image else None
         token['is_admin'] = user.is_staff 
         token['is_super_admin']=user.is_superuser
-        
-
         return token
+
 class UserStatusSerializer(serializers.Serializer):
     status=serializers.CharField()
 

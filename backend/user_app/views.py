@@ -1,12 +1,11 @@
 from django.shortcuts import render
-from rest_framework.permissions import AllowAny,IsAuthenticated
-from user_app.permissions import IsSuperUser,IsAdminUser
+from rest_framework.permissions import AllowAny,IsAuthenticated,IsAdminUser
+from user_app.permissions import IsSuperUser
 from rest_framework.generics import CreateAPIView,RetrieveUpdateAPIView,ListAPIView,RetrieveAPIView,RetrieveUpdateDestroyAPIView
 from user_app.serializers import UserSerializer,UserListSerializer,UserStatusSerializer
 from user_app.models import CustomUser
 from rest_framework.response import Response
-from rest_framework.documentation import include_docs_urls
-from django.urls import path
+from rest_framework import status
 
 # Create your views here.
 
@@ -17,25 +16,23 @@ class UserRegistrationView(CreateAPIView):
 class UserDetailsView(RetrieveUpdateAPIView):
     serializer_class=UserSerializer
     permission_classes=[IsAuthenticated]
-
+    
+    #currently logged in user
     def get_object(self):
         return self.request.user
 
-class UserStatusView(RetrieveAPIView):
-    serializer_class=UserStatusSerializer
-    permission_classes=[IsAuthenticated]
 
-    def get(self,request,*args,**kwargs):
-        user=request.user
 
-        if user.is_superuser:
-            status="superadmin"
-        elif user.is_staff:
-            status="admin"
-        else:
-            status="user"
-        serializer=self.get_serializer({"status":status})
-        return Response(serializer.data)
+class UserStatusView(RetrieveUpdateAPIView):
+    serializer_class = UserStatusSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        """Determine and return the user's status."""
+        user = self.request.user
+        print(user.name)
+        status = "superadmin" if user.is_superuser else "admin" if user.is_staff else "user"
+        return {"status": status}
 
 class UserListView(ListAPIView):
     queryset = CustomUser.objects.filter(is_superuser=False)
