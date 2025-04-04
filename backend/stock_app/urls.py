@@ -4,9 +4,9 @@ from .views import (
                     ,ProjectBalanceDetailsView,ProjectUpdateView,ProjectStatusRetriveView
                     ,InstrumentListView,TradeCreateView,TradeDeleteView,TradeDetailsListView
 
-                    ,SellableInstrumentView,InvestmentCreateAPIView
-                    ,InvestorContributionRetrieveApiView,InvestorProfitCreateView,UpdateProfitView,ProfitCreateView,
-                    FinancialAdvisorListView,AddFinancialAdvisorListCreateView,FinAdvisorCommissionListCreateView,
+                    ,SellableInstrumentView,InvestmentCreateAPIView,ClientInvestmentDetailsListView
+                    ,InvestorContributionRetrieveApiView,InvestorProfitCreateView,UpdateProfitView,ProfitCreateView,InvestorProfitDetailsView
+                    ,FinancialAdvisorListView,AddFinancialAdvisorListCreateView,FinAdvisorCommissionListCreateView,
 
                     AccountReceivableCreateApiView,AccountRecivableDetailsListApiView,
                     ProfitCreateView,ProjectProfitTotalListApiView
@@ -31,6 +31,7 @@ urlpatterns = [
     path('add/investment/',InvestmentCreateAPIView.as_view(),name='add-investment'),
     path('investor/contrib/percent/<str:project_id>/',InvestorContributionRetrieveApiView.as_view(),name='inv-cont-percent'),
     path('add/investor/profit/',InvestorProfitCreateView.as_view(),name='add-investor-profit'),
+    path('investor/investment-details/',ClientInvestmentDetailsListView.as_view(),name='client-investment-details'),
     
     path('add/financial/advisor/',AddFinancialAdvisorListCreateView.as_view(),name='add-fin-advisor'),
     path('fin/advisor/commission/<str:project_id>/',FinancialAdvisorListView.as_view(),name='fin-advisor-commission'),
@@ -38,6 +39,7 @@ urlpatterns = [
 
     path('add/profit/',ProfitCreateView.as_view(),name='create-profit'),
     path('project/total/profit/',ProjectProfitTotalListApiView.as_view(),name='total-profit'),
+    path('investor/profit-details/',InvestorProfitDetailsView.as_view(),name='investor-profit-details'),
     
     path('create/acc/recvable/',AccountReceivableCreateApiView.as_view(),name='create-acc_rcvable'),
     path('acc/recvable/details/',AccountRecivableDetailsListApiView.as_view(),name='acc_rcvable-details'),

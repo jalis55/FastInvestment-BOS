@@ -6,7 +6,7 @@ from accounting.models import Account,Transaction
 from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer,ProjectStatusSerializer
 
 from .serializers import (InstrumentSerializer,TradeSerializer,TradeDetailsSerializer,SellableInstrumentSerializer,
-                          InvestmentSerializer,InvestmentContributionSerializer,
+                          InvestmentSerializer,InvestmentContributionSerializer,ClientInvestmentDetailsSerializer,
                           FinancialAdvisorSerializer,FinancialAdvisorAddSerializer,FinAdvisorCommissionSerializer
                           ,AccountReceivableSerializer,AccountReceivableDetailsSerializer,ProfitSerializer
                           ,InvestorProfitSerializer
@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from decimal import Decimal
 from django.shortcuts import get_object_or_404
-from django.db.models import Sum, F,Case, When, IntegerField,Q,DecimalField
+from django.db.models import Sum, F,Case, When, IntegerField,Q,DecimalField, FloatField,ExpressionWrapper
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 from django.utils import timezone
@@ -222,41 +222,49 @@ class InvestmentCreateAPIView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(authorized_by=self.request.user)
 
+class ClientInvestmentDetailsListView(generics.ListAPIView):
+    serializer_class = ClientInvestmentDetailsSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        queryset=Investment.objects.filter(investor=self.request.user)
+        return queryset
     
-class InvestorContributionRetrieveApiView(generics.RetrieveAPIView):
+class InvestorContributionRetrieveApiView(generics.GenericAPIView):  # Not RetrieveAPIView
     permission_classes = [IsAdminUser]
+    serializer_class = InvestmentContributionSerializer
 
     def get(self, request, project_id):
         try:
-            # Fetch the project
             project = Project.objects.get(project_id=project_id)
         except Project.DoesNotExist:
-            return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
+            raise NotFound("Project not found")
 
-        # Get all investments for the project
         investments = Investment.objects.filter(project=project)
-
-        # Calculate the total investment amount for the project
         total_project_investment = investments.aggregate(total=Sum('amount'))['total'] or 0
 
-        # Group investments by investor and calculate their total contribution and percentage
-        investor_data = []
-        for investor in investments.values_list('investor', flat=True).distinct():  # Get unique investor IDs
-            investor_instance = User.objects.get(id=investor)  # Fetch full User object
-            investor_investments = investments.filter(investor=investor_instance)
-            total_investor_contribution = investor_investments.aggregate(total=Sum('amount'))['total'] or 0
+        # More efficient single-query approach
+        investor_contributions = (
+            investments.values('investor')
+            .annotate(
+                total_contribution=Sum('amount'),
+                percentage=ExpressionWrapper(
+                    Sum('amount') * 100.0 / total_project_investment if total_project_investment > 0 else 0,
+                    output_field=FloatField()
+                )
+            )
+            .order_by('-total_contribution')
+        )
 
-            # Calculate percentage
-            percentage = (total_investor_contribution / total_project_investment) * 100 if total_project_investment > 0 else 0
+        # Prefetch users in one query
+        users = User.objects.in_bulk([item['investor'] for item in investor_contributions])
+        
+        data = [{
+            'investor': users[item['investor']],
+            'contribute_amount': item['total_contribution'],
+            'contribution_percentage': round(item['percentage'], 2)
+        } for item in investor_contributions]
 
-            investor_data.append({
-                'investor': investor_instance,  # Pass full User object
-                'contribute_amount': total_investor_contribution,
-                'contribution_percentage': round(percentage, 2),
-            })
-
-        # Serialize the data
-        serializer = InvestmentContributionSerializer(investor_data, many=True)
+        serializer = self.get_serializer(data, many=True)
         return Response(serializer.data)
 
 class InvestorProfitCreateView(generics.GenericAPIView):
@@ -272,6 +280,13 @@ class InvestorProfitCreateView(generics.GenericAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class InvestorProfitDetailsView(generics.ListAPIView):
+    serializer_class=InvestorProfitSerializer
+    permission_classes=[IsAuthenticated]
+
+    def get_queryset(self):
+        return InvestorProfit.objects.filter(investor=self.request.user)
+    
 
 
 class AddFinancialAdvisorListCreateView(generics.ListCreateAPIView):

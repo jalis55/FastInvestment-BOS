@@ -111,6 +111,11 @@ class InvestmentContributionSerializer(serializers.Serializer):
     contribute_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
     contribution_percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
 
+class ClientInvestmentDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Investment
+        fields = ['project','amount','created_at']
+
 # Add the InstrumentSerializer
 class InstrumentSerializer(serializers.ModelSerializer):
     class Meta:
