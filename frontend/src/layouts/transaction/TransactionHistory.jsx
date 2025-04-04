@@ -7,6 +7,7 @@ import api from "../../api.js";
 import Swal from "sweetalert2";
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
+import BannerTitle from "../../components/BannerTitle.jsx";
 
 const TransactionHistory = () => {
   const [filterType, setFilterType] = useState("all");
@@ -170,7 +171,7 @@ const TransactionHistory = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-6">Transaction History</h1>
+     <BannerTitle title="Transaction History" />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

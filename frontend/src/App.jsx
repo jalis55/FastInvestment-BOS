@@ -4,7 +4,6 @@ import { ThemeProvider } from "./contexts/theme-context";
 import AuthProvider from "./contexts/AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
 import RedirectRoute from "./RedirectRoute";
-
 import Layout from "./routes/layout";
 import Dashboard from "./routes/dashboard/Dashboard";
 import Login from "./routes/auth/Login";
@@ -26,6 +25,8 @@ import FundTransfer from "./layouts/transaction/FundTransfer";
 import NotFound from "./layouts/NotFound";
 import Forbidden from "./layouts/Forbidden";
 import TransactionHistory from "./layouts/transaction/TransactionHistory";
+import InvestmentHistory from "./layouts/investments/InvestmentHistory";
+import ProfitDetails from "./layouts/AccountReceivableDetails/ProfitDetails";
 
 const router = createBrowserRouter([
   {
@@ -145,7 +146,23 @@ const router = createBrowserRouter([
         path: "trans-history",
         element: (
           <ProtectedRoute roles={["user"]}>
-            <TransactionHistory/>
+            <TransactionHistory />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "investment-history",
+        element: (
+          <ProtectedRoute roles={["user"]}>
+            <InvestmentHistory />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "profit-details",
+        element: (
+          <ProtectedRoute roles={["user"]}>
+            <ProfitDetails />
           </ProtectedRoute>
         )
       },
@@ -164,7 +181,7 @@ const router = createBrowserRouter([
   },
   {
     path: "forbidden",
-    element: <Forbidden/>
+    element: <Forbidden />
   },
   {
     path: '*',

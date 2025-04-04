@@ -3,7 +3,7 @@ import {
   Users, BadgeDollarSign, ArrowRightLeft, BriefcaseBusiness,
   BadgePercent, FileSpreadsheet, FolderKanban, Wallet, Landmark,
   UsersRound, SquarePercent, ChartCandlestick, BookOpenCheck,
-  BanknoteIcon
+  BanknoteIcon, BookUp2, AppWindow,LucideBriefcaseBusiness,BadgePlus
 } from 'lucide-react';
 
 const menu = [
@@ -20,47 +20,66 @@ const menu = [
     icon: Users,
   },
   {
-    menuName: "Transaction",
-    url: "/transaction",
-    roles: ["admin", "super_admin"],
-    icon: Landmark,
+    menuName: "Accounting",
+    roles: ["admin", "super_admin"], // Available to all but different access
+    icon: LucideBriefcaseBusiness,
+    children: [
+      {
+        menuName: "Transaction",
+        url: "/transaction",
+        roles: ["admin", "super_admin"],
+        icon: Landmark,
+      },
+      {
+        menuName: "Fund Transfer",
+        url: "/fund-transfer",
+        roles: ["admin", "super_admin"],
+        icon: ArrowRightLeft,
+      },
+      {
+        menuName: "Pending Payments",
+        url: "/pending-payments",
+        roles: ["super_admin"], // Only for super_admin
+        icon: Wallet,
+      },
+
+    ],
   },
+
+
+
   {
-    menuName: "Fund Transfer",
-    url: "/fund-transfer",
-    roles: ["admin", "super_admin"],
-    icon: ArrowRightLeft,
+    menuName: "Project",
+    roles: ["admin", "super_admin"], // Available to all but different access
+    icon: AppWindow,
+    children: [
+      {
+        menuName: "Create Project",
+        url: "/create-project",
+        roles: ["admin", "super_admin"],
+        icon: FolderKanban,
+      },
+      {
+        menuName: "Add Advisor",
+        url: "/add-advisor",
+        roles: ["admin", "super_admin"],
+        icon: UsersRound,
+      },
+      {
+        menuName: "Add Investments",
+        url: "/add-investments",
+        roles: ["admin", "super_admin"],
+        icon: BriefcaseBusiness,
+      },
+      {
+        menuName: "Close Project",
+        url: "/close-project",
+        roles: ["admin", "super_admin"],
+        icon: BookOpenCheck,
+      },
+    ],
   },
-  {
-    menuName: "Pending Payments",
-    url: "/pending-payments",
-    roles: ["super_admin"], // Only for super_admin
-    icon: Wallet,
-  },
-  {
-    menuName: "Create Project",
-    url: "/create-project",
-    roles: ["admin", "super_admin"],
-    icon: FolderKanban,
-  },
-  {
-    menuName: "Close Project",
-    url: "/close-project",
-    roles: ["admin", "super_admin"],
-    icon: BookOpenCheck,
-  },
-  {
-    menuName: "Add Advisor",
-    url: "/add-advisor",
-    roles: ["admin", "super_admin"],
-    icon: UsersRound,
-  },
-  {
-    menuName: "Add Investments",
-    url: "/add-investments",
-    roles: ["admin", "super_admin"],
-    icon: BriefcaseBusiness,
-  },
+
   {
     menuName: "Trade",
     roles: ["admin", "super_admin"], // Available to all but different access
@@ -80,6 +99,7 @@ const menu = [
       },
     ],
   },
+
   {
     menuName: "Disburse Profit",
     url: "/disburse-profit",
@@ -108,6 +128,18 @@ const menu = [
         url: "/trans-history",
         roles: ["user"],
         icon: BanknoteIcon,
+      },
+      {
+        menuName: "Investment History",
+        url: "/investment-history",
+        roles: ["user"],
+        icon: BookUp2,
+      },
+      {
+        menuName: "Profit Details",
+        url: "/profit-details",
+        roles: ["user"],
+        icon: BadgePlus,
       },
     ],
   },

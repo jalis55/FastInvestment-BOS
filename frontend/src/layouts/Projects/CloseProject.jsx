@@ -124,7 +124,6 @@ const CloseProject = () => {
         investorsDetails.forEach((investor) => {
 
           const percentage = parseFloat(investor.contribution_percentage).toFixed(2);
-
           const amt = ((parseFloat(closingBal) * percentage) / 100);
           transactionData.push(
             {
@@ -135,13 +134,8 @@ const CloseProject = () => {
               narration: `Deposit as project return from Project ${projectFinDetails.project_id} `
             }
           )
-          closingBal -= amt;
+
         });
-
-
-
-
-
 
         await Promise.all([
           api.put('/api/stock/close/project/', proData),
