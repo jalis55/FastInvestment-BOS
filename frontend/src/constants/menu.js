@@ -29,12 +29,12 @@ const menu = [
         roles: ["super_admin"],
         icon: UserSearch,
       },
-      {
-        menuName: "User Details",
-        url: "/user-details",
-        roles: ["super_admin"],
-        icon: Users,
-      },
+      // {
+      //   menuName: "User Details",
+      //   url: "/user-details",
+      //   roles: ["super_admin"],
+      //   icon: Users,
+      // },
       {
         menuName: "User Registration",
         url: "/user-registration",
