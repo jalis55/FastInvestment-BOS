@@ -14,11 +14,11 @@ const Header = ({ collapsed, setCollapsed }) => {
     // Retrieve the base URL from environment variables
     const baseURL = process.env.REACT_APP_API_URL;
 
-    // Construct the absolute URL for the profile image
-    const profileImageUrl = user.profile_image
-        ? `${baseURL}${user.profile_image}`
+    // Add cache busting to ensure fresh image is loaded
+    const profileImageUrl = user?.profile_image
+        ? `${baseURL}${user.profile_image}?${new Date().getTime()}`
         : profileImg;
-
+        
     const [isOpen, setIsOpen] = useState(false);
 
     // Function to toggle the dropdown's visibility

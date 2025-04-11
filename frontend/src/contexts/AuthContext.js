@@ -16,6 +16,18 @@ const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
+  // Add this function to update user profile data
+  const updateUserProfile = useCallback((newProfileData) => {
+    setUser(prev => ({
+      ...prev,
+      ...newProfileData,
+      // Preserve these special fields if not being updated
+      is_super_admin: prev?.is_super_admin || false,
+      is_admin: prev?.is_admin || false,
+      roles: prev?.roles || []
+    }));
+  }, []);
+
   const refreshToken = useCallback(async () => {
     try {
       const refresh = localStorage.getItem(REFRESH_TOKEN);
@@ -25,12 +37,14 @@ const AuthProvider = ({ children }) => {
       localStorage.setItem(ACCESS_TOKEN, data.access);
       const decoded = jwtDecode(data.access);
       
-      setUser({
+      setUser(prev => ({
         ...decoded,
+        // Preserve the profile image when refreshing token
+        profile_image: prev?.profile_image || decoded.profile_image,
         is_super_admin: decoded.is_super_admin || false,
         is_admin: decoded.is_admin || false,
         roles: decoded.roles || []
-      });
+      }));
       return true;
     } catch (error) {
       logout();
@@ -72,13 +86,8 @@ const AuthProvider = ({ children }) => {
     if (user.is_super_admin) return true;
     if (!requiredRoles || requiredRoles.length === 0) return true;
     
-    // Check admin flag
     if (requiredRoles.includes('admin') && user.is_admin) return true;
-    
-    // Check user role (non-admin)
     if (requiredRoles.includes('user') && !user.is_admin) return true;
-    
-    // Check custom roles
     return requiredRoles.some(role => user.roles?.includes(role));
   }, [user]);
 
@@ -89,7 +98,8 @@ const AuthProvider = ({ children }) => {
       logout, 
       isLoading, 
       hasRole,
-      refreshToken 
+      refreshToken,
+      updateUserProfile // Add this to the context value
     }}>
       {children}
     </AuthContext.Provider>
