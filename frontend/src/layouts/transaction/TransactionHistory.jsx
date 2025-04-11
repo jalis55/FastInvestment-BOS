@@ -159,7 +159,7 @@ const TransactionHistory = () => {
 
     const csvData = allTransactions.map(item => ({
       "Narration": item.narration,
-      "Transaction type": item.transaction_type == 'payment' ? 'withdraw' : 'deposit',
+      "Transaction type": item.transaction_type === 'payment' ? 'withdraw' : 'deposit',
       "Amount": item.amount,
       "Date": item.issued_date
     }));

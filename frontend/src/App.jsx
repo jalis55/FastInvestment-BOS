@@ -27,6 +27,8 @@ import Forbidden from "./layouts/Forbidden";
 import TransactionHistory from "./layouts/transaction/TransactionHistory";
 import InvestmentHistory from "./layouts/investments/InvestmentHistory";
 import ProfitDetails from "./layouts/AccountReceivableDetails/ProfitDetails";
+import UserDetails from "./layouts/users/UserDetails";
+import UserRegistration from "./layouts/users/UserRegistration";
 
 const router = createBrowserRouter([
   {
@@ -59,6 +61,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute roles={["super_user"]}>
             <Users />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "user-details",
+        element: (
+          <ProtectedRoute roles={["user"]}>
+            <UserDetails/>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "user-registration",
+        element: (
+          <ProtectedRoute roles={["user"]}>
+            <UserRegistration/>
           </ProtectedRoute>
         )
       },

@@ -93,7 +93,7 @@ const AddInvestments = () => {
 
         try {
             const response = await api.post(`/api/stock/add/investment/`, data);
-            if (response.status == 201) {
+            if (response.status === 201) {
                 const mailData = {
                     email: selectedCustomer.email,
                     subject: "Project Opening",

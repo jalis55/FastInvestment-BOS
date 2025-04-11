@@ -66,12 +66,12 @@ const CreateProjects = () => {
 
             if (response.status === 201) {
                 // Send email notification
-                const mailData = {
-                    email: formData.responsibleMail,
-                    subject: "Project Opening",
-                    message: `Project opened successfully. Your project ID is ${response.data.project_id}`,
-                };
-                await api.post("/api/mail/send-email/", mailData);
+                // const mailData = {
+                //     email: formData.responsibleMail,
+                //     subject: "Project Opening",
+                //     message: `Project opened successfully. Your project ID is ${response.data.project_id}`,
+                // };
+                // await api.post("/api/mail/send-email/", mailData);
 
                 // Show success message
                 Swal.fire({

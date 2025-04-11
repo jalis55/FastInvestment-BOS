@@ -3,7 +3,8 @@ import {
   Users, BadgeDollarSign, ArrowRightLeft, BriefcaseBusiness,
   BadgePercent, FileSpreadsheet, FolderKanban, Wallet, Landmark,
   UsersRound, SquarePercent, ChartCandlestick, BookOpenCheck,
-  BanknoteIcon, BookUp2, AppWindow,LucideBriefcaseBusiness,BadgePlus
+  BanknoteIcon, BookUp2, AppWindow,LucideBriefcaseBusiness,BadgePlus,
+  UserSearch,UserCog,UserPlus2
 } from 'lucide-react';
 
 const menu = [
@@ -13,11 +14,34 @@ const menu = [
     roles: ["admin", "super_admin", "user"], // Available to all roles
     icon: Home,
   },
+
+
+
+
   {
-    menuName: "Users",
-    url: "/users",
-    roles: ["super_admin"],
-    icon: Users,
+    menuName: "User Management",
+    roles: ["admin", "super_admin"], // Available to all but different access
+    icon: UserCog,
+    children: [
+      {
+        menuName: "Users",
+        url: "/users",
+        roles: ["super_admin"],
+        icon: UserSearch,
+      },
+      {
+        menuName: "User Details",
+        url: "/user-details",
+        roles: ["super_admin"],
+        icon: Users,
+      },
+      {
+        menuName: "User Registration",
+        url: "/user-registration",
+        roles: ["super_admin"],
+        icon: UserPlus2,
+      },
+    ],
   },
   {
     menuName: "Accounting",

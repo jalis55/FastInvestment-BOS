@@ -46,14 +46,14 @@ const Registration = () => {
                 </button>
 
 
-                <p class="text-center text-lg">
+                {/* <p class="text-center text-lg">
                     Have account?
                     <a
                         href="#"
                         class="font-medium text-indigo-500 underline-offset-4 hover:underline"
                     >Login</a
                     >
-                </p>
+                </p> */}
             </section>
         </main>
 

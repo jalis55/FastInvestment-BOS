@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import { useTheme } from "../hooks/use-theme";
-import { Bell, ChevronsLeft, Moon, Search, Sun, LogOut } from "lucide-react";
+import { Bell, ChevronsLeft, Moon,  Sun} from "lucide-react";
 import profileImg from "../assets/profile-image.jpg";
 import PropTypes from "prop-types";
 import { AuthContext } from "../contexts/AuthContext";
@@ -25,7 +25,7 @@ const Header = ({ collapsed, setCollapsed }) => {
     const toggleDropdown = () => setIsOpen(!isOpen);
 
     // Function to close the dropdown
-    const closeDropdown = () => setIsOpen(false);
+    // const closeDropdown = () => setIsOpen(false);
 
 
 
