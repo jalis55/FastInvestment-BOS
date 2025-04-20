@@ -178,4 +178,4 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
 
 
-# jatl lktf rcfh nzwu
+
