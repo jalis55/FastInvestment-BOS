@@ -8,16 +8,14 @@ import { useAuth } from "@/auth/AuthContext";
 
 const Header = ({ collapsed, setCollapsed }) => {
     // const { theme, setTheme } = useTheme();
-    const { user, logout } = useAuth();
+    const { userData, logout } = useAuth();
      const navigate = useNavigate();
 
     // Retrieve the base URL from environment variables
     const baseURL = import.meta.env.VITE_API_URL;
 
-    // Add cache busting to ensure fresh image is loaded
-    const profileImageUrl = user?.profile_image
-        ? `${baseURL}${user.profile_image}?${new Date().getTime()}`
-        : profileImg;
+
+
 
     const [isOpen, setIsOpen] = useState(false);
 
@@ -78,7 +76,7 @@ const Header = ({ collapsed, setCollapsed }) => {
                         onClick={toggleDropdown}
                     >
                         <img
-                            src={profileImageUrl}
+                            src={userData.profile_image || profileImg} 
                             alt="profile"
                             className="size-10 rounded-full object-cover"
                         />
@@ -96,7 +94,7 @@ const Header = ({ collapsed, setCollapsed }) => {
                             <div className="py-1" role="none">
 
                                 <Link to="/user-details" title="profile" className="block px-4 py-2 text-sm text-gray-700">
-                                    {user.name.toUpperCase()}
+                                    {userData.name.toUpperCase()}
                                 </Link>
                                 <Link title="logout" className="block px-4 py-2 text-sm text-gray-700" onClick={handleLogout}>
                                     Logout

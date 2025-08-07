@@ -65,9 +65,9 @@ const router = createBrowserRouter([
 
 
           /* ---- User Management ---- */
-    { path: 'users',             element: <RoleRoute roles={['super_user']}><Users /></RoleRoute> },
-    { path: 'user-details',      element: <RoleRoute roles={['user']}><UserDetails /></RoleRoute> },
-    { path: 'user-registration', element: <RoleRoute roles={['user']}><UserRegistration /></RoleRoute> },
+    { path: 'users', element: <RoleRoute roles={['super_user']}><Users /></RoleRoute> },
+    { path: 'user-details',element: <RoleRoute roles={['user']}><UserDetails /></RoleRoute> },
+    { path: 'user-registration',element: <RoleRoute roles={['user']}><UserRegistration /></RoleRoute> },
 
       /* ---- Trade ---- */
       { path: 'buy-instruments', element: <RoleRoute roles={['user', 'admin']}><BuyInstruments /></RoleRoute> },

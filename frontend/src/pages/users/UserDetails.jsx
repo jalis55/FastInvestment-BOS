@@ -6,8 +6,8 @@ import { useAuth } from "@/auth/AuthContext";
 
 const UserDetails = () => {
   // Retrieve the base URL from environment variables
-  const baseURL = process.env.REACT_APP_API_URL;
-  const { user} = useAuth();
+  const baseURL = import.meta.env.VITE_API_URL;
+  const { userData, setUserData } = useAuth();
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -31,8 +31,8 @@ const UserDetails = () => {
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const response = await API.get('/api/user-profile/');
-      const userData = response.data;
+      // const response = await API.get('/api/user-profile/');
+      // const userData = response.data;
 
       // Format the data for the form
       setFormData({
@@ -119,8 +119,8 @@ const UserDetails = () => {
           },
         });
 
-        // If we get here, the request was successful
-        console.log("User updated:", response.data);
+
+        setUserData(response.data);
         setSuccess(true);
         setEditing(false);
 
@@ -132,14 +132,6 @@ const UserDetails = () => {
             profile_image_preview: response.data.profile_image || prev.profile_image_preview
           }));
         }
-        console.log(response.data.profile_image);
-        // This will update the header immediately
-        updateUserProfile({
-          profile_image: response.data.profile_image.replace(`${baseURL}media/`, '/media/'),
-          name: response.data.name, // Update other fields if needed
-          email: response.data.email,
-          // ... any other fields that might have changed
-        });
 
       } catch (error) {
         console.error("Error updating user:", error);

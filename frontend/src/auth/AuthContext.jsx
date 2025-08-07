@@ -36,8 +36,6 @@ const decodeUser = (token) => {
     const decoded = jwtDecode(token);
     return {
       id: decoded.user_id,
-      email: decoded.email,
-      name: decoded.name,
       is_admin: decoded.is_admin,
       is_super_admin: decoded.is_super_admin,
       roles: decoded.roles || [],
@@ -52,16 +50,34 @@ const decodeUser = (token) => {
 /* ------------------------------------------------------------------ */
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const fetchUserData = useCallback(async () => {
+    try {
+      const response = await API.get('/api/user-profile/');
+      if (response.status === 200) {
+        setUserData(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+      setUserData(null);
+    }
+  }, []);
 
   /* Hydrate on mount */
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
-    setUser(token ? decodeUser(token) : null);
-    setIsLoading(false);
-  }, []);
+    const decodedUser = token ? decodeUser(token) : null;
+    setUser(decodedUser);
+    
+    if (decodedUser) {
+      fetchUserData().finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
+  }, [fetchUserData]);
 
-  /* ✅ Stable role-checker via useCallback */
   const hasRole = useCallback(
     (requiredRoles = []) => {
       if (!user) return false;
@@ -78,31 +94,56 @@ export default function AuthProvider({ children }) {
 
   /* Auth actions */
   const login = async (email, password) => {
-    const { data, status } = await API.post('/api/token/', { email, password });
-    if (status === 200) {
-      setTokens(data.access, data.refresh);
-      setUser(decodeUser(data.access));
+    setIsLoading(true);
+    try {
+      const { data, status } = await API.post('/api/token/', { email, password });
+      if (status === 200) {
+        setTokens(data.access, data.refresh);
+        const decodedUser = decodeUser(data.access);
+        setUser(decodedUser);
+        await fetchUserData();
+      }
+      return status;
+    } finally {
+      setIsLoading(false);
     }
-    return status;
   };
 
   const register = async (email, password) => {
-    const { data, status } = await API.post('/api/user/register/', {
-      email,
-      password,
-    });
-    if (status === 201) {
-      setTokens(data.access, data.refresh);
-      setUser(decodeUser(data.access));
+    setIsLoading(true);
+    try {
+      const { data, status } = await API.post('/api/user/register/', {
+        email,
+        password,
+      });
+      if (status === 201) {
+        setTokens(data.access, data.refresh);
+        const decodedUser = decodeUser(data.access);
+        setUser(decodedUser);
+        await fetchUserData();
+      }
+      return status;
+    } finally {
+      setIsLoading(false);
     }
-    return status;
   };
 
   const logout = () => {
     clearTokens();
     setUser(null);
+    setUserData(null);
   };
 
-  const value = { user, isLoading, login, register, logout, hasRole };
+  const value = { 
+    user, 
+    userData,  // Expose userData in the context
+    setUserData,
+    isLoading, 
+    login, 
+    register, 
+    logout, 
+    hasRole,
+  };
+  
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
