@@ -15,6 +15,7 @@ from rest_framework.exceptions import ValidationError
 from django.db import transaction as db_transaction
 from django.utils import timezone
 from decimal import Decimal
+from django.core.exceptions import ObjectDoesNotExist
 
 
 
@@ -154,6 +155,20 @@ class FundTransferView(generics.CreateAPIView):
     serializer_class = FundTransferSerializer
     permission_classes = [IsAdminUser]
 
+
+    def __make_transaction(self,user1,user2,amount,trans_type,narration):
+        """Helper method to create a transaction."""
+        return Transaction.objects.create(
+            user=user1,
+            amount=amount,
+            transaction_type=trans_type,
+            narration=f'{narration} - {user2}',
+            status='completed',
+            issued_by=self.request.user,
+            issued_date=timezone.now
+
+        )
+
     @db_transaction.atomic
     def perform_create(self, serializer):
         try:
@@ -166,6 +181,10 @@ class FundTransferView(generics.CreateAPIView):
 
             transfer_from_account.update_balance(transaction.amount, 'payment')
             transfer_to_account.update_balance(transaction.amount, 'deposit')
+
+            # Create a transaction record for the transfer
+            self.__make_transaction(transfer_from, transfer_to, transaction.amount, 'payment', 'Fund transfer to')
+            self.__make_transaction(transfer_to, transfer_from, transaction.amount, 'deposit', 'Fund receive from')
 
         except ValidationError as e:
             raise serializers.ValidationError("Insufficient balance for this transfer.")
