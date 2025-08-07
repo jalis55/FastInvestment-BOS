@@ -16,18 +16,26 @@ const Transaction = () => {
     const [availableWithdrawBal, setAvilableWithdrawBal] = useState(0)
 
     useEffect(() => {
-        API.get('/api/admin/customers/')
-            .then((response) => setUsers(response.data))
-            .catch((error) => console.error('Error fetching users:', error));
+
+        const fetchUsers = async () => {
+            try {
+                const response = await API.get('/api/admin/customers/');
+                setUsers(response.data);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                setStatusMessage('Failed to load users');
+            }
+        }
+        fetchUsers();
     }, []);
 
     const handleTransactionType = async (transType) => {
-        if(transType==='payment'){
+        if (transType === 'payment') {
             const response = await API.get(`/api/acc/user/${selectedUser}/balance/`);
             setAvilableWithdrawBal(Number(response.data.balance));
-            
+
         }
-        else{
+        else {
             setAvilableWithdrawBal(0);
         }
         setTransactionType(transType);
@@ -54,16 +62,16 @@ const Transaction = () => {
             return; // Prevent further execution
         }
 
-                // Check if the amount is less than 1000
-                if (transactionType==='payment' && amount > availableWithdrawBal){
-                    await Swal.fire({
-                        title: 'Invalid Amount',
-                        text: 'Available Balance Exceeds',
-                        icon: 'warning',
-                        confirmButtonText: 'OK',
-                    });
-                    return; // Prevent further execution
-                }
+        // Check if the amount is less than 1000
+        if (transactionType === 'payment' && amount > availableWithdrawBal) {
+            await Swal.fire({
+                title: 'Invalid Amount',
+                text: 'Available Balance Exceeds',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+            });
+            return; // Prevent further execution
+        }
 
         // Show confirmation dialog
         const confirmResult = await Swal.fire({
@@ -84,28 +92,29 @@ const Transaction = () => {
                 transaction_type: transactionType,
                 trans_mode: transMode,
             };
-
-            API.post('/api/acc/user/create-transaction/', transactionData)
-                .then((res) => {
-                    setAmount('');
-                    setSelectedUser('');
-                    setTransMode('');
-                    setTransactionType('');
-                    setStatusMessage("Transaction Successful");
-                    Swal.fire({
-                        title: 'Success!',
-                        text: 'Transaction has been created successfully.',
-                        icon: 'success'
-                    });
-                })
-                .catch((error) => {
-                    setStatusMessage('Failed to create transaction');
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Failed to create transaction. Please try again.',
-                        icon: 'error'
-                    });
+            try {
+                setLoading(true);
+                const response = await API.post('/api/acc/user/create-transaction/', transactionData);
+                setAmount('');
+                setSelectedUser('');
+                setTransMode('');
+                setTransactionType('');
+                setStatusMessage("Transaction Successful");
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Transaction has been created successfully.',
+                    icon: 'success'
                 });
+
+
+            } catch (error) {
+                setStatusMessage('Failed to create transaction');
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to create transaction. Please try again.',
+                    icon: 'error'
+                });
+            }
         }
     };
 
@@ -161,7 +170,7 @@ const Transaction = () => {
 
                             </select>
                         </div>
-                        {availableWithdrawBal>0 &&
+                        {availableWithdrawBal > 0 &&
                             <div className="mb-2">
                                 <label htmlFor="website-admin" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Available Balance</label>
                                 <div className="flex">

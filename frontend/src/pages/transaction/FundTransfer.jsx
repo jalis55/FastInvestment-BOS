@@ -86,26 +86,10 @@ const FundTransfer = () => {
                 transfer_to: toUser,
                 amount: parseFloat(amount),
             };
-            const transactionData = [
-                {
-                    user: fromUser,
-                    amount: parseFloat(amount),
-                    transaction_type: 'payment',
-                    trans_mode:'internal',
-                    narration:`Internal fund transfer to ${getUserName(toUser)}`
-                },
-                {
-                    user: toUser,
-                    amount: parseFloat(amount),
-                    transaction_type: 'deposit',
-                    trans_mode:'internal',
-                    narration:`Internal fund receive from ${getUserName(fromUser)}`
-                }
-            ]
+
             try {
                 const response = await API.post('/api/acc/user/fund-transfer/', fundTransferData);
-                console.log(transactionData);
-                await API.post('/api/acc/user/create-transaction/', transactionData);
+
                 Swal.fire({
                     title: 'Success!',
                     text: 'Transaction has been created successfully.',
