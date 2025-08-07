@@ -19,6 +19,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = ['id', 'user', 'amount', 'transaction_type', 'trans_mode', 'narration','issued_by', 'issued_date', 'status']
         read_only_fields = ['issued_by', 'issued_date', 'status']  
+
 class TransactionDetailsSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -37,7 +38,17 @@ class PendingPaymentsSerializer(serializers.ModelSerializer):
 class TransactionApproveSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = ['status']
+        fields = ["status"]
+        read_only_fields = []  # No fields are read-only, as status is updatable
+
+    def validate_status(self, value):
+        """Ensure status is either 'approved' or 'declined'."""
+        valid_statuses = ["approved", "declined"]
+        if value not in valid_statuses:
+            raise serializers.ValidationError(
+                f"Status must be one of {valid_statuses}."
+            )
+        return value
 
 class FundTransferSerializer(serializers.ModelSerializer):
     class Meta:

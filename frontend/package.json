@@ -1,66 +1,46 @@
 {
-  "name": "testadmin",
-  "version": "0.1.0",
+  "name": "reactwithtailwindshadcn",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
   "dependencies": {
-    "@chakra-ui/react": "^3.11.0",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
-    "@radix-ui/react-icons": "^1.3.2",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.2.0",
-    "@testing-library/user-event": "^13.5.0",
+    "@radix-ui/react-slot": "^1.2.0",
+    "@tailwindcss/vite": "^4.1.4",
     "@uidotdev/usehooks": "^2.4.1",
-    "autoprefixer": "^10.4.21",
-    "axios": "^1.8.2",
-    "bootstrap": "^5.3.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",
-    "framer-motion": "^12.4.10",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "jwt-decode": "^4.0.0",
-    "lucide-react": "^0.479.0",
-    "papaparse": "^5.5.2",
-    "postcss": "^8.5.3",
+    "lucide-react": "^0.503.0",
+    "papaparse": "^5.5.3",
+    "prop-types": "^15.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.3.0",
-    "react-scripts": "5.0.1",
-    "recharts": "^2.15.1",
-    "sweetalert2": "^11.17.2",
+    "react-router-dom": "^7.7.1",
+    "sweetalert2": "^11.22.2",
     "tailwind-merge": "^3.2.0",
-    "tailwindcss": "^4.1.3",
-    "web-vitals": "^2.1.4"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "tailwindcss": "^4.1.4",
+    "tw-animate-css": "^1.2.8"
   },
   "devDependencies": {
-    "@shadcn/ui": "^0.0.4"
+    "@eslint/js": "^9.22.0",
+    "@types/node": "^22.14.1",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "vite": "^6.3.1"
   }
 }

@@ -30,7 +30,6 @@ class UserStatusView(RetrieveUpdateAPIView):
     def get_object(self):
         """Determine and return the user's status."""
         user = self.request.user
-        print(user.name)
         status = "superadmin" if user.is_superuser else "admin" if user.is_staff else "user"
         return {"status": status}
 

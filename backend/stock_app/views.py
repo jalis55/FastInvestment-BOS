@@ -296,22 +296,16 @@ class AddFinancialAdvisorListCreateView(generics.ListCreateAPIView):
 
 
 
-class FinAdvisorCommissionListCreateView(generics.GenericAPIView):
+class FinAdvisorCommissionListCreateView(generics.ListCreateAPIView):
     queryset=FinAdvisorCommission.objects.all()
     serializer_class=FinAdvisorCommissionSerializer
     permission_classes=[IsAdminUser]
 
-    def post(self, request, *args, **kwargs):
-        # Use 'many=True' to allow handling of a list of objects
-        serializer = FinAdvisorCommissionSerializer(data=request.data, many=True)
-
-        if serializer.is_valid():
-            # Save all objects
-            serializer.save(authorized_by=self.request.user,disburse_dt=timezone.now())
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        # If validation fails, return the errors
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def perform_create(self, serializer):
+        serializer.save(
+            authorized_by=self.request.user,
+            disburse_dt=timezone.now()
+        )
 
 class FinancialAdvisorListView(generics.ListAPIView):
     serializer_class = FinancialAdvisorSerializer

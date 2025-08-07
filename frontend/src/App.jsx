@@ -1,218 +1,117 @@
-// src/App.jsx
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { ThemeProvider } from "./contexts/theme-context";
-import AuthProvider from "./contexts/AuthContext";
-import ProtectedRoute from "./ProtectedRoute";
-import RedirectRoute from "./RedirectRoute";
-import Layout from "./routes/layout";
-import Dashboard from "./routes/dashboard/Dashboard";
-import Login from "./routes/auth/Login";
-import Registration from "./routes/auth/Registration";
-import Logout from "./routes/auth/Logout";
-import SellInstruments from "./layouts/trade/SellInstruments";
-import BuyInstruments from "./layouts/trade/BuyInstruments";
-import Users from "./layouts/users/Users";
-import Transaction from "./layouts/transaction/Transaction";
-import PendingPayments from "./layouts/pending payments/PendingPayments";
-import AddInvestments from "./layouts/investments/AddInvestments";
-import DisburseProfit from "./layouts/disbursements/DisburseProfit";
-import CreateProject from "./layouts/Projects/CreateProject";
-import FinancialAdvisor from "./layouts/financialAdvisor/FinancialAdvisor";
-import AccountReceivableDetails from "./layouts/AccountReceivableDetails/AccountReceivableDetails";
-import TradeDetails from "./layouts/trade/TradeDetails";
-import CloseProject from "./layouts/Projects/CloseProject";
-import FundTransfer from "./layouts/transaction/FundTransfer";
-import NotFound from "./layouts/NotFound";
-import Forbidden from "./layouts/Forbidden";
-import TransactionHistory from "./layouts/transaction/TransactionHistory";
-import InvestmentHistory from "./layouts/investments/InvestmentHistory";
-import ProfitDetails from "./layouts/AccountReceivableDetails/ProfitDetails";
-import UserDetails from "./layouts/users/UserDetails";
-import UserRegistration from "./layouts/users/UserRegistration";
+// App.js
+import React from 'react';
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from 'react-router-dom';
+
+import AuthProvider from './auth/AuthContext';
+import RedirectRoute from './auth/RedirectRoute';
+import RoleRoute from './auth/RoleRoute';
+import RequiredAuth from './auth/ReuiredRoute';
+import Layout from './pages/layout/Layout';
+import Login from './pages/login/Login';
+import Registration from './pages/register/Register';
+
+import Dashboard from './pages/dashboard/Dashboard';
+
+// USER MANAGEMENT
+import Users from './pages/users/Users';
+import UserDetails from './pages/users/UserDetails';
+import UserRegistration from './pages/users/UserRegistration';
+
+// TRADE
+import BuyInstruments from './pages/trade/BuyInstruments';
+import SellInstruments from './pages/trade/SellInstruments';
+
+// PROJECT
+import CreateProject from './pages/projects/CreateProject';
+import CloseProject from './pages/projects/CloseProject';
+// INVESTMENTS
+import AddInvestments from './pages/investments/AddInvestments';
+// Financial Advisor
+import FinancialAdvisor from './pages/financialAdvisor/FinancialAdvisor';
+
+//Disbursement
+import DisburseProfit from './pages/disbursements/DisburseProfit';
+
+// Accounting
+import Transaction from './pages/transaction/Transaction';
+import FundTransfer from './pages/transaction/FundTransfer';
+import PendingPayments from './pages/pending payments/PendingPayments';
+// Reports
+import TradeDetails from './pages/reports/TradeDetails';
+import AccountReceivableDetails from './pages/reports/AccountReceivableDetails';
+import TransactionHistory from './pages/reports/TransactionHistory';
+import InvestmentHistory from './pages/reports/InvestmentHistory';
+import ProfitDetails from './pages/reports/ProfitDetails';
+
+
+
+
+
+
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: (
-      <ProtectedRoute>
+      <RequiredAuth>
         <Layout />
-      </ProtectedRoute>
+      </RequiredAuth>
     ),
     children: [
       { index: true, element: <Dashboard /> },
-      {
-        path: "buy-instruments",
-        element: (
-          <ProtectedRoute roles={["user", "admin"]}>
-            <BuyInstruments />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "sell-instruments",
-        element: (
-          <ProtectedRoute roles={["user", "admin"]}>
-            <SellInstruments />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "users",
-        element: (
-          <ProtectedRoute roles={["super_user"]}>
-            <Users />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "user-details",
-        element: (
-          <ProtectedRoute roles={["user"]}>
-            <UserDetails/>
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "user-registration",
-        element: (
-          <ProtectedRoute roles={["user"]}>
-            <UserRegistration/>
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "transaction",
-        element: (
-          <ProtectedRoute roles={["admin"]}>
-            <Transaction />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "fund-transfer",
-        element: (
-          <ProtectedRoute roles={["admin"]}>
-            <FundTransfer />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "pending-payments",
-        element: (
-          <ProtectedRoute roles={["super_admin"]}>
-            <PendingPayments />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "add-advisor",
-        element: (
-          <ProtectedRoute roles={["admin"]}>
-            <FinancialAdvisor />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "add-investments",
-        element: (
-          <ProtectedRoute roles={["admin"]}>
-            <AddInvestments />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "disburse-profit",
-        element: (
-          <ProtectedRoute roles={["admin"]}>
-            <DisburseProfit />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "create-project",
-        element: (
-          <ProtectedRoute roles={["admin"]}>
-            <CreateProject />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "close-project",
-        element: (
-          <ProtectedRoute roles={["admin"]}>
-            <CloseProject />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "acc-rec-details",
-        element: (
-          <ProtectedRoute roles={["admin"]}>
-            <AccountReceivableDetails />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "trade-details",
-        element: (
-          <ProtectedRoute roles={["user", "admin"]}>
-            <TradeDetails />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "trans-history",
-        element: (
-          <ProtectedRoute roles={["user"]}>
-            <TransactionHistory />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "investment-history",
-        element: (
-          <ProtectedRoute roles={["user"]}>
-            <InvestmentHistory />
-          </ProtectedRoute>
-        )
-      },
-      {
-        path: "profit-details",
-        element: (
-          <ProtectedRoute roles={["user"]}>
-            <ProfitDetails />
-          </ProtectedRoute>
-        )
-      },
+
+
+          /* ---- User Management ---- */
+    { path: 'users',             element: <RoleRoute roles={['super_user']}><Users /></RoleRoute> },
+    { path: 'user-details',      element: <RoleRoute roles={['user']}><UserDetails /></RoleRoute> },
+    { path: 'user-registration', element: <RoleRoute roles={['user']}><UserRegistration /></RoleRoute> },
+
+      /* ---- Trade ---- */
+      { path: 'buy-instruments', element: <RoleRoute roles={['user', 'admin']}><BuyInstruments /></RoleRoute> },
+      { path: 'sell-instruments', element: <RoleRoute roles={['user', 'admin']}><SellInstruments /></RoleRoute> },
+      /* ---- Project ---- */
+      { path: 'create-project', element: <RoleRoute roles={['admin']}><CreateProject /></RoleRoute> },
+      { path: 'add-advisor', element: <RoleRoute roles={['admin']}><FinancialAdvisor /></RoleRoute> },
+      { path: 'add-investments', element: <RoleRoute roles={['admin']}><AddInvestments /></RoleRoute> },
+      { path: 'close-project', element: <RoleRoute roles={['admin']}><CloseProject /></RoleRoute> },
+      { path: 'disburse-profit', element: <RoleRoute roles={['admin']}><DisburseProfit /></RoleRoute> },
+
+
+      /* Accounting */
+      { path: 'transaction', element: <RoleRoute roles={['admin']}><Transaction /></RoleRoute> },
+      { path: 'fund-transfer', element: <RoleRoute roles={['admin']}><FundTransfer /></RoleRoute> },
+      { path: 'pending-payments', element: <RoleRoute roles={['super_admin']}><PendingPayments /></RoleRoute> },
+
+
+      /* ---- Reports ---- */
+      { path: 'acc-rec-details', element: <RoleRoute roles={['admin']}><AccountReceivableDetails /></RoleRoute> },
+      { path: 'trade-details', element: <RoleRoute roles={['user', 'admin']}><TradeDetails /></RoleRoute> },
+      { path: 'trans-history', element: <RoleRoute roles={['user']}><TransactionHistory/> </RoleRoute> },
+      { path: 'investment-history', element: <RoleRoute roles={['user']}><InvestmentHistory/></RoleRoute> },
+      { path: 'profit-details', element: <RoleRoute roles={['user']}><ProfitDetails/></RoleRoute> },
     ],
   },
   {
     element: <RedirectRoute />,
     children: [
-      { path: "login", element: <Login /> },
-      { path: "register", element: <Registration /> },
+      { path: 'login', element: <Login /> },
+      { path: 'register', element: <Registration /> },
+      // ... other public routes
     ],
   },
-  {
-    path: "logout",
-    element: <Logout />
-  },
-  {
-    path: "forbidden",
-    element: <Forbidden />
-  },
-  {
-    path: '*',
-    element: <NotFound />,
-  }
+  // {
+  //   path: '/unauthorized',
+  //   element:<Unauthorized/>
+  // }
 ]);
 
 function App() {
   return (
     <AuthProvider>
-      <ThemeProvider storageKey="theme">
-        <RouterProvider router={router} />
-      </ThemeProvider>
+      <RouterProvider router={router} />
     </AuthProvider>
   );
 }
