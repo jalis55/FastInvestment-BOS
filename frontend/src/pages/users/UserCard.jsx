@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import UserImage from "./UserImage";
+import API from '@/api/axios';
 
-const UserCard = ({ user, toggleAdminStatus, toggleActiveStatus }) => {
+const UserCard = ({ user }) => { 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const buttonRef = useRef(null);
+    const [activeSt, setActiveSt] = useState(user.is_active);
+    const [adminSt, setAdminSt] = useState(user.is_staff);
 
     // Close dropdown when clicking outside
     const handleClickOutside = (e) => {
@@ -27,6 +30,26 @@ const UserCard = ({ user, toggleAdminStatus, toggleActiveStatus }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [isDropdownOpen]);
+
+    const toggleStatus = async (statusType) => {
+        try {
+            let response;
+            if (statusType === 'activeStatus') {
+                response = await API.patch(`api/admin/users/${user.id}/`, { is_active: !activeSt });
+                if (response.status === 200) {
+                    setActiveSt(!activeSt);
+                }
+            }
+            if (statusType === 'adminStatus') {
+                response = await API.patch(`api/admin/users/${user.id}/`, { is_staff: !adminSt });
+                if (response.status === 200) {
+                    setAdminSt(!adminSt);
+                }
+            }
+        } catch (error) {
+            console.error('Error toggling status:', error);
+        }
+    };
 
     return (
         <div className="w-full max-w-sm bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 relative">
@@ -58,17 +81,19 @@ const UserCard = ({ user, toggleAdminStatus, toggleActiveStatus }) => {
                             <li>
                                 <button
                                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                                    role="menuitem"
+                                    role="menuitem" 
+                                    onClick={() => toggleStatus('activeStatus')}
                                 >
-                                    Edit
+                                    {activeSt ? "Deactivate" : "Activate"}
                                 </button>
                             </li>
                             <li>
                                 <button
                                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
                                     role="menuitem"
+                                    onClick={() => toggleStatus('adminStatus')}
                                 >
-                                    Export Data
+                                    {adminSt ? "Remove Admin" : "Make Admin"}
                                 </button>
                             </li>
                             <li>
@@ -87,9 +112,16 @@ const UserCard = ({ user, toggleAdminStatus, toggleActiveStatus }) => {
             {/* User content */}
             <div className="flex flex-col items-center pb-10">
                 <UserImage image_url={user.profile_image} name={user.name} sex={user.sex} />
-                <h5 className="mb-1 text-xl font-medium text-gray-900 dark:text-white">
-                    {user.name.toUpperCase()}
-                </h5>
+                <div className="mb-1 flex items-center gap-2">
+                    <h5 className="text-xl font-medium text-gray-900 dark:text-white">
+                        {user.name.toUpperCase()}
+                    </h5>
+                    <span
+                        className={`inline-block w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
+                            activeSt ? 'bg-green-500' : 'bg-red-500'
+                        }`}
+                    ></span>
+                </div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                     {user.email}
                 </span>

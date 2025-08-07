@@ -30,29 +30,6 @@ const Users = () => {
       user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const toggleAdminStatus = (userId, isStaff) => {
-    API.patch(`api/admin/users/${userId}/`, { is_staff: !isStaff })
-      .then(() => {
-        setUserList((prevUserList) =>
-          prevUserList.map((user) =>
-            user.id === userId ? { ...user, is_staff: !isStaff } : user
-          )
-        );
-      })
-      .catch((err) => alert('Error updating admin status: ' + err));
-  };
-
-  const toggleActiveStatus = (userId, isActive) => {
-    API.patch(`api/admin/users/${userId}/`, { is_active: !isActive })
-      .then(() => {
-        setUserList((prevUserList) =>
-          prevUserList.map((user) =>
-            user.id === userId ? { ...user, is_active: !isActive } : user
-          )
-        );
-      })
-      .catch((err) => alert('Error updating active status: ' + err));
-  };
 
   return (
     <>
@@ -72,7 +49,7 @@ const Users = () => {
             id="default-search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-50 p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 mb-2"
+            className="block w-60 p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 mb-2"
             placeholder="Search by name or email"
             required
           />
@@ -82,7 +59,7 @@ const Users = () => {
         {/* User Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredUsers.map((user, index) => (
-            <UserCard key={index} user={user} toggleAdminStatus={toggleAdminStatus} toggleActiveStatus={toggleActiveStatus} />
+            <UserCard key={index} user={user} />
           ))}
         </div>
       </div>
