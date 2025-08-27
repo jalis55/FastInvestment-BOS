@@ -3,7 +3,8 @@ import axios from 'axios';
 import { getRefreshToken, setTokens, clearTokens } from '../auth/AuthContext';
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000/', // <-- fix
+  baseURL: import.meta.env.VITE_API_URL ,
+  // || 'http://127.0.0.1:8001/', // <-- fix
 });
 
 /* Attach access token on every request */

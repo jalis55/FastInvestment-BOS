@@ -105,6 +105,7 @@ const Transaction = () => {
                     text: 'Transaction has been created successfully.',
                     icon: 'success'
                 });
+                
 
 
             } catch (error) {
@@ -115,6 +116,7 @@ const Transaction = () => {
                     icon: 'error'
                 });
             }
+            setLoading(false);
         }
     };
 

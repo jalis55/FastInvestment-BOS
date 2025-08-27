@@ -20,10 +20,13 @@ from django.core.exceptions import ObjectDoesNotExist
 
 
 
+
+
 class AllUserBalanceDetailsView(generics.ListAPIView):
     queryset=Account.objects.all()
     serializer_class=AccountSerializer
     permission_classes=[IsAdminUser]
+
 
 class CheckBalanceView(generics.RetrieveAPIView):
     queryset = Account.objects.all()
@@ -32,7 +35,10 @@ class CheckBalanceView(generics.RetrieveAPIView):
 
     def get_object(self):
         # Get the account for the user with the ID passed in the URL
-        account = Account.objects.get(user_id=self.kwargs['pk'])
+        try:
+            account = Account.objects.get(user_id=self.kwargs['pk'])
+        except Account.DoesNotExist:
+            raise ValidationError("Account not found.")
         
         # Ensure the requesting user is either the owner of the account or a staff member
         if self.request.user.is_staff or account.user == self.request.user:
@@ -40,6 +46,9 @@ class CheckBalanceView(generics.RetrieveAPIView):
         else:
             # If not allowed, raise a permission denied error
             raise PermissionDenied("You do not have permission to view this balance.")
+
+
+
         
 class TransactionDetailsView(generics.ListAPIView):
     serializer_class=TransactionDetailsSerializer
@@ -99,58 +108,62 @@ class TransactionCreateView(generics.CreateAPIView):
 
 
 class PendingPaymentsView(generics.ListAPIView):
-    queryset=Transaction.objects.filter(transaction_type='payment',status='pending')
-    serializer_class=PendingPaymentsSerializer
-    permission_classes=[IsSuperUser]
+    permission_classes = [IsSuperUser]
+    serializer_class = PendingPaymentsSerializer
+
+    def get_queryset(self):
+        return (Transaction.objects
+                .filter(transaction_type='payment', status='pending')
+                .select_related('user', 'issued_by'))
+
 
 class TransactionApproveView(generics.UpdateAPIView):
-    queryset = Transaction.objects.all()
+    queryset = Transaction.objects.filter(status='pending')
     serializer_class = TransactionApproveSerializer
-    permission_classes = [IsSuperUser]  # Restrict to superusers
+    permission_classes = [IsSuperUser]
 
     def update(self, request, *args, **kwargs):
-        transaction = self.get_object()
-        serializer = self.get_serializer(transaction, data=request.data, partial=True)
+        transaction_obj = self.get_object()
+        serializer = self.get_serializer(transaction_obj, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
 
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        status_update = serializer.validated_data.get('status')
+        new_status = serializer.validated_data.get('status')
 
         with db_transaction.atomic():
             try:
-                # Ensure the user has an account
-                account = transaction.user.account
-            except (ObjectDoesNotExist, AttributeError):
-                return Response(
-                    {"detail": "No account found for the user."},
-                    status=status.HTTP_400_BAD_REQUEST
+                account = Account.objects.get(user_id=transaction_obj.user_id)
+            except Account.DoesNotExist:
+                return Response({"detail": "No account found for the user."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            if new_status == "approved":
+                try:
+                    account.update_balance(transaction_obj.amount, transaction_obj.transaction_type)
+                except ValidationError as e:
+                    return Response({"detail": f"Balance update failed: {str(e)}"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                narration = transaction_obj.narration or (
+                    f"Withdrawal of {transaction_obj.amount} approved" 
+                    if transaction_obj.transaction_type == "withdrawal" 
+                    else f"Deposit of {transaction_obj.amount} approved"
                 )
 
-            # Handle approval
-            if status_update == "approved":
-                try:
-                    # Update balance based on transaction type
-                    account.update_balance(transaction.amount, transaction.transaction_type)
-                    transaction.status = "approved"
-                    # Set narration based on transaction type
-                    if transaction.transaction_type == "withdrawal":
-                        transaction.narration = f"Withdrawal of {transaction.amount} approved"
-                    elif transaction.transaction_type == "deposit":
-                        transaction.narration = f"Deposit of {transaction.amount} approved"
-                    transaction.save()
-                except ValidationError as e:
-                    return Response(
-                        {"detail": f"Balance update failed: {str(e)}"},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-            # Handle decline
-            elif status_update == "declined":
-                transaction.status = "declined"
-                transaction.narration = transaction.narration or f"Transaction declined"
-                transaction.save()
+                # Directly update the transaction with fewer queries
+                Transaction.objects.filter(pk=transaction_obj.pk).update(
+                    status="approved",
+                    narration=narration
+                )
 
-        return Response(serializer.data, status=status.HTTP_200_OK)  
+            elif new_status == "declined":
+                narration = transaction_obj.narration or "Transaction declined"
+                Transaction.objects.filter(pk=transaction_obj.pk).update(
+                    status="declined",
+                    narration=narration
+                )
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 class FundTransferView(generics.CreateAPIView):
     serializer_class = FundTransferSerializer
     permission_classes = [IsAdminUser]

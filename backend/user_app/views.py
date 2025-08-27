@@ -7,6 +7,9 @@ from user_app.models import CustomUser
 from rest_framework.response import Response
 from rest_framework import status
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
 # Create your views here.
 
 class UserRegistrationView(CreateAPIView):
@@ -39,9 +42,15 @@ class UserListView(ListAPIView):
     permission_classes = [IsSuperUser]  # Only allow superusers to access this view
 
 class CustomerListView(ListAPIView):
-    queryset=CustomUser.objects.filter(is_superuser=False,is_staff=False,is_active=True)
-    serializer_class=UserListSerializer
-    permission_classes=[IsAdminUser]
+    serializer_class = UserListSerializer
+    permission_classes = [IsAdminUser]
+
+    @method_decorator(cache_page(60 * 20))
+    def get(self, *args, **kwargs):
+        return super().get(*args, **kwargs)
+
+    def get_queryset(self):
+        return CustomUser.objects.filter(is_superuser=False, is_staff=False)
 
 class UpdateUserStatusView(RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.filter(is_superuser=False)

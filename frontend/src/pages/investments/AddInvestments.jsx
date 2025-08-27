@@ -33,7 +33,7 @@ const AddInvestments = () => {
             setProjectBalance(response.data.available_balance);
             getCustomers();
         } catch (error) {
-            console.error("Error fetching project data:", error);
+            console.log(response)
             Swal.fire({ icon: 'error', title: 'API Error', text: error.response?.data?.message || 'Something went wrong.' });
         }
     };
@@ -41,7 +41,7 @@ const AddInvestments = () => {
     const getCustomers = async () => {
         try {
             const response = await API.get(`/api/admin/customers/`);
-            console.log("Customers Response:", response.data); // Debugging log
+
             setCustomers(response.data);
         } catch (error) {
             console.error("Error fetching customers:", error);
@@ -61,10 +61,9 @@ const AddInvestments = () => {
     const getCustomerBalance = async (id) => {
         try {
             const response = await API.get(`/api/acc/user/${id}/balance/`);
-            console.log("Customer Balance Response:", response.data); // Debugging log
             setSelectedCustomerBal(response.data.balance);
         } catch (error) {
-            console.error("Error fetching customer balance:", error);
+            console.error("Error fetching customer balance:");
             Swal.fire({ icon: 'error', title: 'API Error', text: error.response?.data?.message || 'Something went wrong.' });
         }
     };

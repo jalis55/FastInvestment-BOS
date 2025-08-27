@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { CalendarIcon, UserIcon, SaveIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -59,6 +58,22 @@ const UserRegistration = () => {
         return Object.keys(newErrors).length === 0
     }
 
+    const resetForm = () => {
+        setFormData({
+            email: "",
+            name: "",
+            phone: "",
+            profile_image: null,
+            profile_image_preview: null,
+            sex: "M",
+            bio: "",
+            dob: null,
+            password: "",
+        });
+        setErrors({});
+        setShowCalendar(false);
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -85,7 +100,6 @@ const UserRegistration = () => {
                     formDataToSend.append("profile_image", formData.profile_image);
                 }
 
-
                 const response = await API.post('/api/user-register/', formDataToSend, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
@@ -97,17 +111,7 @@ const UserRegistration = () => {
                 setSuccess(true);
 
                 // Reset form after successful submission
-                setFormData({
-                    email: "",
-                    name: "",
-                    phone: "",
-                    profile_image: null,
-                    profile_image_preview: null,
-                    sex: "male",
-                    bio: "",
-                    dob: null,
-                    password: "",
-                });
+                resetForm();
 
             } catch (error) {
                 console.error("Error creating user:", error);
@@ -405,9 +409,10 @@ const UserRegistration = () => {
                             <div className="flex justify-end">
                                 <button
                                     type="button"
+                                    onClick={resetForm}
                                     className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 >
-                                    Cancel
+                                    Reset Form
                                 </button>
                                 <button
                                     type="submit"

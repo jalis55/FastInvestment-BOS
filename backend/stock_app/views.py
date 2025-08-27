@@ -3,13 +3,15 @@ from rest_framework.permissions import IsAuthenticated,AllowAny,IsAdminUser
 from user_app.permissions import IsSuperUser
 from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,FinAdvisorCommission,AccountReceivable,Profit,InvestorProfit
 from accounting.models import Account,Transaction
-from .projectserializers import ProjectCreateSerializer,ProjectBalanceDetailsSerializer,ProjectStatusSerializer
 
 from .serializers import (InstrumentSerializer,TradeSerializer,TradeDetailsSerializer,SellableInstrumentSerializer,
                           InvestmentSerializer,InvestmentContributionSerializer,ClientInvestmentDetailsSerializer,
-                          FinancialAdvisorSerializer,FinancialAdvisorAddSerializer,FinAdvisorCommissionSerializer
+                          FinancialAdvisorSerializer,FinancialAdvisorAddSerializer
                           ,AccountReceivableSerializer,AccountReceivableDetailsSerializer,ProfitSerializer
                           ,InvestorProfitSerializer
+                          ,ProjectCreateSerializer,ProjectStatusSerializer,ProjectBalanceDetailsSerializer,ProjectCloseSerializer
+
+                          ,ProfitDisburseSerializer
                           )
 from django.db import transaction
 from rest_framework.response import Response
@@ -23,91 +25,143 @@ from django.utils import timezone
 from django.core.mail import send_mail
 from django.db.models.functions import Coalesce
 from django.contrib.auth import get_user_model
+import json
+from stock_app.utils import investor_contributions_map
 
 User=get_user_model()
 
 
 class ProjectCreateView(generics.CreateAPIView):
+    serializer_class=ProjectCreateSerializer
+    permission_classes=[IsAdminUser]
 
-    queryset = Project.objects.all()
-    serializer_class = ProjectCreateSerializer
-    permission_classes = [IsAdminUser]
-
-    def perform_create(self, serializer):
+    def perform_create(self,serializer):
         serializer.save(created_by=self.request.user)
 
-class ProjectUpdateView(generics.UpdateAPIView):
-    permission_classes = [IsAdminUser]
 
-    def update(self, request, *args, **kwargs):
-        project_id = request.data.get("project_id")
-        total_investment = request.data.get("total_investment")
-        total_collection = request.data.get("total_collection")
-        gain_or_loss = request.data.get("gain_or_lose")  # Corrected field name
 
-        try:
-            project = Project.objects.get(project_id=project_id)
-            project.total_investment = total_investment
-            project.total_collection = total_collection
-            project.gain_or_loss = gain_or_loss
-            project.project_closing_dt=timezone.now()
-            project.project_active_status = False
-            project.save()
-
-            return Response({"message": f"Project {project_id}({project.project_title}) records updated successfully"}, status=status.HTTP_200_OK)
-        except Project.DoesNotExist:
-            return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 
 class ProjectStatusRetriveView(generics.RetrieveAPIView):
     queryset=Project.objects.all()
     serializer_class=ProjectStatusSerializer
     permission_classes=[IsAdminUser]
-    lookup_field = 'project_id'
+
 
 class ProjectBalanceDetailsView(generics.RetrieveAPIView):
     serializer_class = ProjectBalanceDetailsSerializer
-    permission_classes = [IsAdminUser]
-
+    permission_classes = [AllowAny]
 
     def get_object(self):
-        project_id = self.kwargs['project_id']
-        try:
-            project = Project.objects.get(project_id=project_id)
-        except Project.DoesNotExist:
-            raise NotFound("Project not found.")
+        project_id = self.kwargs['pk']
+        project = get_object_or_404(Project, pk=project_id)
 
-            # Fetch total investment
-        total_investment = Investment.objects.filter(project=project).aggregate(
-            total=Coalesce(Sum('amount'), 0, output_field=DecimalField())
-        )['total']
+        total_investment=project.investment_project_details.aggregate(t=Sum('amount'))['t'] or 0
 
-        # Calculate total buy
-        total_buy = Trade.objects.filter(project=project, trns_type=Trade.BUY).aggregate(
-            total=Coalesce(Sum(F('qty') * F('actual_unit_price')), 0, output_field=DecimalField())
-        )['total']
+        total_buy=project.trade_project_details.filter(trns_type='buy').aggregate(t=Sum(F('qty')
+            *F('actual_unit_price')))['t'] or 0
 
-        # Calculate total sell
-        total_sell = Trade.objects.filter(project=project, trns_type=Trade.SELL).aggregate(
-            total=Coalesce(Sum(F('qty') * F('actual_unit_price')), 0, output_field=DecimalField())
-        )['total']
+        total_sell=project.trade_project_details.filter(trns_type='sell').aggregate(t=Sum(F('qty')
+            *F('actual_unit_price')))['t'] or 0
 
-        accrued_profit = Profit.objects.filter(project=project_id).aggregate(total_amount=Sum('amount'))['total_amount']
+        total_profit=project.profit_project_details.aggregate(t=Sum('amount'))['t'] or 0
 
-        # Compute available balance and gain/loss
-        available_balance = total_investment - total_buy
-        
+        available_balance = (total_investment - total_buy + (total_sell-total_profit))
 
         return {
-            "project_id": project.project_id,
+            "project_id": project_id,
             "total_investment": total_investment,
             "total_buy_amount": total_buy,
-            "available_balance": available_balance,
             "total_sell_amount": total_sell,
-            "accrued_profit":accrued_profit
+            "accrued_profit": total_profit,
+            "available_balance": max(available_balance, Decimal('0.00'))
+        }
+
+
+User = get_user_model()
+
+class ProjectCloseView(APIView):
+    @transaction.atomic
+    def __prepare_transactions(self, project, closing_bal, total_investment):
+        """Prepare investor transactions atomically"""
+        investors_contrib = investor_contributions_map(project)
+        for investor, amount in investors_contrib.items():
+            percentage = round(amount * 100 / closing_bal, 2)
+            investor_user = User.objects.get(id=investor)
+            Transaction.objects.create(
+                user=investor_user,
+                amount=(closing_bal * percentage) / 100,
+                transaction_type='deposit',
+                narration=f'Return from project {project}',
+                status='completed',
+                issued_date=timezone.now(),
+                issued_by=self.request.user,
+            )
+
+    @transaction.atomic
+    def patch(self, request, pk, format=None):
+        """Close project atomically - all operations succeed or fail together"""
+        try:
+            # Use select_for_update to lock the project row for update
+            project = Project.objects.select_for_update().get(pk=pk)
             
-    }
+            # Check if project is already closed
+            if not project.project_active_status:
+                return Response(
+                    {"error": "Project is already closed"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            serializer = ProjectCloseSerializer(project, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                # Calculate gain/loss
+                gain_lose = project.receivable_project_details.aggregate(
+                    t=Sum('gain_lose')
+                )['t'] or 0
+                
+                # Prepare data for update
+                update_data = {
+                    'project_closing_dt': timezone.now(),
+                    'project_active_status': False,
+                    'gain_or_loss': gain_lose,
+                    **serializer.validated_data
+                }
+                
+                # Update project
+                for attr, value in update_data.items():
+                    setattr(project, attr, value)
+                project.save()
+                
+                # Prepare transactions (this is also atomic and part of the main transaction)
+                self.__prepare_transactions(
+                    project, 
+                    serializer.validated_data['closing_balance'], 
+                    serializer.validated_data['total_investment']
+                )
+                
+                # Return response with updated data
+                response_serializer = ProjectCloseSerializer(project)
+                return Response({
+                    "status": "closed", 
+                    "data": response_serializer.data
+                })
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Project.DoesNotExist:
+            return Response(
+                {"error": "Project not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            # Transaction will be automatically rolled back due to @transaction.atomic
+            return Response(
+                {"error": f"Failed to close project: {str(e)}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 
 class InstrumentListView(generics.ListAPIView):
     queryset = Instrument.objects.all()
@@ -115,58 +169,60 @@ class InstrumentListView(generics.ListAPIView):
     permission_classes = [IsAdminUser]  # Allow any user to view instruments
 
 
-class SellableInstrumentView(generics.GenericAPIView):
-    serializer_class = SellableInstrumentSerializer
-    permission_classes = [IsAdminUser]
 
-    def get_object(self):
-        """Fetch the project based on project_id."""
-        project_id = self.kwargs['project_id']
+class SellableInstrumentView(APIView):
+    permission_classes = [IsAdminUser]
+    serializer_class = SellableInstrumentSerializer
+
+    def get_project(self, project_id):
         try:
             return Project.objects.get(pk=project_id)
         except Project.DoesNotExist:
             raise NotFound("Project not found.")
 
-    def get(self, request, project_id):
-        """Returns available instrument quantity after buy/sell for a project, including the average actual buy unit price."""
-        project = self.get_object()  # Fetch the project using get_object
-
-        # Aggregate total buy and sell quantities per instrument
-        trades = Trade.objects.filter(project=project).values('instrument_id').annotate(
-            total_buy=Sum(Case(When(trns_type='buy', then='qty'), default=0, output_field=IntegerField())),
-            total_sell=Sum(Case(When(trns_type='sell', then='qty'), default=0, output_field=IntegerField()))
-        )
-
-        # Prefetch instrument names to reduce database queries
-        instruments = Instrument.objects.in_bulk([trade['instrument_id'] for trade in trades])
-
-        # Construct response data
-        results = [
-            {
-                'instrument': instruments[trade['instrument_id']],  # Pass the Instrument object
-                'available_quantity': trade['total_buy'] - trade['total_sell'],
-                'average_buy_unit_price': self.get_average_buy_unit_price(trade['instrument_id'])
-            }
-            for trade in trades if trade['total_buy'] - trade['total_sell'] > 0
-        ]
-
-        # Serialize the results
-        serializer = self.get_serializer(results, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
     def get_average_buy_unit_price(self, instrument_id):
-        """Fetches the average buy unit price for a given instrument."""
-        # Filter buy trades for the instrument and calculate total quantity and cost in a single query
-        buy_trades = Trade.objects.filter(instrument_id=instrument_id, trns_type=Trade.BUY, actual_unit_price__isnull=False)
-        
-        total_qty_cost = buy_trades.aggregate(
-            total_qty=Sum('qty'),
-            total_cost=Sum(F('qty') * F('actual_unit_price'))
+        totals = (
+            Trade.objects.filter(
+                instrument_id=instrument_id,
+                trns_type=Trade.BUY,
+                actual_unit_price__isnull=False
+            )
+            .aggregate(
+                total_qty=Sum('qty'),
+                total_cost=Sum(F('qty') * F('actual_unit_price'))
+            )
+        )
+        total_qty = totals.get('total_qty') or 0
+        if total_qty > 0:
+            return round(totals['total_cost'] / total_qty, 2)
+        return None
+
+    def get(self, request, project_id, *args, **kwargs):
+        project = self.get_project(project_id)
+
+        trades = (
+            Trade.objects.filter(project=project)
+            .values('instrument_id')
+            .annotate(
+                total_buy=Sum(Case(When(trns_type='buy', then='qty'), default=0, output_field=IntegerField())),
+                total_sell=Sum(Case(When(trns_type='sell', then='qty'), default=0, output_field=IntegerField()))
+            )
         )
 
-        if total_qty_cost['total_qty'] and total_qty_cost['total_qty'] > 0:
-            return round(total_qty_cost['total_cost'] / total_qty_cost['total_qty'], 2)
-        return None
+        instruments = Instrument.objects.in_bulk([t['instrument_id'] for t in trades])
+
+        results = []
+        for t in trades:
+            available = t['total_buy'] - t['total_sell']
+            if available > 0:
+                results.append({
+                    'instrument': instruments.get(t['instrument_id']),
+                    'available_quantity': available,
+                    'average_buy_unit_price': self.get_average_buy_unit_price(t['instrument_id'])
+                })
+
+        serializer = self.serializer_class(results, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class TradeCreateView(generics.CreateAPIView):
     queryset = Trade.objects.all()
@@ -195,7 +251,9 @@ class TradeDetailsListView(generics.ListAPIView):
         project_id = self.request.query_params.get('project_id')
 
         # Start with the base queryset
-        queryset = Trade.objects.all()
+        # queryset = Trade.objects.all()
+        queryset = Trade.objects.select_related('instrument')
+
 
         # Apply date range filter
         if from_dt and to_dt and project_id:
@@ -229,56 +287,29 @@ class ClientInvestmentDetailsListView(generics.ListAPIView):
         queryset=Investment.objects.filter(investor=self.request.user)
         return queryset
     
-class InvestorContributionRetrieveApiView(generics.GenericAPIView):  # Not RetrieveAPIView
+class InvestorContributionRetrieveAPI(APIView):
     permission_classes = [IsAdminUser]
     serializer_class = InvestmentContributionSerializer
 
-    def get(self, request, project_id):
-        try:
-            project = Project.objects.get(project_id=project_id)
-        except Project.DoesNotExist:
-            raise NotFound("Project not found")
+    def get(self, request, project_id, *args, **kwargs):
+        project = get_object_or_404(Project, project_id=project_id)
+        total = project.investment_project_details.aggregate(t=Sum('amount'))['t'] or 0
+        contrib_map = investor_contributions_map(project)
 
-        investments = Investment.objects.filter(project=project)
-        total_project_investment = investments.aggregate(total=Sum('amount'))['total'] or 0
+        # build payload
+        users = User.objects.in_bulk(contrib_map.keys())
+        data = [
+            {
+                'investor': users[user_id],
+                'contribute_amount': amount,
+                'contribution_percentage': round(amount * 100 / total, 2) if total else 0,
+            }
+            for user_id, amount in contrib_map.items()
+        ]
+        serializer = self.serializer_class(data, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-        # More efficient single-query approach
-        investor_contributions = (
-            investments.values('investor')
-            .annotate(
-                total_contribution=Sum('amount'),
-                percentage=ExpressionWrapper(
-                    Sum('amount') * 100.0 / total_project_investment if total_project_investment > 0 else 0,
-                    output_field=FloatField()
-                )
-            )
-            .order_by('-total_contribution')
-        )
 
-        # Prefetch users in one query
-        users = User.objects.in_bulk([item['investor'] for item in investor_contributions])
-        
-        data = [{
-            'investor': users[item['investor']],
-            'contribute_amount': item['total_contribution'],
-            'contribution_percentage': round(item['percentage'], 2)
-        } for item in investor_contributions]
-
-        serializer = self.get_serializer(data, many=True)
-        return Response(serializer.data)
-
-class InvestorProfitCreateView(generics.GenericAPIView):
-    queryset=InvestorProfit.objects.all()
-    serializer_class=InvestorProfitSerializer
-    permission_classes=[IsAdminUser]
-
-    def post(self,request,*args,**kwargs):
-        serializer=InvestorProfitSerializer(data=request.data,many=True)
-
-        if serializer.is_valid():
-            serializer.save(authorized_by=self.request.user,disburse_dt=timezone.now())
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class InvestorProfitDetailsView(generics.ListAPIView):
     serializer_class=InvestorProfitSerializer
@@ -296,16 +327,7 @@ class AddFinancialAdvisorListCreateView(generics.ListCreateAPIView):
 
 
 
-class FinAdvisorCommissionListCreateView(generics.ListCreateAPIView):
-    queryset=FinAdvisorCommission.objects.all()
-    serializer_class=FinAdvisorCommissionSerializer
-    permission_classes=[IsAdminUser]
 
-    def perform_create(self, serializer):
-        serializer.save(
-            authorized_by=self.request.user,
-            disburse_dt=timezone.now()
-        )
 
 class FinancialAdvisorListView(generics.ListAPIView):
     serializer_class = FinancialAdvisorSerializer
@@ -376,61 +398,173 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
         return queryset
 
 
-    
-class ProjectCloseView(generics.UpdateAPIView):
-    permission_classes=[IsAdminUser]
 
-    def update(self,request,*args,**kwargs):
-        project_id=request.data.get("project_id")
-        total_investment=request.data.get("total_investment")
-        total_buy=request.data.get("total_buy")
-        total_sell=request.data.get("total_sell")
-        total_sell_profit=request.data.get("total_sell_profit")
-        gain_or_loss=request.data.get("gain_or_loss")
-        closing_balance=request.data.get("closing_balance")
 
-        if not project_id:
-            return Response({"error": "project id is required."}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            
-            update_count = Project.objects.filter(project_id=project_id).update(
-                
-                total_investment=total_investment,
-                total_buy=total_buy,
-                total_sell=total_sell,
-                total_sell_profit=total_sell_profit,
-                gain_or_loss=gain_or_loss,
-                closing_balance=closing_balance,
-                project_active_status=0,
-                project_closing_dt=timezone.now(),
-                closed_by=request.user
-            )
+class ProfitDisburse(APIView):
+    permission_classes = [AllowAny]
 
-            return Response({"message": f"{update_count} records updated successfully"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def post(self, request, format=None):
+        serializer = ProfitDisburseSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class UpdateProfitView(generics.UpdateAPIView):
-    permission_classes = [IsAdminUser]
-
-    def update(self,request,*args,**kwargs):
         from_dt = request.data.get("from_dt")
         to_dt = request.data.get("to_dt")
-        project_id = request.data.get("project")
-        if not from_dt or not to_dt or not project_id:
-            return Response({"error": "from_dt, to_dt, and project are required."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            filters = Q(project=project_id, trade__trade_date__range=(from_dt, to_dt))
+        project_id = request.data.get("project_id")
 
-            update_count = Profit.objects.filter(filters).update(
-                disburse_st=1,
-                disburse_dt=timezone.now(),
-                authorized_by=request.user
+        try:
+            with transaction.atomic():  # Ensure all operations succeed or fail together
+                return self._process_profit_disbursement(project_id, from_dt, to_dt, request)
+        except Exception as e:
+            return Response(
+                {"error": f"An error occurred during profit disbursement: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-            return Response({"message": f"{update_count} records updated successfully"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def _process_profit_disbursement(self, project_id, from_dt, to_dt, request):
+        # --- fetch the project once -------------------------------------------------
+        project_instance = get_object_or_404(Project, project_id=project_id)
+        total_investment = project_instance.investment_project_details.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
 
+        # --- profits to disburse ----------------------------------------------------
+        profits = self._get_profits_for_disbursement(project_instance, from_dt, to_dt)
+        if not profits.exists():
+            return Response(
+                {"message": "No profits found for disbursement"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
+        # --- advisors for this project ---------------------------------------------
+        fin_advisors = FinancialAdvisor.objects.filter(
+            project=project_instance
+        ).values('advisor', 'com_percentage')
+
+        # --- pre-load required instances to avoid N+1 ------------------------------
+        trade_ids = profits.values_list('trade', flat=True)
+        advisor_ids = [fa['advisor'] for fa in fin_advisors]
+
+        trades = {t.id: t for t in Trade.objects.filter(id__in=trade_ids)}
+        advisors = self._prepare_advisors_data(advisor_ids)
+        investors = investor_contributions_map(project_instance)
+        investors_profit = {}
+
+        # --- process commissions and profits ---------------------------------------
+        self._process_commissions_and_profits(
+            profits, fin_advisors, trades, advisors, 
+            investors, investors_profit, total_investment, 
+            project_instance
+        )
+
+        # --- create transactions ---------------------------------------------------
+        self._create_transactions(advisors, investors_profit, project_id)
+
+        # --- update profit records -------------------------------------------------
+        profits.update(disburse_st=1, disburse_dt=timezone.now())
+
+        return Response(
+            {"message": "Profit disbursement completed successfully"},
+            status=status.HTTP_200_OK
+        )
+
+    def _get_profits_for_disbursement(self, project_instance, from_dt, to_dt):
+        """Retrieve profits eligible for disbursement"""
+        filters = Q(
+            project=project_instance,
+            trade__trade_date__range=(from_dt, to_dt),
+            disburse_st=0
+        )
+        return Profit.objects.filter(filters)
+
+    def _prepare_advisors_data(self, advisor_ids):
+        """Prepare advisor data structure"""
+        advisors = {}
+        for user in User.objects.filter(id__in=advisor_ids):
+            advisors[user.id] = {"user": user, "amount": 0}
+        return advisors
+
+    def _process_commissions_and_profits(self, profits, fin_advisors, trades, advisors, 
+                                       investors, investors_profit, total_investment, project_instance):
+        """Process advisor commissions and investor profits"""
+        for profit in profits:
+            total_profit_amount = profit.amount
+            trade_instance = trades[profit.trade_id]
+
+            # Process advisor commissions
+            total_profit_amount = self._process_advisor_commissions(
+                fin_advisors, advisors, total_profit_amount, 
+                trade_instance, project_instance
+            )
+
+            # Process investor profits
+            self._process_investor_profits(
+                investors, investors_profit, total_investment, 
+                total_profit_amount, trade_instance, project_instance
+            )
+
+    def _process_advisor_commissions(self, fin_advisors, advisors, total_profit_amount, 
+                                   trade_instance, project_instance):
+        """Process financial advisor commissions"""
+        for fa in fin_advisors:
+            profit_amount = total_profit_amount * fa['com_percentage'] / 100
+            user_instance = advisors[fa['advisor']]
+
+            FinAdvisorCommission.objects.create(
+                advisor=user_instance['user'],
+                project=project_instance,
+                com_percent=fa['com_percentage'],
+                com_amount=profit_amount,
+                trade=trade_instance,
+                disburse_dt=timezone.now(),
+            )
+            user_instance['amount'] += profit_amount
+            total_profit_amount -= profit_amount  # leftover after each advisor
+            
+        return total_profit_amount
+
+    def _process_investor_profits(self, investors, investors_profit, total_investment, 
+                                total_profit_amount, trade_instance, project_instance):
+        """Process investor profit distribution"""
+        for investor_id, cont_amount in investors.items():
+            percentage = round(cont_amount * 100 / total_investment, 2) if total_investment else 0
+            inv_profit_amt = round((total_profit_amount * percentage) / 100, 2)
+            
+            investors_profit[investor_id] = investors_profit.get(investor_id, 0) + inv_profit_amt
+
+            InvestorProfit.objects.create(
+                investor=User.objects.get(id=investor_id),
+                project=project_instance,
+                trade=trade_instance,
+                contribute_amount=cont_amount,
+                percentage=percentage,
+                profit_amount=inv_profit_amt,
+                disburse_dt=timezone.now()
+            )
+
+    def _create_transactions(self, advisors, investors_profit, project_id):
+        """Create transactions for advisors and investors"""
+        # Create transactions for advisors
+        for advisor in advisors.values():
+            Transaction.objects.create(
+                user=advisor['user'],
+                amount=advisor['amount'],
+                transaction_type='deposit',
+                narration=f'Commission from project {project_id}',
+                status='completed',
+                issued_date=timezone.now(),
+                issued_by=self.request.user
+            )
+        
+        # Create transactions for investors
+        for investor_id, amount in investors_profit.items():
+            investor_user = User.objects.get(id=investor_id)
+            Transaction.objects.create(
+                user=investor_user,
+                amount=amount,
+                transaction_type='deposit',
+                narration=f'Profit from project {project_id}',
+                status='completed',
+                issued_date=timezone.now(),
+                issued_by=self.request.user,
+            )

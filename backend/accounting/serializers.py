@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Account, Transaction,FundTransfer
 from user_app.models import CustomUser
 
+
 class ShortUserDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model=CustomUser
@@ -13,6 +14,10 @@ class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
         fields = ['user', 'balance']  # Include user and balance
+
+        def validate_user(self,value):
+            if not CustomUser.objects.filter(id=value).exists():
+                raise serializers.ValidationError("User Account does not exist")
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,33 +1,28 @@
+# Use the latest stable Python version as the base image
+FROM python:3.12.0-slim
 
-# Use the official Python runtime image
-FROM python:3.13  
- 
-# Create the app directory
-RUN mkdir /app
- 
-# Set the working directory inside the container
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Set the working directory in the container
 WORKDIR /app
- 
-# Set environment variables 
-# Prevents Python from writing pyc files to disk
-ENV PYTHONDONTWRITEBYTECODE=1
-#Prevents Python from buffering stdout and stderr
-ENV PYTHONUNBUFFERED=1 
- 
-# Upgrade pip
-RUN pip install --upgrade pip 
- 
-# Copy the Django project  and install dependencies
-COPY requirements.txt  /app/
- 
-# run this command to install all dependencies 
-RUN pip install --no-cache-dir -r requirements.txt
- 
-# Copy the Django project to the container
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file and install Python dependencies
+COPY requirements.txt /app/
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Copy the rest of the application code
 COPY . /app/
- 
-# Expose the Django port
-EXPOSE 8000
- 
-# Run Django’s development server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+# Expose the port the app runs on
+EXPOSE 8001
+
+# Command to run the application
+CMD ["gunicorn", "--bind", "0.0.0.0:8001", "core.wsgi:application"]

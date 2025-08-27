@@ -9,6 +9,7 @@ const InvestmentHistory = () => {
     const fetchInvestmentData = async () => {
       try {
         const response = await API.get("/api/stock/investor/investment-details/");
+        console.log(response.data);
         setInvestmentData(response.data);
       } catch (error) {
         console.error("Error fetching transactions:", error);

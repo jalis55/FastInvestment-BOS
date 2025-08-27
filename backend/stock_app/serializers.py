@@ -60,8 +60,10 @@ class InvestmentDetailsSerializer(serializers.ModelSerializer):
 class InvestmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Investment
-        fields = ['project', 'investor', 'amount', 'authorized_by']
-        read_only_fields = ['authorized_by']
+        fields = ['project', 'investor', 'amount']
+        read_only_field=["authorized_by"]
+        
+        
 
     def validate_amount(self, value):
         """Ensure the amount is a positive value."""
@@ -183,3 +185,63 @@ class AccountReceivableDetailsSerializer(serializers.ModelSerializer):
             'trade',
             'gain_lose',
         )
+
+# projects
+
+class ProjectCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Project
+        fields=(
+            'project_title',
+            'project_description',
+            'project_responsible_mail',
+        )
+        read_only_fields = ['created_by']
+
+
+class ProjectStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Project
+        fields=('project_id','project_active_status')
+
+class ProjectBalanceDetailsSerializer(serializers.Serializer):
+    project_id = serializers.CharField()
+    total_investment=serializers.DecimalField(max_digits=10,decimal_places=2)
+    total_buy_amount=serializers.DecimalField(max_digits=10,decimal_places=2)
+    available_balance = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_sell_amount=serializers.DecimalField(max_digits=10,decimal_places=2)
+    accrued_profit=serializers.DecimalField(max_digits=10,decimal_places=2)
+
+
+
+class ProjectCloseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Project
+        fields=('project_id',
+                'total_investment',
+                'total_buy',
+                'total_sell',
+                'total_sell_profit',
+                'closing_balance',
+
+        )
+        read_only_fields=['closed_by','project_closing_dt','project_active_status','gain_or_loss']
+
+
+
+
+class ProfitDisburseSerializer(serializers.Serializer):
+    from_dt=serializers.DateField(required=True)
+    to_dt=serializers.DateField(required=True)
+    project_id=serializers.CharField(required=True)
+
+    def validate(self,data):
+        if data['from_dt']>data['to_dt']:
+            raise serializers.ValidationError('From date can not be after To date')
+        
+        return data
+    def validate_project_id(self, value):
+        if not Project.objects.filter(project_id=value).exists():
+            raise serializers.ValidationError("Project does not exist")
+        return value
+

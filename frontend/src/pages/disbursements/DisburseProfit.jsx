@@ -109,99 +109,51 @@ const DisburseProfit = () => {
         setInvProfit(investorsProfit);
     };
 
+    const showAdvComm=()=>{
+        advCommission.map((adv)=>{
+            console.log(adv.advisor['id'],adv.advisor['email'],adv.advisor['name'],adv["com_percentage"])
+        })
+    }
+
     const handleDisburse = async () => {
         if (!isDataLoaded) return;
-      
+
         setIsLoading(true);
-      
-        // Prepare data
-        const AdvisorCommissionData = advCommission.map(({ advisor_email, ...rest }) => rest);
-        const InvestorProfitData = invProfit.map(({ investor_email, ...rest }) => rest);
-        const profitUpdateData = {
-          from_dt: formData.fromDt,
-          to_dt: formData.toDate,
-          project: projectId,
-        };
-        const transactionData = processTransactionData();
-      
+
         try {
-          // Execute all APIs in parallel
-          const results = await Promise.all([
-            API.post('/api/stock/add/fin/advisor/commission/', AdvisorCommissionData),
-            API.post('/api/stock/add/investor/profit/', InvestorProfitData),
-            API.put('/api/stock/update/profit/', profitUpdateData),
-            API.post('/api/acc/user/create-transaction/', transactionData),
-          ]);
-      
-          // All succeeded
-          Swal.fire("Success", "All operations completed successfully!", "success");
-          resetForm();
+            const response = await API.post('/api/stock/profit/disburse/', {
+                project_id: formData.searchId,
+                from_dt: formData.fromDt,
+                to_dt: formData.toDate,
+            });
+
+            if (response.status === 200) {
+                Swal.fire("Success", "Profits disbursed successfully!", "success");
+                resetForm();
+            } else {
+                Swal.fire("Error", response.data?.message || "Failed to disburse profits", "error");
+            }
         } catch (error) {
-          // At least one API failed
-          console.error("Failed API:", error.config?.url); // Log which API failed
-          Swal.fire(
-            "Partial Failure",
-            `Operation failed: ${error.message}\n\nPlease check and retry.`,
-            "error"
-          );
+            console.error("Disbursement error:", error);
+            Swal.fire("Error", error.response?.data?.error || "Failed to disburse profits", "error");
         } finally {
-          setIsLoading(false);
+            setIsLoading(false);
         }
-      };
-      
-      // Helper to reset form
-      const resetForm = () => {
+    };
+
+    const resetForm = () => {
         setFormData({ searchId: '', fromDt: '', toDate: '' });
         setAdvCommission([]);
         setInvProfit([]);
         setIsDataLoaded(false);
-      };
-    const processTransactionData=()=>{
+    };
 
-        
-        // Function to sum amounts by user (advisor/investor)
-        const aggregateAmounts = (data, idKey, amountKey) => {
-            return data.reduce((acc, item) => {
-                let user = item[idKey];
-                let amount = parseFloat(item[amountKey]);
-        
-                acc[user] = (acc[user] || 0) + amount;
-                return acc;
-            }, {});
-        };
-        
-        // Aggregate advisor commissions
-        const advisorSums = aggregateAmounts(advCommission, "advisor", "com_amount");
-        
-        // Aggregate investor profits
-        const investorSums = aggregateAmounts(invProfit, "investor", "profit_amount");
-        
-        // Merge results into final format with fixed keys
-        const user = [
-            ...Object.entries(advisorSums).map(([user, amount]) => ({
-                user:user,
-                amount:amount.toFixed(2),
-                transaction_type: "deposit",
-                trans_mode:`Project Profit:${projectId}`,
-                narration: `Commission ${amount.toFixed(2)} from Project ${projectId}`
-            })),
-            ...Object.entries(investorSums).map(([user, amount]) => ({
-                user: user,
-                amount:amount.toFixed(2),
-                transaction_type: "deposit",
-                trans_mode: `Project Profit:${projectId}`, 
-                narration: `Profit from Project ${projectId}`
-            }))
-        ];
-      
-        return user;
-        
-    }
+
 
     return (
         <div className="container mx-auto p-4">
             <BannerTitle title="Disburse Profit" />
-            
+
             {/* Search Form */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
                 <form onSubmit={searchProject}>
@@ -255,75 +207,106 @@ const DisburseProfit = () => {
             {isDataLoaded && (
                 <div className="space-y-6">
                     {/* Advisor Commissions */}
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <div className="p-4 bg-gray-50 border-b">
-                            <h2 className="text-lg font-semibold">Financial Advisor Commissions</h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Advisor</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trade ID</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commission %</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {advCommission.map((advCom, index) => (
-                                        <tr key={`advisor-${index}`} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{advCom.advisor_email}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{advCom.trade}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{advCom.com_percent}%</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${advCom.com_amount}</td>
+                    {advCommission.length > 0 && (
+                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                            <div className="p-4 bg-gray-50 border-b">
+                                <h2 className="text-lg font-semibold">Financial Advisor Commissions</h2>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Advisor</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trade ID</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Commission %</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {advCommission.map((advCom, index) => (
+                                            <tr key={`advisor-${index}`} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {advCom.advisor_email || advCom.advisor || 'N/A'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {advCom.trade || 'N/A'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {advCom.com_percent || 0}%
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    ${advCom.com_amount ? parseFloat(advCom.com_amount).toFixed(2) : '0.00'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Investor Profits */}
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <div className="p-4 bg-gray-50 border-b">
-                            <h2 className="text-lg font-semibold">Investor Profit Distribution</h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Investor</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trade ID</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contribution</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contribution %</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profit Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {invProfit.map((investor, index) => (
-                                        <tr key={`investor-${index}`} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{investor.investor_email}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{investor.trade}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${investor.contribute_amount}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{investor.percentage}%</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${investor.profit_amount}</td>
+                    {invProfit.length > 0 && (
+                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                            <div className="p-4 bg-gray-50 border-b">
+                                <h2 className="text-lg font-semibold">Investor Profit Distribution</h2>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Investor</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trade ID</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contribution</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contribution %</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profit Amount</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {invProfit.map((investor, index) => (
+                                            <tr key={`investor-${index}`} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {investor.investor_email || investor.investor || 'N/A'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {investor.trade || 'N/A'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    ${investor.contribute_amount ? parseFloat(investor.contribute_amount).toFixed(2) : '0.00'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {investor.percentage ? parseFloat(investor.percentage).toFixed(2) : '0.00'}%
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    ${investor.profit_amount ? parseFloat(investor.profit_amount).toFixed(2) : '0.00'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* No Data Message */}
+                    {advCommission.length === 0 && invProfit.length === 0 && isDataLoaded && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p className="text-yellow-800">No commission or profit data found for this project.</p>
+                        </div>
+                    )}
 
                     {/* Disburse Button */}
-                    <div className="flex justify-start">
-                        <button
-                            onClick={handleDisburse}
-                            className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Processing...' : 'Disburse Profits'}
-                        </button>
-                    </div>
+                    {(advCommission.length > 0 || invProfit.length > 0) && (
+                        <div className="flex justify-start">
+                            <button
+                                onClick={handleDisburse}
+                                className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg disabled:bg-gray-400"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Processing...' : 'Disburse Profits'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

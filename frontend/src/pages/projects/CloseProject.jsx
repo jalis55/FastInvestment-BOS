@@ -106,42 +106,15 @@ const CloseProject = () => {
       if (result.isConfirmed) {
         //prepare api data
         const proData = {
-          project_id: projectFinDetails.project_id,
+          project_id:projectFinDetails.project_id,
           total_investment: projectFinDetails.total_investment,
           total_buy: projectFinDetails.total_buy_amount,
           total_sell: projectFinDetails.total_sell_amount,
           total_sell_profit: projectFinDetails.accrued_profit,
-          gain_or_loss: calculateGainLose(),
-          closing_balance: calculateClosingBalance(),
+          closing_balance: projectFinDetails.available_balance,
         }
 
-        const investors = await API.get(`/api/stock/investor/contrib/percent/${projectFinDetails.project_id}/`);
-        const investorsDetails = investors.data;
-
-        const transactionData = [];
-        let closingBal = parseFloat(calculateClosingBalance()).toFixed(2);
-
-        investorsDetails.forEach((investor) => {
-
-          const percentage = parseFloat(investor.contribution_percentage).toFixed(2);
-          const amt = ((parseFloat(closingBal) * percentage) / 100);
-          transactionData.push(
-            {
-              user: investor.investor.id,
-              amount: amt.toFixed(2),
-              transaction_type: "deposit",
-              trans_mode: `Project Return:${projectFinDetails.project_id}`,
-              narration: `Deposit as project return from Project ${projectFinDetails.project_id} `
-            }
-          )
-
-        });
-
-        await Promise.all([
-          API.put('/api/stock/close/project/', proData),
-          API.post('/api/acc/user/create-transaction/', transactionData),
-        ]);
-
+          await API.patch(`/api/stock/close/project/${projectFinDetails.project_id}/`, proData)
         // On success
         Swal.fire({
           icon: 'success',
@@ -209,12 +182,6 @@ const CloseProject = () => {
                   <span className="text-gray-600">Total Buy Amount:</span>
                   <span className="text-gray-800 font-medium">&#2547; {projectFinDetails.total_buy_amount}</span>
                 </div>
-                <div className="flex justify-between mt-2">
-                  <hr className="my-4 border-t border-gray-300" />
-                  <span className="text-gray-600">Available Balance:</span>
-                  <span className="text-gray-800 font-medium">&#2547; {projectFinDetails.available_balance}</span>
-                </div>
-
 
 
                 <div className="flex justify-between mt-2">
@@ -230,7 +197,7 @@ const CloseProject = () => {
 
                 <div className="flex justify-between mt-2">
                   <span className="text-gray-600 font-semibold">Closing Balance:</span>
-                  <span className="text-gray-800 font-bold">&#2547; {calculateClosingBalance().toFixed(2)}</span>
+                  <span className="text-gray-800 font-bold">&#2547; {projectFinDetails.available_balance}</span>
                 </div>
               </div>
             </div>
