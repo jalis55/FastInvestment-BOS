@@ -98,7 +98,7 @@ const router = createBrowserRouter([
     element: <RedirectRoute />,
     children: [
       { path: 'login', element: <Login /> },
-      { path: 'register', element: <Registration /> },
+      // { path: 'register', element: <Registration /> },
       // ... other public routes
     ],
   },

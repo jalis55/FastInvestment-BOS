@@ -107,11 +107,11 @@ const UserRegistration = () => {
                 });
 
                 // If we get here, the request was successful
-                console.log("User created:", response.data);
                 setSuccess(true);
 
                 // Reset form after successful submission
                 resetForm();
+                
 
             } catch (error) {
                 console.error("Error creating user:", error);
@@ -158,11 +158,11 @@ const UserRegistration = () => {
     }
 
     return (
-        <div className="bg-gray-100 dark:bg-gray-900 min-h-screen p-8">
+        <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
             <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                 <div className="bg-white shadow overflow-hidden sm:rounded-lg">
                     {/* Header */}
-                    <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
+                    <div className="px-4 py-2 border-b border-gray-200 sm:px-6">
                         <div className="flex justify-between items-center">
                             <div>
                                 <h3 className="text-lg leading-6 font-medium text-gray-900">Add New User</h3>
@@ -184,7 +184,7 @@ const UserRegistration = () => {
                     </div>
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="px-4 py-5 sm:p-6">
+                    <form onSubmit={handleSubmit} className="px-4 py-2 sm:p-6">
                         <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                             {/* Account Information Section */}
                             <div className="sm:col-span-6">
@@ -344,7 +344,7 @@ const UserRegistration = () => {
                                                     handleChange("dob", new Date(e.target.value))
                                                     setShowCalendar(false)
                                                 }}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                className="w-full px-3 py-1 border border-gray-300 rounded-md"
                                             />
                                         </div>
                                     )}
@@ -369,7 +369,7 @@ const UserRegistration = () => {
                                     <div>
                                         <label
                                             htmlFor="profile_image"
-                                            className="cursor-pointer px-3 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                            className="cursor-pointer px-3 py-1 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                         >
                                             Upload Photo
                                             <input
@@ -410,14 +410,14 @@ const UserRegistration = () => {
                                 <button
                                     type="button"
                                     onClick={resetForm}
-                                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    className="bg-white py-1 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 >
                                     Reset Form
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className={`ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loading ? "opacity-70 cursor-not-allowed" : ""
+                                    className={`ml-3 inline-flex justify-center py-1 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loading ? "opacity-70 cursor-not-allowed" : ""
                                         }`}
                                 >
                                     {loading ? (

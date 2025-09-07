@@ -137,12 +137,12 @@ const Login = () => {
                                 </div>
                             )}
                         </form>
-                        
+{/*                         
                         <div className="m-auto mt-6 w-fit md:mt-8">
                             <span className="m-auto dark:text-gray-400">Don't have an account?
                                 <Link to="/register" className="font-semibold text-indigo-600 dark:text-indigo-100 ml-1">Create Account</Link>
                             </span>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>
