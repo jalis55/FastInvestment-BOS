@@ -65,6 +65,7 @@ const Login = () => {
                                         className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-300 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 sm:text-sm"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="test@admin.com"
                                     />
                                 </div>
                             </div>
@@ -83,6 +84,7 @@ const Login = () => {
                                         className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-300 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 sm:text-sm pr-10"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="user.admin"
                                     />
                                     <button
                                         type="button"

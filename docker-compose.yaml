@@ -1,32 +1,38 @@
-version: '2.2'
-
+version: '3.8'
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend  # Path to backend Dockerfile
     ports:
-      - "8000:8000"
-    volumes:
-      - ./backend:/app
+      - "8000:8001"
     environment:
-      - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONUNBUFFERED=1
-    command: python manage.py runserver 0.0.0.0:8000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    volumes:
+      - ./backend:/app  # Mount local code for hot reload
+      - /app/__pycache__  # Exclude pycache
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    build: ./frontend  # Path to frontend Dockerfile
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "3000:5173"
     environment:
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
-    stdin_open: true
-    tty: true
+      - VITE_API_URL=http://localhost:8000/  # For container-to-container
+
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app  # Mount local code for hot reload
+      - /app/node_modules  # Preserve node_modules
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:

@@ -2,8 +2,11 @@
 import axios from 'axios';
 import { getRefreshToken, setTokens, clearTokens } from '../auth/AuthContext';
 
+const baseUrl =import.meta.env.VITE_API_URL;
+console.log(baseUrl)
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ,
+  baseURL: baseUrl ,
   // || 'http://127.0.0.1:8001/', // <-- fix
 });
 
