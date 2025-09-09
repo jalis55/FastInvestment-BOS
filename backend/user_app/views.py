@@ -9,6 +9,7 @@ from rest_framework import status
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 
 # Create your views here.
 
@@ -44,14 +45,24 @@ class UserListView(ListAPIView):
 class CustomerListView(ListAPIView):
     serializer_class = UserListSerializer
     permission_classes = [IsAdminUser]
-
-    @method_decorator(cache_page(60 * 20))
-    def get(self, *args, **kwargs):
-        return super().get(*args, **kwargs)
+    
+    # Remove unnecessary get() method override
+    # def get(self, *args, **kwargs):
+    #     return super().get(*args, **kwargs)
 
     def get_queryset(self):
-        return CustomUser.objects.filter(is_superuser=False, is_staff=False)
-
+        cache_key = 'user_cache'
+        queryset = cache.get(cache_key)
+        
+        if queryset is None:  # More explicit than "if not queryset"
+            print("storing data in cache")
+            queryset = CustomUser.objects.filter(
+                is_superuser=False, 
+                is_staff=False
+            )
+            cache.set(cache_key, queryset, timeout=60*15)
+        
+        return queryset
 class UpdateUserStatusView(RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.filter(is_superuser=False)
     serializer_class=UserListSerializer

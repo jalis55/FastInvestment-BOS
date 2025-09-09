@@ -15,7 +15,7 @@ export const useAuth = () => useContext(AuthContext);
 /* ------------------------------------------------------------------ */
 /* Token helpers                                                      */
 /* ------------------------------------------------------------------ */
-const TOKEN_KEY   = 'access';
+const TOKEN_KEY = 'access';
 const REFRESH_KEY = 'refresh';
 
 export const getRefreshToken = () => localStorage.getItem(REFRESH_KEY);
@@ -70,7 +70,7 @@ export default function AuthProvider({ children }) {
     const token = localStorage.getItem(TOKEN_KEY);
     const decodedUser = token ? decodeUser(token) : null;
     setUser(decodedUser);
-    
+
     if (decodedUser) {
       fetchUserData().finally(() => setIsLoading(false));
     } else {
@@ -104,7 +104,11 @@ export default function AuthProvider({ children }) {
         await fetchUserData();
       }
       return status;
-    } finally {
+    }
+    catch (error) {
+      return error.message
+    }
+    finally {
       setIsLoading(false);
     }
   };
@@ -134,16 +138,16 @@ export default function AuthProvider({ children }) {
     setUserData(null);
   };
 
-  const value = { 
-    user, 
+  const value = {
+    user,
     userData,  // Expose userData in the context
     setUserData,
-    isLoading, 
-    login, 
-    register, 
-    logout, 
+    isLoading,
+    login,
+    register,
+    logout,
     hasRole,
   };
-  
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

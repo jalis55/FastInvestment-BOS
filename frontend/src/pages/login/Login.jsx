@@ -34,6 +34,9 @@ const Login = () => {
         if (status === 200) {
             navigate(location.state?.from || '/', { replace: true });
         }
+        else if (status === "Network Error") {
+            setError("Connection Failed");
+        }
         else {
             setError('Login failed. Please check your credentials.');
         }
@@ -129,8 +132,8 @@ const Login = () => {
                                                 clipRule="evenodd"></path>
                                         </svg>
                                     </span>
-                                    { loading ? <ButtonSpinner/> : "Sign In" }
-                                    
+                                    {loading ? <ButtonSpinner /> : "Sign In"}
+
                                 </button>
                             </div>
                             {error && (
@@ -139,7 +142,7 @@ const Login = () => {
                                 </div>
                             )}
                         </form>
-{/*                         
+                        {/*                         
                         <div className="m-auto mt-6 w-fit md:mt-8">
                             <span className="m-auto dark:text-gray-400">Don't have an account?
                                 <Link to="/register" className="font-semibold text-indigo-600 dark:text-indigo-100 ml-1">Create Account</Link>

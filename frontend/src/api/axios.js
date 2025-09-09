@@ -3,7 +3,6 @@ import axios from 'axios';
 import { getRefreshToken, setTokens, clearTokens } from '../auth/AuthContext';
 
 const baseUrl =import.meta.env.VITE_API_URL;
-console.log(baseUrl)
 
 const API = axios.create({
   baseURL: baseUrl ,
