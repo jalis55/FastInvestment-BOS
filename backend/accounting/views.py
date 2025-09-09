@@ -80,7 +80,7 @@ class TransactionCreateView(generics.CreateAPIView):
                 try:
                     # Handle deposit transactions (non-internal)
                     if transaction.transaction_type == "deposit" and transaction.trans_mode != "internal":
-                        account, created = Account.objects.get_or_create(user=transaction.user)
+                        account = Account.objects.get(user=transaction.user)
                         amount = Decimal(transaction.amount)
                         account.update_balance(amount, "deposit")
                         transaction.status = "completed"
@@ -90,7 +90,7 @@ class TransactionCreateView(generics.CreateAPIView):
 
                     # Handle internal transactions
                     elif transaction.trans_mode == "internal":
-                        account, created = Account.objects.get_or_create(user=transaction.user)
+                        account, created = Account.objects.get(user=transaction.user)
                         amount = Decimal(transaction.amount)
                         transaction.status = "completed"
                         if transaction.narration is None:

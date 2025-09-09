@@ -46,16 +46,13 @@ class CustomerListView(ListAPIView):
     serializer_class = UserListSerializer
     permission_classes = [IsAdminUser]
     
-    # Remove unnecessary get() method override
-    # def get(self, *args, **kwargs):
-    #     return super().get(*args, **kwargs)
 
     def get_queryset(self):
         cache_key = 'user_cache'
         queryset = cache.get(cache_key)
         
-        if queryset is None:  # More explicit than "if not queryset"
-            print("storing data in cache")
+        if queryset is None:  
+            # print("storing data in cache")
             queryset = CustomUser.objects.filter(
                 is_superuser=False, 
                 is_staff=False
