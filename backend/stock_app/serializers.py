@@ -1,10 +1,15 @@
-from rest_framework import serializers
-from .models import Project, Investment, FinancialAdvisor, FinAdvisorCommission,Trade, Instrument,AccountReceivable,Profit,InvestorProfit
-from accounting.models import Account,Transaction
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from decimal import Decimal
 from django.db.models import Sum
+from rest_framework import serializers
+
+from accounting.models import Account, Transaction
+
+from .models import (AccountReceivable, FinAdvisorCommission, FinancialAdvisor,
+                     Instrument, Investment, InvestorProfit, Profit, Project,
+                     Trade)
 
 User = get_user_model()
 

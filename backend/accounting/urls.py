@@ -1,13 +1,9 @@
 from django.urls import path
 
-from .views import (CheckBalanceView
-                    ,AllUserBalanceDetailsView
-                    ,TransactionCreateView
-                    ,TransactionDetailsView
-                    ,TransactionApproveView
-                    ,FundTransferView
-                    ,PendingPaymentsView
-                    )
+from .views import (AllUserBalanceDetailsView, CheckBalanceView,
+                    FundTransferView, PendingPaymentsView,
+                    TransactionApproveView, TransactionCreateView,
+                    TransactionDetailsView)
 
 urlpatterns = [
     path('user/<int:pk>/balance/', CheckBalanceView.as_view(), name='check_balance'),

@@ -1,9 +1,10 @@
-from rest_framework import generics
-from rest_framework.response import Response
-from rest_framework import status
 from django.core.mail import send_mail
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
 from .emailSerializers import EmailSerializer
-from rest_framework.permissions import IsAuthenticated,AllowAny
+
 
 class SendEmailView(generics.CreateAPIView):
     serializer_class = EmailSerializer

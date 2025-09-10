@@ -1,15 +1,18 @@
+from django.core.cache import cache
 from django.shortcuts import render
-from rest_framework.permissions import AllowAny,IsAuthenticated,IsAdminUser
-from user_app.permissions import IsSuperUser
-from rest_framework.generics import CreateAPIView,RetrieveUpdateAPIView,ListAPIView,RetrieveAPIView,RetrieveUpdateDestroyAPIView
-from user_app.serializers import UserSerializer,UserListSerializer,UserStatusSerializer
-from user_app.models import CustomUser
-from rest_framework.response import Response
-from rest_framework import status
-
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from django.core.cache import cache
+from rest_framework import status
+from rest_framework.generics import (CreateAPIView, ListAPIView,
+                                     RetrieveAPIView, RetrieveUpdateAPIView,
+                                     RetrieveUpdateDestroyAPIView)
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+
+from user_app.models import CustomUser
+from user_app.permissions import IsSuperUser
+from user_app.serializers import (UserListSerializer, UserSerializer,
+                                  UserStatusSerializer)
 
 # Create your views here.
 

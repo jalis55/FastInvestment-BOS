@@ -1,7 +1,9 @@
-from django.db import models
-from django.conf import settings
 from decimal import Decimal
+
+from django.conf import settings
+from django.db import models
 from rest_framework.exceptions import ValidationError
+
 
 class Account(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

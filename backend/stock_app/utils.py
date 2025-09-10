@@ -1,5 +1,7 @@
 from django.db.models import Sum
+
 from accounting.models import Account
+
 
 def investor_contributions_map(project):
     """

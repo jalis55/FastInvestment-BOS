@@ -1,6 +1,7 @@
 # permissions.py
 from rest_framework.permissions import BasePermission
 
+
 class IsSuperUser(BasePermission):
     """
     Custom permission to only allow access to superusers.

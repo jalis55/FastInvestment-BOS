@@ -1,8 +1,10 @@
-from rest_framework import serializers
-from .models import Account, Transaction,FundTransfer
-from user_app.models import CustomUser
 from django.db import transaction as db_transaction
 from django.utils import timezone
+from rest_framework import serializers
+
+from user_app.models import CustomUser
+
+from .models import Account, FundTransfer, Transaction
 
 
 class ShortUserDetailsSerializer(serializers.ModelSerializer):

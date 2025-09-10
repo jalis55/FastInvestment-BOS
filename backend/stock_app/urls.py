@@ -1,18 +1,16 @@
 from django.urls import path
-from .views import (
-                     ProjectCreateView,ProjectStatusRetriveView,ProjectBalanceDetailsView,ProjectCloseView
 
-                    ,InstrumentListView,TradeCreateView,TradeDeleteView,TradeDetailsListView
-
-                    ,SellableInstrumentView,InvestmentCreateAPIView,ClientInvestmentDetailsListView
-                    ,InvestorContributionRetrieveAPI,ProfitCreateView,InvestorProfitDetailsView
-                    ,FinancialAdvisorListView,AddFinancialAdvisorListCreateView,
-
-                    AccountReceivableCreateApiView,AccountRecivableDetailsListApiView,
-                    ProfitCreateView,ProjectProfitTotalListApiView
-
-                    ,ProfitDisburse
-                    )
+from .views import (AccountReceivableCreateApiView,
+                    AccountRecivableDetailsListApiView,
+                    AddFinancialAdvisorListCreateView,
+                    ClientInvestmentDetailsListView, FinancialAdvisorListView,
+                    InstrumentListView, InvestmentCreateAPIView,
+                    InvestorContributionRetrieveAPI, InvestorProfitDetailsView,
+                    ProfitCreateView, ProfitDisburse,
+                    ProjectBalanceDetailsView, ProjectCloseView,
+                    ProjectCreateView, ProjectProfitTotalListApiView,
+                    ProjectStatusRetriveView, SellableInstrumentView,
+                    TradeCreateView, TradeDeleteView, TradeDetailsListView)
 
 urlpatterns = [
 

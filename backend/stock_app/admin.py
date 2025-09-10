@@ -1,10 +1,8 @@
 from django.contrib import admin
-from stock_app.models import (Project,Instrument,Investment,Trade
-                              ,FinancialAdvisor,AccountReceivable
-                              ,FinAdvisorCommission
-                              ,Profit
-                              ,InvestorProfit
-                              )
+
+from stock_app.models import (AccountReceivable, FinAdvisorCommission,
+                              FinancialAdvisor, Instrument, Investment,
+                              InvestorProfit, Profit, Project, Trade)
 
 # Register your models here.
 

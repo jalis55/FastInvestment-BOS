@@ -1,19 +1,14 @@
 
+from django.conf import settings
 from django.contrib import admin
-from django.urls import path,include
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
-
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from django.contrib.staticfiles.urls import static, staticfiles_urlpatterns
+from django.urls import include, path
+from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView,
+                                   SpectacularSwaggerView)
+from rest_framework_simplejwt.views import (TokenObtainPairView,
+                                            TokenRefreshView)
 
 from core.views import SendEmailView
-
-from django.conf import settings
-from django.contrib.staticfiles.urls import static,staticfiles_urlpatterns
-
-
 
 urlpatterns = [
      path('api/mail/send-email/', SendEmailView.as_view(), name='send-email'),

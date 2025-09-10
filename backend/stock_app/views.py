@@ -1,32 +1,40 @@
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated,AllowAny,IsAdminUser
-from user_app.permissions import IsSuperUser
-from .models import Project, Instrument,Trade,Investment,FinancialAdvisor,FinAdvisorCommission,AccountReceivable,Profit,InvestorProfit
-from accounting.models import Account,Transaction
-
-from .serializers import (InstrumentSerializer,TradeSerializer,TradeDetailsSerializer,SellableInstrumentSerializer,
-                          InvestmentSerializer,InvestmentContributionSerializer,ClientInvestmentDetailsSerializer,
-                          FinancialAdvisorSerializer,FinancialAdvisorAddSerializer
-                          ,AccountReceivableSerializer,AccountReceivableDetailsSerializer,ProfitSerializer
-                          ,InvestorProfitSerializer
-                          ,ProjectCreateSerializer,ProjectStatusSerializer,ProjectBalanceDetailsSerializer,ProjectCloseSerializer
-
-                          ,ProfitDisburseSerializer
-                          )
-from django.db import transaction
-from rest_framework.response import Response
-from rest_framework import status
-from decimal import Decimal
-from django.shortcuts import get_object_or_404
-from django.db.models import Sum, F,Case, When, IntegerField,Q,DecimalField, FloatField,ExpressionWrapper
-from rest_framework.exceptions import NotFound
-from rest_framework.views import APIView
-from django.utils import timezone
-from django.core.mail import send_mail
-from django.db.models.functions import Coalesce
-from django.contrib.auth import get_user_model
 import json
-from stock_app.utils import investor_contributions_map,update_customer_balance
+from decimal import Decimal
+
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from django.db import transaction
+from django.db.models import (Case, DecimalField, ExpressionWrapper, F,
+                              FloatField, IntegerField, Q, Sum, When)
+from django.db.models.functions import Coalesce
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework import generics, status
+from rest_framework.exceptions import NotFound
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounting.models import Account, Transaction
+from stock_app.utils import investor_contributions_map, update_customer_balance
+from user_app.permissions import IsSuperUser
+
+from .models import (AccountReceivable, FinAdvisorCommission, FinancialAdvisor,
+                     Instrument, Investment, InvestorProfit, Profit, Project,
+                     Trade)
+from .serializers import (AccountReceivableDetailsSerializer,
+                          AccountReceivableSerializer,
+                          ClientInvestmentDetailsSerializer,
+                          FinancialAdvisorAddSerializer,
+                          FinancialAdvisorSerializer, InstrumentSerializer,
+                          InvestmentContributionSerializer,
+                          InvestmentSerializer, InvestorProfitSerializer,
+                          ProfitDisburseSerializer, ProfitSerializer,
+                          ProjectBalanceDetailsSerializer,
+                          ProjectCloseSerializer, ProjectCreateSerializer,
+                          ProjectStatusSerializer,
+                          SellableInstrumentSerializer, TradeDetailsSerializer,
+                          TradeSerializer)
 
 User=get_user_model()
 
