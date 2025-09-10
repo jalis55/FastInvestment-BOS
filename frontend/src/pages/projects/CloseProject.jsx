@@ -113,6 +113,7 @@ const CloseProject = () => {
           total_sell_profit: projectFinDetails.accrued_profit,
           closing_balance: projectFinDetails.available_balance,
         }
+        // console.log(projectFinDetails.available_balance)
 
           await API.patch(`/api/stock/close/project/${projectFinDetails.project_id}/`, proData)
         // On success

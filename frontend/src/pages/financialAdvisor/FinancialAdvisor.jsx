@@ -38,7 +38,6 @@ const FinancialAdvisor = () => {
     const getCustomers = async () => {
         try {
             const response = await API.get(`/api/admin/customers/`);
-            console.log("Customers Response:", response.data); // Debugging log
             setCustomers(response.data);
         } catch (error) {
             console.error("Error fetching customers:", error);

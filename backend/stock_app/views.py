@@ -26,7 +26,7 @@ from django.core.mail import send_mail
 from django.db.models.functions import Coalesce
 from django.contrib.auth import get_user_model
 import json
-from stock_app.utils import investor_contributions_map
+from stock_app.utils import investor_contributions_map,update_customer_balance
 
 User=get_user_model()
 
@@ -85,18 +85,25 @@ class ProjectCloseView(APIView):
     def __prepare_transactions(self, project, closing_bal, total_investment):
         """Prepare investor transactions atomically"""
         investors_contrib = investor_contributions_map(project)
+        
+        print(investors_contrib)
         for investor, amount in investors_contrib.items():
-            percentage = round(amount * 100 / closing_bal, 2)
-            investor_user = User.objects.get(id=investor)
+
+            percentage = round((amount /total_investment) *100, 2)
+            customer = User.objects.get(id=investor)
+
+            amount=(closing_bal * percentage) / 100
             Transaction.objects.create(
-                user=investor_user,
-                amount=(closing_bal * percentage) / 100,
+                user=customer,
+                amount=amount,
                 transaction_type='deposit',
                 narration=f'Return from project {project}',
                 status='completed',
                 issued_date=timezone.now(),
                 issued_by=self.request.user,
             )
+            update_customer_balance(customer,amount)
+
 
     @transaction.atomic
     def patch(self, request, pk, format=None):
