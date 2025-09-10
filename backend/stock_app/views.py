@@ -78,7 +78,7 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
         }
 
 
-User = get_user_model()
+
 
 class ProjectCloseView(APIView):
     @transaction.atomic

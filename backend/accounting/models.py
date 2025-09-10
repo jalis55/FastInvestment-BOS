@@ -11,33 +11,30 @@ class Account(models.Model):
     def __str__(self):
         return f"{self.user.name}'s Account"
 
-    def update_balance(self, amount, transaction_type):
-        # Ensure amount is a Decimal
-        amount = Decimal(amount)  # Convert to Decimal explicitly
-        
-        if transaction_type == 'deposit':
-            self.balance += amount  # Use Decimal addition
-        elif transaction_type == 'payment':
-            if self.balance < amount:
-                raise ValidationError({f"Insufficient balance for withdrawal of {self.user}."})
-            self.balance -= amount  # Use Decimal subtraction
-        
+    def deposit(self, amount: Decimal):
+        self.balance += amount
+        self.save()
+
+    def withdraw(self, amount: Decimal):
+        if self.balance < amount:
+            raise ValidationError(f"Insufficient balance for {self.user}")
+        self.balance -= amount
         self.save()
 
 class Transaction(models.Model):
     TRANSACTION_TYPE_CHOICES = [
-        ('payment', 'Payment'),  # For withdrawals
-        ('deposit', 'Deposit'),   # For deposits
+        ('payment', 'Payment'),
+        ('deposit', 'Deposit'),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPE_CHOICES)
-    trans_mode = models.CharField(max_length=50)  # e.g., 'bank_transfer', 'cash'
-    narration=models.CharField(max_length=300,blank=True,null=True)
+    trans_mode = models.CharField(max_length=50)  # e.g. 'bank_transfer', 'cash', 'internal'
+    narration = models.CharField(max_length=300, blank=True, null=True)
     issued_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='transactions_issued')
     issued_date = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, default='pending')  # Add status if needed
+    status = models.CharField(max_length=20, default='pending')
 
     def __str__(self):
         return f"{self.transaction_type} of {self.amount} by {self.user.name}"

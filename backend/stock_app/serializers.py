@@ -82,10 +82,11 @@ class InvestmentSerializer(serializers.ModelSerializer):
         # Use atomic transaction to ensure all operations succeed or rollback
         with transaction.atomic():
             # Check if the investor has an account; create one if not
-            account, created = Account.objects.get_or_create(user=investor)
+            account = Account.objects.select_for_update().get(user=investor)
 
             # Update the account balance
-            account.update_balance(amount, transaction_type='payment')
+            # account.update_balance(amount, transaction_type='payment')
+            account.withdraw(amount)
 
             # Create a transaction record
             transaction_record = Transaction.objects.create(
