@@ -95,7 +95,7 @@ class Trade(models.Model):
     def calculate_total_commission(self):
         commission_rate = 0.004  # 0.4%
         self.total_commission = round(float(self.unit_price) * self.qty * commission_rate, 2)
-        return self.total_commission
+        return self.total_commission if self.total_commission>10 else 10.00
 
     def calculate_actual_unit_price(self):
         """Calculates and sets the actual unit price."""

@@ -14,6 +14,9 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import requests
+from bs4 import BeautifulSoup
+from django.core.cache import cache
 
 from accounting.models import Account, Transaction
 from stock_app.utils import investor_contributions_map, update_customer_balance
@@ -183,6 +186,37 @@ class InstrumentListView(generics.ListAPIView):
     serializer_class = InstrumentSerializer
     permission_classes = [IsAdminUser]  # Allow any user to view instruments
 
+class InstrumentClosePriceView(APIView):
+    permission_classes=[AllowAny]
+    
+    def get(self, request):
+        cache_key = 'close_price'
+        queryset = cache.get(cache_key)
+        
+        if queryset is None:
+            url = "https://dsebd.org/dse_close_price.php"
+            page_content = requests.get(url)
+            page_soup = BeautifulSoup(page_content.text, "html.parser")
+
+            table_content = page_soup.find("div", {"id": "RightBody"})
+            tables = table_content.find_all("table")
+            trs = tables[1].find_all("tr")
+            data = {}
+            
+            for tr in trs[1:]:
+                tds = tr.find_all("td")
+                data[tds[1].text.strip()] = tds[2].text
+            
+            # Set the data in cache
+            cache.set(cache_key, data, timeout=60*15)
+            
+            # Return the freshly fetched data
+            return Response(data)
+        
+        # Return data from cache if it exists
+        return Response(queryset)
+
+
 
 
 class SellableInstrumentView(APIView):
@@ -257,7 +291,7 @@ class TradeDeleteView(generics.DestroyAPIView):
 
 class TradeDetailsListView(generics.ListAPIView):
     serializer_class = TradeDetailsSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsAdminUser]
 
     def get_queryset(self):
         # Extract query parameters

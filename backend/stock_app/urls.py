@@ -4,7 +4,7 @@ from .views import (AccountReceivableCreateApiView,
                     AccountRecivableDetailsListApiView,
                     AddFinancialAdvisorListCreateView,
                     ClientInvestmentDetailsListView, FinancialAdvisorListView,
-                    InstrumentListView, InvestmentCreateAPIView,
+                    InstrumentListView, InvestmentCreateAPIView,InstrumentClosePriceView,
                     InvestorContributionRetrieveAPI, InvestorProfitDetailsView,
                     ProfitCreateView, ProfitDisburse,
                     ProjectBalanceDetailsView, ProjectCloseView,
@@ -17,10 +17,11 @@ urlpatterns = [
 
 
     path('instruments/', InstrumentListView.as_view(), name='instrument-list'),
+    path('instruments/close/price/',InstrumentClosePriceView.as_view(),name='instrument-close-price'),
     path('create/trade/', TradeCreateView.as_view(), name='create-trade'),
     path('delete/trade/<str:trade_id>/',TradeDeleteView.as_view(),name='delete-trade'),
     path('trade/details/',TradeDetailsListView.as_view(),name='trade-details-ason'),
-    path('sellable/instruments/<str:project_id>/',SellableInstrumentView.as_view(),name='buyable-instruments'),
+    path('sellable/instruments/<str:project_id>/',SellableInstrumentView.as_view(),name='sellable-instruments'),
 
     path('create/project/',ProjectCreateView.as_view(),name='create-project'),
     path('project/status/<str:pk>/',ProjectStatusRetriveView.as_view(),name='project-status'),

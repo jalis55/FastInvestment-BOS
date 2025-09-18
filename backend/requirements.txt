@@ -1,9 +1,11 @@
 asgiref==3.8.1
 attrs==25.3.0
+beautifulsoup4==4.13.5
 certifi==2025.8.3
 charset-normalizer==3.4.3
 Django==5.2
 django-cors-headers==4.7.0
+django-redis==5.4.0
 django-schema-viewer==0.5.3
 django-seed==0.3.1
 django-silk==5.4.1
@@ -16,15 +18,18 @@ gprof2dot==2025.4.14
 gunicorn==23.0.0
 idna==3.10
 inflection==0.5.1
+isort==6.0.1
 jsonschema==4.25.0
 jsonschema-specifications==2025.4.1
 packaging==25.0
 pillow==11.0.0
 PyJWT==2.9.0
 PyYAML==6.0.2
+redis==5.2.0
 referencing==0.36.2
 requests==2.32.4
 rpds-py==0.27.0
+soupsieve==2.8
 sqlparse==0.5.1
 stripe==12.4.0
 toposort==1.10
@@ -32,5 +37,3 @@ typing_extensions==4.14.1
 tzdata==2024.2
 uritemplate==4.2.0
 urllib3==2.5.0
-django-redis==5.4.0
-redis==5.2.0
