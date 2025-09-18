@@ -122,11 +122,14 @@ const BuyInstruments = () => {
             await API.post('/api/stock/create/trade/', tradeData);
 
             setAvailableBalance((prevBalance) => {
-                const totalCommission = getTotalCom();
+                let totalCommission = getTotalCom();
+                if (totalCommission <10){
+                    let totalCommission=10
+                }
                 const buyAmt = (parseInt(qty) * parseFloat(unitPrice)) + totalCommission;
                 return prevBalance - buyAmt;
             });
-
+       
             Swal.fire({ icon: 'success', title: 'Success', text: 'Instrument purchase successful!' });
 
             // Reset Form

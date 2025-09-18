@@ -45,6 +45,7 @@ import AccountReceivableDetails from './pages/reports/AccountReceivableDetails';
 import TransactionHistory from './pages/reports/TransactionHistory';
 import InvestmentHistory from './pages/reports/InvestmentHistory';
 import ProfitDetails from './pages/reports/ProfitDetails';
+import ProjectDetails from './pages/reports/ProjectDetails';
 
 
 
@@ -92,6 +93,8 @@ const router = createBrowserRouter([
       { path: 'trans-history', element: <RoleRoute roles={['user']}><TransactionHistory/> </RoleRoute> },
       { path: 'investment-history', element: <RoleRoute roles={['user']}><InvestmentHistory/></RoleRoute> },
       { path: 'profit-details', element: <RoleRoute roles={['user']}><ProfitDetails/></RoleRoute> },
+      { path: 'project-details', element: <RoleRoute roles={['admin']}><ProjectDetails/></RoleRoute> },
+      
     ],
   },
   {

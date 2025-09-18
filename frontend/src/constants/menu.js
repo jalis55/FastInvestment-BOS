@@ -4,7 +4,8 @@ import {
   BadgePercent, FileSpreadsheet, FolderKanban, Wallet, Landmark,
   UsersRound, SquarePercent, ChartCandlestick, BookOpenCheck,
   BanknoteIcon, BookUp2, AppWindow,LucideBriefcaseBusiness,BadgePlus,
-  UserSearch,UserCog,UserPlus2
+  UserSearch,UserCog,UserPlus2,
+  BadgeInfoIcon
 } from 'lucide-react';
 
 const menu = [
@@ -165,6 +166,12 @@ const menu = [
         roles: ["user"],
         icon: BadgePlus,
       },
+      {
+        menuName:"Project Detaitls",
+        url:"/project-details",
+        roles:["admin"],
+        icon:BadgeInfoIcon
+      }
     ],
   },
 ];
