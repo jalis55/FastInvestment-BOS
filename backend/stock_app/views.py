@@ -35,7 +35,7 @@ from .serializers import (AccountReceivableDetailsSerializer,
                           ProfitDisburseSerializer, ProfitSerializer,
                           ProjectBalanceDetailsSerializer,
                           ProjectCloseSerializer, ProjectCreateSerializer,
-                          ProjectStatusSerializer,
+                          ProjectStatusSerializer,ProjectListSerializer,
                           SellableInstrumentSerializer, TradeDetailsSerializer,
                           TradeSerializer)
 
@@ -50,7 +50,10 @@ class ProjectCreateView(generics.CreateAPIView):
         serializer.save(created_by=self.request.user)
 
 
-
+class ProjectListView(generics.ListAPIView):
+    queryset = Project.objects.all().order_by('-project_active_status', '-project_opening_dt')
+    serializer_class=ProjectListSerializer
+    permission_classes=[AllowAny]
     
 
 class ProjectStatusRetriveView(generics.RetrieveAPIView):

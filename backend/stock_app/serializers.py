@@ -233,6 +233,23 @@ class ProjectCloseSerializer(serializers.ModelSerializer):
         )
         read_only_fields=['closed_by','project_closing_dt','project_active_status','gain_or_loss']
 
+class ProjectListSerializer(serializers.ModelSerializer):
+    created_by=UserDetailsSerializer(read_only=True)
+    closed_by=UserDetailsSerializer(read_only=True)
+
+    class Meta:
+        model=Project
+        fields=(
+            'project_id',
+            'project_title',
+            'project_responsible_mail',
+            'project_active_status',
+            'project_opening_dt',
+            'created_by',
+            'project_closing_dt',
+            'closed_by'
+        )
+
 
 
 
