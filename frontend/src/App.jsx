@@ -46,6 +46,7 @@ import TransactionHistory from './pages/reports/TransactionHistory';
 import InvestmentHistory from './pages/reports/InvestmentHistory';
 import ProfitDetails from './pages/reports/ProfitDetails';
 import ProjectDetails from './pages/reports/ProjectDetails';
+import ProjectList from './pages/reports/ProjectList';
 
 
 
@@ -94,6 +95,7 @@ const router = createBrowserRouter([
       { path: 'investment-history', element: <RoleRoute roles={['user']}><InvestmentHistory/></RoleRoute> },
       { path: 'profit-details', element: <RoleRoute roles={['user']}><ProfitDetails/></RoleRoute> },
       { path: 'project-details', element: <RoleRoute roles={['admin']}><ProjectDetails/></RoleRoute> },
+      { path: 'project-list', element: <RoleRoute roles={['admin']}><ProjectList/></RoleRoute> },
       
     ],
   },

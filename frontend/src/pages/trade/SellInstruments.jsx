@@ -36,7 +36,7 @@ const SellInstruments = () => {
       Swal.fire({
         icon: 'error',
         title: 'API Error',
-        text: error.response?.data?.message || 'Something went wrong.'
+        text: error.response?.data?.detail || error.response?.data?.message || 'Something went wrong.'
       });
     }
   };

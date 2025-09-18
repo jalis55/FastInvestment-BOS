@@ -171,6 +171,12 @@ const menu = [
         url:"/project-details",
         roles:["admin"],
         icon:BadgeInfoIcon
+      },
+            {
+        menuName:"Project List",
+        url:"/project-list",
+        roles:["admin"],
+        icon:BadgeInfoIcon
       }
     ],
   },
