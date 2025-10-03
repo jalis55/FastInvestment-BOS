@@ -8,10 +8,10 @@ from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView,
 from rest_framework_simplejwt.views import (TokenObtainPairView,
                                             TokenRefreshView)
 
-from core.views import SendEmailView
+
 
 urlpatterns = [
-     path('api/mail/send-email/', SendEmailView.as_view(), name='send-email'),
+
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('silk/', include('silk.urls', namespace='silk')),

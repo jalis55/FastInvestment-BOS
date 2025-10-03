@@ -146,6 +146,7 @@ class ProjectCloseView(APIView):
                     'project_closing_dt': timezone.now(),
                     'project_active_status': False,
                     'gain_or_loss': gain_lose,
+                    'closed_by': request.user,
                     **serializer.validated_data
                 }
                 
