@@ -103,7 +103,7 @@ const ProjectList = () => {
                                                     <p className="text-sm font-medium text-red-800">
                                                         Closed: {formatDate(project.project_closing_dt)}
                                                     </p>
-                                                    <p className="text-xs text-gray-500">By {project.closed_by.email}</p>
+                                                    <p className="text-xs text-gray-500">By {project.closed_by?.email || null}</p>
                                                 </>
                                             )}
                                         </div>

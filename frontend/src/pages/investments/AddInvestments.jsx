@@ -45,7 +45,7 @@ const AddInvestments = () => {
             setCustomers(response.data);
         } catch (error) {
             console.error("Error fetching customers:", error);
-            Swal.fire({ icon: 'error', title: 'API Error', text: error.response?.data?.message || 'Something went wrong.' });
+            Swal.fire({ icon: 'error', title: 'API Error', text: error.response?.data?.detail || error.response?.data?.message || 'Something went wrong.' });
         }
     };
 
