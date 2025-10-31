@@ -138,5 +138,7 @@ class FundTransferSerializer(serializers.ModelSerializer):
                 issued_by=self.context['request'].user,
                 issued_date=timezone.now()
             )
+            from_acc.withdraw(amount)
+            to_acc.deposit(amount)
 
             return fund_transfer

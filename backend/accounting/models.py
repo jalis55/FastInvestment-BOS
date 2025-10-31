@@ -29,7 +29,7 @@ class Transaction(models.Model):
         ('deposit', 'Deposit'),
     ]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='transactions')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPE_CHOICES)
     trans_mode = models.CharField(max_length=50)  # e.g. 'bank_transfer', 'cash', 'internal'
