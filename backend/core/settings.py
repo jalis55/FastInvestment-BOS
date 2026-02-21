@@ -1,4 +1,3 @@
-
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -205,14 +204,18 @@ SPECTACULAR_SETTINGS = {
 
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
+REDIS_USERNAME=os.environ.get('REDIS_USERNAME', '')
+REDIS_PASSWORD=os.environ.get('REDIS_PASSWORD', '')
+
+
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
-        # "LOCATION": f"redis://localhost:{6379}/1",
+        "LOCATION": f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0",  # Changed from /1 to /0
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": REDIS_PASSWORD,
         }
     }
 }
