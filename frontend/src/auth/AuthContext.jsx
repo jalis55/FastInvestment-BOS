@@ -37,6 +37,10 @@ export default function AuthProvider({ children }) {
     return true;
   }, []);
 
+  const ensureCsrfCookie = useCallback(async () => {
+    await API.get('/api/session/', { skipAuthRefresh: true });
+  }, []);
+
   const fetchSession = useCallback(async ({ allowRefresh = false } = {}) => {
     try {
       const { data } = await API.get('/api/session/', { skipAuthRefresh: true });
@@ -90,6 +94,7 @@ export default function AuthProvider({ children }) {
   const login = async (email, password) => {
     setIsLoading(true);
     try {
+      await ensureCsrfCookie();
       const { data, status } = await API.post('/api/token/', { email, password });
       if (status === 200) {
         applySession(data);
@@ -120,6 +125,7 @@ export default function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
+      await ensureCsrfCookie();
       await API.post('/api/logout/');
     } catch (error) {
       console.error('Logout failed:', error);

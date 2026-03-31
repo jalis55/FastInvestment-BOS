@@ -2,9 +2,38 @@ import axios from 'axios';
 
 const baseUrl =import.meta.env.VITE_API_URL;
 
+const getCookie = (name) => {
+  if (typeof document === 'undefined') {
+    return '';
+  }
+
+  const cookie = document.cookie
+    .split('; ')
+    .find((entry) => entry.startsWith(`${name}=`));
+
+  return cookie ? decodeURIComponent(cookie.split('=').slice(1).join('=')) : '';
+};
+
 const API = axios.create({
   baseURL: baseUrl ,
   withCredentials: true,
+  xsrfCookieName: 'csrftoken',
+  xsrfHeaderName: 'X-CSRFToken',
+});
+
+API.interceptors.request.use((config) => {
+  const method = (config.method || 'get').toLowerCase();
+  const csrfSafeMethod = ['get', 'head', 'options', 'trace'].includes(method);
+
+  if (!csrfSafeMethod) {
+    const csrfToken = getCookie('csrftoken');
+    if (csrfToken) {
+      config.headers = config.headers || {};
+      config.headers['X-CSRFToken'] = csrfToken;
+    }
+  }
+
+  return config;
 });
 
 /* Auto-refresh on 401 */
@@ -39,11 +68,7 @@ API.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await axios.post(
-          '/api/token/refresh/',
-          {},
-          { baseURL: API.defaults.baseURL, withCredentials: true }
-        );
+        await API.post('/api/token/refresh/', {}, { skipAuthRefresh: true });
         onRefreshed();
         return API(originalRequest);
       } catch {

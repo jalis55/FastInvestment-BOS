@@ -1,3 +1,5 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.cache import cache
 from django.conf import settings
 from rest_framework import status
@@ -9,6 +11,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from user_app.models import CustomUser
@@ -85,6 +88,7 @@ def _clear_auth_cookies(response):
     )
 
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class CookieTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
     permission_classes = [AllowAny]
@@ -108,6 +112,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
         return response
 
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class CookieTokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
 
@@ -133,11 +138,19 @@ class LogoutView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        refresh_token = request.COOKIES.get(settings.AUTH_COOKIE_REFRESH)
+        if refresh_token:
+            try:
+                RefreshToken(refresh_token).blacklist()
+            except TokenError:
+                pass
+
         response = Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
         _clear_auth_cookies(response)
         return response
 
 
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class CurrentSessionView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []

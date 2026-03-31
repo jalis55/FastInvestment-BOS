@@ -5,6 +5,8 @@ import API from "@/api/axios";
 import Swal from "sweetalert2";
 import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
 
+const COMMISSION_RATE = 0.004;
+const MINIMUM_COMMISSION = 10;
 
 const BuyInstruments = () => {
     const [searchId, setSearchId] = useState('');
@@ -61,17 +63,15 @@ const BuyInstruments = () => {
         }
     };
 
-    const getTotalCom = () => {
-        const comm = ((qty * unitPrice * 0.4) / 100).toFixed(2)
-        return Number(comm)
-    }
+    const parsedQty = Number.parseInt(qty, 10) || 0;
+    const parsedUnitPrice = Number.parseFloat(unitPrice) || 0;
+    const subtotal = parsedQty * parsedUnitPrice;
+    const calculatedCommission = subtotal * COMMISSION_RATE;
+    const totalCommission = subtotal > 0 ? Math.max(calculatedCommission, MINIMUM_COMMISSION) : 0;
+    const totalCost = subtotal + totalCommission;
 
     // Validate inputs
     const validateInputs = () => {
-        const parsedQty = parseInt(qty);
-        const parsedUnitPrice = parseFloat(unitPrice);
-
-
         if (!selectedInstrument) {
             Swal.fire({ icon: 'warning', title: 'Selection Required', text: 'Please select an instrument.' });
             return false;
@@ -86,9 +86,6 @@ const BuyInstruments = () => {
             Swal.fire({ icon: 'warning', title: 'Invalid Unit Price', text: 'Unit Price must be a positive number.' });
             return false;
         }
-
-        const totalCommission = getTotalCom();
-        const totalCost = (parsedQty * unitPrice) + totalCommission;
 
         if (totalCost > availableBalance) {
             Swal.fire({ icon: 'error', title: 'Insufficient Funds', text: 'Your balance is not enough to complete this purchase.' });
@@ -121,14 +118,7 @@ const BuyInstruments = () => {
         try {
             await API.post('/api/stock/create/trade/', tradeData);
 
-            setAvailableBalance((prevBalance) => {
-                let totalCommission = getTotalCom();
-                if (totalCommission <10){
-                    let totalCommission=10
-                }
-                const buyAmt = (parseInt(qty) * parseFloat(unitPrice)) + totalCommission;
-                return prevBalance - buyAmt;
-            });
+            setAvailableBalance((prevBalance) => prevBalance - totalCost);
        
             Swal.fire({ icon: 'success', title: 'Success', text: 'Instrument purchase successful!' });
 
@@ -241,7 +231,7 @@ const BuyInstruments = () => {
                             <input
                                 type="number"
                                 id="comm"
-                                value={((qty * unitPrice * .4) / 100).toFixed(2)}
+                                value={totalCommission.toFixed(2)}
 
                                 min="0"
                                 step="0.01"
@@ -249,6 +239,13 @@ const BuyInstruments = () => {
                                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                 readOnly={true}
                             />
+                            <p id="commission-helper" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Commission is 0.4% of trade value with a minimum of 10.00 BDT.
+                            </p>
+                        </div>
+
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                            Total payable: {subtotal.toFixed(2)} + {totalCommission.toFixed(2)} = <span className="font-semibold">{totalCost.toFixed(2)} BDT</span>
                         </div>
 
                         {/* Submit Button */}

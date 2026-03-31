@@ -64,10 +64,14 @@ const ProjectDetails = () => {
 
                 // now load instruments
                 setLoadingInstruments(true);
-                const [instrumentsData, closePriceData] = await Promise.all([
-                    fetchSellable(balance.project_id),
-                    fetchClosePrices(),
-                ]);
+                const instrumentsData = await fetchSellable(balance.project_id);
+
+                if (!instrumentsData.length) {
+                    setInstruments([]);
+                    return;
+                }
+
+                const closePriceData = await fetchClosePrices();
 
                 const updated = instrumentsData.map((i) => ({
                     ...i,
@@ -203,13 +207,13 @@ const ProjectDetails = () => {
                     </div>
                 </div>
             )}
-            {projectBalance && (
+            {projectBalance &&  (
                 <>
                     {loadingInstruments ? (
                         <div className="text-center">
                             <Spinner />
                         </div>
-                    ) : (
+                    ) : rows.length ? (
                         <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                             <div className="bg-gray-300 px-6 py-4">
                                 <h2 className="text-xl font-semibold text-black">Instruments Balance Overview</h2>
@@ -227,27 +231,23 @@ const ProjectDetails = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {rows.length ? (
-                                        rows.map((r, idx) => (
-                                            <tr key={idx} className="bg-white border-b">
-                                                <th className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{r.name}</th>
-                                                <td className="px-6 py-4">{r.qty}</td>
-                                                <td className="px-6 py-4">৳{r.cost}</td>
-                                                <td className="px-6 py-4">৳{r.totalCost}</td>
-                                                <td className="px-6 py-4">৳{r.price}</td>
-                                                <td className="px-6 py-4">৳{r.marketValue}</td>
-                                                <td className="px-6 py-4">৳{r.gainLoss}</td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={7} className="px-6 py-4 text-center">
-                                                No instruments found
-                                            </td>
+                                    {rows.map((r, idx) => (
+                                        <tr key={idx} className="bg-white border-b">
+                                            <th className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{r.name}</th>
+                                            <td className="px-6 py-4">{r.qty}</td>
+                                            <td className="px-6 py-4">৳{r.cost}</td>
+                                            <td className="px-6 py-4">৳{r.totalCost}</td>
+                                            <td className="px-6 py-4">৳{r.price}</td>
+                                            <td className="px-6 py-4">৳{r.marketValue}</td>
+                                            <td className="px-6 py-4">৳{r.gainLoss}</td>
                                         </tr>
-                                    )}
+                                    ))}
                                 </tbody>
                             </table>
+                        </div>
+                    ) : (
+                        <div className="rounded-lg border border-gray-200 bg-white px-6 py-8 text-center text-sm text-gray-500 shadow-sm">
+                            No instruments found
                         </div>
                     )}
                 </>

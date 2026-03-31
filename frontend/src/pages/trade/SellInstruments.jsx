@@ -4,6 +4,9 @@ import ButtonSpinner from "@/components/ButtonSpinner.jsx";
 import API from "@/api/axios";
 import Swal from "sweetalert2";
 
+const COMMISSION_RATE = 0.004;
+const MINIMUM_COMMISSION = 10;
+
 const SellInstruments = () => {
   const [searchId, setSearchId] = useState('');
   const [instruments, setInstruments] = useState([]);
@@ -41,9 +44,12 @@ const SellInstruments = () => {
     }
   };
 
-  const getTotalCom = () => {
-    return parseFloat((qty * unitPrice * 0.4) / 100).toFixed(2);
-  };
+  const parsedQty = Number.parseInt(qty, 10) || 0;
+  const parsedUnitPrice = Number.parseFloat(unitPrice) || 0;
+  const grossAmount = parsedQty * parsedUnitPrice;
+  const calculatedCommission = grossAmount * COMMISSION_RATE;
+  const totalCommission = grossAmount > 0 ? Math.max(calculatedCommission, MINIMUM_COMMISSION) : 0;
+  const netReceivable = grossAmount - totalCommission;
 
   // Handle instrument selection
   const handleInstrumentChange = useCallback((e) => {
@@ -80,7 +86,6 @@ const SellInstruments = () => {
   const prepareAccountReceivableData = async (data) => {
     try {
       const { id: trdId, project: proId, qty, unit_price, instrument: instrumentId } = data;
-      const totalCommission = getTotalCom();
       const sellAmt = qty * unit_price - totalCommission;
       const instrument = instruments.find(inst => inst.instrument.id === instrumentId);
 
@@ -284,7 +289,7 @@ const SellInstruments = () => {
                 <input
                   type="number"
                   id="comm"
-                  value={((qty * unitPrice * .4) / 100).toFixed(2)}
+                  value={totalCommission.toFixed(2)}
                   min="0"
                   step="0.01"
                   aria-describedby="commission-helper"
@@ -292,6 +297,10 @@ const SellInstruments = () => {
                   placeholder="Enter Commission Amount"
                   readOnly={true}
                 />
+              </div>
+
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
+                Net receivable: {grossAmount.toFixed(2)} - {totalCommission.toFixed(2)} = <span className="font-semibold">{netReceivable.toFixed(2)} BDT</span>
               </div>
 
               <div className="flex justify-center">
