@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
 import ButtonSpinner from '@/components/ButtonSpinner';
 
@@ -45,19 +45,51 @@ const Login = () => {
     };
 
     return (
-        <div className="bg-gray-50 dark:bg-gray-800">
-            <div className="flex min-h-[80vh] flex-col justify-center py-12 sm:px-6 lg:px-8">
-                <div className="text-center sm:mx-auto sm:w-full sm:max-w-md">
-                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-                        Sign in
+        <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(145deg,#07111f_0%,#0f172a_42%,#1d4ed8_100%)] px-4 py-10">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.26),transparent_22%),radial-gradient(circle_at_bottom_right,rgba(96,165,250,0.22),transparent_26%)]" />
+            <div className="relative mx-auto grid min-h-[86vh] max-w-6xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="hidden text-white lg:block">
+                    <p className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-cyan-200">
+                        Fast Investment Limited
+                    </p>
+                    <h1 className="max-w-xl text-5xl font-semibold leading-tight">
+                        A calmer, sharper backoffice for investment operations.
                     </h1>
+                    <p className="mt-6 max-w-xl text-base leading-8 text-blue-50/80">
+                        Manage projects, trades, investor reporting, and internal workflows from a single professional control surface.
+                    </p>
+                    <div className="mt-10 grid max-w-2xl grid-cols-3 gap-4">
+                        <div className="rounded-3xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                            <p className="text-2xl font-semibold">Projects</p>
+                            <p className="mt-2 text-sm text-blue-50/70">Track opening, closing, and operational status.</p>
+                        </div>
+                        <div className="rounded-3xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                            <p className="text-2xl font-semibold">Trades</p>
+                            <p className="mt-2 text-sm text-blue-50/70">Review instruments, pricing, and transaction flow.</p>
+                        </div>
+                        <div className="rounded-3xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                            <p className="text-2xl font-semibold">Reports</p>
+                            <p className="mt-2 text-sm text-blue-50/70">Keep key performance and profit details in reach.</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                    <div className="bg-white dark:bg-gray-700 px-4 pb-4 pt-8 sm:rounded-lg sm:px-10 sm:pb-6 sm:shadow">
+                <div className="mx-auto w-full max-w-md">
+                    <div className="rounded-[32px] border border-white/20 bg-white/92 px-6 pb-6 pt-8 shadow-[0_30px_80px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:px-8">
+                        <div className="mb-8">
+                            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                                Secure Access
+                            </p>
+                            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                                Sign in to continue
+                            </h2>
+                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                                Enter your account credentials to open the backoffice dashboard.
+                            </p>
+                        </div>
                         <form className="space-y-6" onSubmit={handleSubmit}>
 
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-white">Email address / Username</label>
+                                <label htmlFor="email" className="field-label">Email address / Username</label>
                                 <div className="mt-1">
                                     <input
                                         id="email"
@@ -65,7 +97,7 @@ const Login = () => {
                                         type="text"
                                         data-testid="username"
                                         required
-                                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-300 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 sm:text-sm"
+                                        className="field-input"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="demo@admin.com"
@@ -73,7 +105,7 @@ const Login = () => {
                                 </div>
                             </div>
                             <div>
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-white">
+                                <label htmlFor="password" className="field-label">
                                     Password
                                 </label>
                                 <div className="mt-1 relative">
@@ -84,14 +116,14 @@ const Login = () => {
                                         data-testid="password"
                                         autoComplete="current-password"
                                         required
-                                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-300 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 sm:text-sm pr-10"
+                                        className="field-input pr-11"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="demo@123"
                                     />
                                     <button
                                         type="button"
-                                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition hover:text-slate-600"
                                         onClick={togglePasswordVisibility}
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                     >
@@ -109,22 +141,17 @@ const Login = () => {
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between">
-
-                                <div className="text-sm">
-                                    <a className="font-medium text-indigo-400 hover:text-indigo-500" href="#">
-                                        Forgot your password?
-                                    </a>
-                                </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-slate-500">Session secured with HttpOnly cookies</span>
                             </div>
                             <div>
                                 <button
                                     data-testid="login"
                                     type="submit"
-                                    className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-700 dark:border-transparent dark:hover:bg-indigo-600 dark:focus:ring-indigo-400 dark:focus:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
+                                    className="primary-button group relative"
                                 >
-                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <svg className="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-4">
+                                        <svg className="h-5 w-5 text-blue-100/80 group-hover:text-white"
                                             xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
                                             aria-hidden="true">
                                             <path fillRule="evenodd"
@@ -137,17 +164,11 @@ const Login = () => {
                                 </button>
                             </div>
                             {error && (
-                                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+                                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                                     {error}
                                 </div>
                             )}
                         </form>
-                        {/*                         
-                        <div className="m-auto mt-6 w-fit md:mt-8">
-                            <span className="m-auto dark:text-gray-400">Don't have an account?
-                                <Link to="/register" className="font-semibold text-indigo-600 dark:text-indigo-100 ml-1">Create Account</Link>
-                            </span>
-                        </div> */}
                     </div>
                 </div>
             </div>

@@ -1,7 +1,8 @@
 import { useState, useMemo,useEffect } from "react";
-import { ArrowUpDown, DollarSign, PieChart, TrendingUp } from "lucide-react";
+import { ArrowUpDown, PieChart, TrendingUp } from "lucide-react";
 import API from "@/api/axios.js";
 import BannerTitle from "../../components/BannerTitle.jsx";
+import Spinner from "@/components/Spinner";
 
 const ProfitDetails = () => {
 
@@ -9,15 +10,18 @@ const ProfitDetails = () => {
       const [sortDirection, setSortDirection] = useState("asc")
       const [selectedProject, setSelectedProject] = useState("all")
       const [profitData,setProfitData]=useState([]);
+      const [loading, setLoading] = useState(true);
     
         useEffect(() => {
             const fetchProfitData = async () => {
                 try {
+                    setLoading(true);
                     const response = await API.get('api/stock/investor/profit-details/');
-                    console.log(response.data);
                     setProfitData(response.data);
                 } catch (error) {
                     console.error("Error fetching profit data:", error);
+                } finally {
+                    setLoading(false);
                 }
             }
             fetchProfitData();
@@ -80,14 +84,14 @@ const ProfitDetails = () => {
         }
       }
   return (
-<div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div>
         <BannerTitle title="Profit Details" />
+        {loading ? <Spinner /> : <div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 
-          <div className="bg-white rounded-lg shadow p-6 border border-gray-100">
+          <div className="page-card">
             <div className="flex items-center">
               <div className="p-3 rounded-full bg-purple-100 text-purple-600">
                 <TrendingUp className="h-6 w-6" />
@@ -100,7 +104,7 @@ const ProfitDetails = () => {
           </div>
 
 
-          <div className="bg-white rounded-lg shadow p-6 border border-gray-100">
+          <div className="page-card">
             <div className="flex items-center">
               <div className="p-3 rounded-full bg-amber-100 text-amber-600">
                 <PieChart className="h-6 w-6" />
@@ -136,7 +140,7 @@ const ProfitDetails = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white shadow overflow-hidden rounded-lg border border-gray-200">
+        <div className="table-shell">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -222,7 +226,7 @@ const ProfitDetails = () => {
             Showing {sortedData.length} of {profitData.length} investment records
           </p>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

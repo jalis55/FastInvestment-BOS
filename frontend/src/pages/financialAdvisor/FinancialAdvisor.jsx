@@ -4,6 +4,7 @@ import ButtonSpinner from "../../components/ButtonSpinner.jsx";
 import API from "@/api/axios";
 import Swal from "sweetalert2";
 import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
+import { SearchBar } from "@/components/ui/search-bar";
 
 const FinancialAdvisor = () => {
     const [searchId, setSearchId] = useState('');
@@ -103,44 +104,39 @@ const FinancialAdvisor = () => {
     return (
         <div>
             <BannerTitle title="Add Financial Advisor" />
-            <form className="max-w-lg mx-auto mb-8" onSubmit={searchProject}>
-                <div className="relative">
-                    <label htmlFor="default-search" className="sr-only">Search</label>
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
-                        </svg>
-                    </div>
-                    <input
-                        type="search"
-                        id="default-search"
+            <div className="mx-auto mb-8 max-w-3xl page-card">
+            <form className="max-w-lg" onSubmit={searchProject}>
+                <SearchBar
                         value={searchId}
                         onChange={(e) => setSearchId(e.target.value)}
-                        className="block w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         placeholder="Search Project"
+                        aria-label="Search project"
                         required
+                        action={
+                            <button
+                                type="submit"
+                                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                Search
+                            </button>
+                        }
                     />
-                    <button
-                        type="submit"
-                        className="absolute right-2.5 bottom-2.5 bg-blue-700 text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                    >
-                        Search
-                    </button>
-                </div>
             </form>
+            </div>
             {customers.length > 0 && (
-                <div className="max-w-md mx-auto space-y-6">
-
-
-                    <p>Add Financial Advisor</p>
+                <div className="mx-auto max-w-2xl page-card">
+                    <div className="mb-6">
+                        <h2 className="section-heading">Advisor Assignment</h2>
+                        <p className="section-copy">Select an advisor and define the commission percentage for this project.</p>
+                    </div>
 
                     <div className="mb-4">
-                        <label htmlFor="countries" className="block text-sm font-medium text-gray-900 dark:text-white">Select Advisor</label>
+                        <label htmlFor="countries" className="field-label">Select Advisor</label>
                         <select
                             id="advisorDropdown"
                             value={selectedCustomer ? selectedCustomer.id : ""}
                             onChange={handleInvestorChange}
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                            className="field-select"
                         >
                             <option>Select Advisor</option>
                             {customers.map((customer) => (
@@ -154,7 +150,7 @@ const FinancialAdvisor = () => {
                         <form onSubmit={handleSubmit}>
 
                             <div className="mb-4">
-                                <label htmlFor="amount" className="block text-sm font-medium text-gray-900 dark:text-white">Commission Percentage</label>
+                                <label htmlFor="amount" className="field-label">Commission Percentage</label>
                                 <input
                                     type="number"
                                     id="amount"
@@ -163,14 +159,14 @@ const FinancialAdvisor = () => {
                                     min="0"
                                     step="0.01"
                                     aria-describedby="amount-helper"
-                                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                    className="field-input"
                                     placeholder="Enter Amount"
                                 />
                             </div>
                             <div className="flex justify-center">
                                 <button
                                     type="submit"
-                                    className="w-full bg-blue-700 text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                                    className="primary-button"
                                     disabled={loading}
                                 >
                                     {loading ? <ButtonSpinner /> : 'Submit'}

@@ -123,14 +123,19 @@ const Transaction = () => {
     return (
         <div>
             <BannerTitle title={"Transaction"} />
-            <form className="max-w-md mx-auto space-y-6" onSubmit={handleSubmit}>
+            <div className="mx-auto max-w-2xl page-card">
+                <div className="mb-6">
+                    <h2 className="section-heading">Create Transaction</h2>
+                    <p className="section-copy">Select a customer, choose the transaction type, and submit the amount.</p>
+                </div>
+            <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="mb-2">
-                    <label htmlFor="instDropdown" className="block text-sm font-medium text-gray-900 dark:text-white">Select Customer</label>
+                    <label htmlFor="instDropdown" className="field-label">Select Customer</label>
                     <select
                         id="userSelect"
                         value={selectedUser}
                         onChange={(e) => setSelectedUser(e.target.value)}
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                        className="field-select">
 
                         <option>Select Customer</option>
                         {users.map((user) => (
@@ -143,9 +148,9 @@ const Transaction = () => {
                 {selectedUser && (
                     <>
                         <div className="mb-2">
-                            <label htmlFor="website-admin" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Amount</label>
+                            <label htmlFor="website-admin" className="field-label">Amount</label>
                             <div className="flex">
-                                <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-s-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600">
+                                <span className="inline-flex items-center rounded-s-xl border border-e-0 border-slate-300 bg-slate-200 px-3 text-sm text-slate-700">
                                     {/* Money Icon */}
                                     <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Zm0-3a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
@@ -155,16 +160,16 @@ const Transaction = () => {
                                     id='amountInput'
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
-                                    className="rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="amount" />
+                                    className="block min-w-0 flex-1 rounded-e-xl border border-slate-300 bg-slate-50 p-2.5 text-sm text-slate-900 focus:border-blue-500 focus:ring-blue-500" placeholder="amount" />
                             </div>
                         </div>
                         <div className="mb-2">
-                            <label htmlFor="instDropdown" className="block text-sm font-medium text-gray-900 dark:text-white">Select Transaction Type</label>
+                            <label htmlFor="instDropdown" className="field-label">Select Transaction Type</label>
                             <select
                                 id="transactionTypeSelect"
                                 value={transactionType}
                                 onChange={(e) => handleTransactionType(e.target.value)}
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" >
+                                className="field-select" >
 
                                 <option value="">Select transaction type</option>
                                 <option value="deposit">Deposit</option>
@@ -174,9 +179,9 @@ const Transaction = () => {
                         </div>
                         {availableWithdrawBal > 0 &&
                             <div className="mb-2">
-                                <label htmlFor="website-admin" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Available Balance</label>
+                                <label htmlFor="website-admin" className="field-label">Available Balance</label>
                                 <div className="flex">
-                                    <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-s-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600">
+                                    <span className="inline-flex items-center rounded-s-xl border border-e-0 border-slate-300 bg-slate-200 px-3 text-sm text-slate-700">
                                         {/* Money Icon */}
                                         <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Zm0-3a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
@@ -185,19 +190,19 @@ const Transaction = () => {
                                     <input type="text"
                                         id='amountInput'
                                         value={availableWithdrawBal}
-                                        className="rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                        className="block min-w-0 flex-1 rounded-e-xl border border-slate-300 bg-slate-50 p-2.5 text-sm text-slate-900"
                                         disabled />
                                 </div>
                             </div>
                         }
 
                         <div className="mb-2">
-                            <label htmlFor="instDropdown" className="block text-sm font-medium text-gray-900 dark:text-white">Select Transaction Mode</label>
+                            <label htmlFor="instDropdown" className="field-label">Select Transaction Mode</label>
                             <select
                                 id="transModeSelect"
                                 value={transMode}
                                 onChange={(e) => setTransMode(e.target.value)}
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" >
+                                className="field-select" >
 
                                 <option value="">Select transaction mode</option>
                                 <option value="cash">Cash</option>
@@ -209,7 +214,7 @@ const Transaction = () => {
                         <div className="flex justify-center">
                             <button
                                 type="submit"
-                                className="w-full bg-blue-700 text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                                className="primary-button"
                                 disabled={loading}
                             >
                                 {loading ? <ButtonSpinner /> : 'Submit'}
@@ -220,6 +225,7 @@ const Transaction = () => {
 
 
             </form>
+            </div>
         </div>
     )
 }

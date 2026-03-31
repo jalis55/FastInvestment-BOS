@@ -8,6 +8,8 @@ const UserCard = ({ user }) => {
     const buttonRef = useRef(null);
     const [activeSt, setActiveSt] = useState(user.is_active);
     const [adminSt, setAdminSt] = useState(user.is_staff);
+    const displayName = user?.name || 'Unnamed User';
+    const displayEmail = user?.email || 'No email';
 
     // Close dropdown when clicking outside
     const handleClickOutside = (e) => {
@@ -35,13 +37,13 @@ const UserCard = ({ user }) => {
         try {
             let response;
             if (statusType === 'activeStatus') {
-                response = await API.patch(`api/admin/users/${user.id}/`, { is_active: !activeSt });
+                response = await API.patch(`/api/admin/users/${user.id}/`, { is_active: !activeSt });
                 if (response.status === 200) {
                     setActiveSt(!activeSt);
                 }
             }
             if (statusType === 'adminStatus') {
-                response = await API.patch(`api/admin/users/${user.id}/`, { is_staff: !adminSt });
+                response = await API.patch(`/api/admin/users/${user.id}/`, { is_staff: !adminSt });
                 if (response.status === 200) {
                     setAdminSt(!adminSt);
                 }
@@ -111,10 +113,10 @@ const UserCard = ({ user }) => {
 
             {/* User content */}
             <div className="flex flex-col items-center pb-10">
-                <UserImage image_url={user.profile_image} name={user.name} sex={user.sex} />
+                <UserImage image_url={user.profile_image} name={displayName} sex={user.sex} />
                 <div className="mb-1 flex items-center gap-2">
                     <h5 className="text-xl font-medium text-gray-900 dark:text-white">
-                        {user.name.toUpperCase()}
+                        {displayName.toUpperCase()}
                     </h5>
                     <span
                         className={`inline-block w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
@@ -123,7 +125,7 @@ const UserCard = ({ user }) => {
                     ></span>
                 </div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {user.email}
+                    {displayEmail}
                 </span>
                 <div className="flex mt-4 md:mt-6">
                     <button className="py-2 px-4 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">

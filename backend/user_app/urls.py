@@ -1,12 +1,13 @@
 
 from django.urls import path
 
-from user_app.views import (CustomerListView, UpdateUserStatusView,
+from user_app.views import (CurrentSessionView, CustomerListView, UpdateUserStatusView,
                             UserDetailsView, UserListView,
                             UserRegistrationView, UserStatusView)
 
 urlpatterns = [
     path('user-register/',UserRegistrationView.as_view(),name='user_registration'),
+    path('session/',CurrentSessionView.as_view(),name='current_session'),
     path('user-profile/',UserDetailsView.as_view(),name='user_profile'),
     path('user-status/',UserStatusView.as_view(),name='user_status'),
     path('admin/users/',UserListView.as_view(),name='user_list'),

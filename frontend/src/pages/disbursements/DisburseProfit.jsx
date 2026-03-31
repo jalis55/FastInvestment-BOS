@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 import API from '@/api/axios';
 import BannerTitle from '../../components/BannerTitle';
+import Spinner from '@/components/Spinner';
 
 const DisburseProfit = () => {
     const [formData, setFormData] = useState({
@@ -151,11 +152,11 @@ const DisburseProfit = () => {
 
 
     return (
-        <div className="container mx-auto p-4">
+        <div>
             <BannerTitle title="Disburse Profit" />
 
             {/* Search Form */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="page-card mb-6">
                 <form onSubmit={searchProject}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
@@ -163,7 +164,7 @@ const DisburseProfit = () => {
                             <input
                                 type="text"
                                 name="searchId"
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="field-input"
                                 placeholder="Enter Project ID"
                                 value={formData.searchId}
                                 onChange={handleInputChange}
@@ -175,7 +176,7 @@ const DisburseProfit = () => {
                             <input
                                 type="date"
                                 name="fromDt"
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="field-input"
                                 value={formData.fromDt}
                                 onChange={handleInputChange}
                                 required
@@ -186,7 +187,7 @@ const DisburseProfit = () => {
                             <input
                                 type="date"
                                 name="toDate"
-                                className="w-full px-3 py-2 border rounded-lg"
+                                className="field-input"
                                 value={formData.toDate}
                                 onChange={handleInputChange}
                                 required
@@ -195,7 +196,7 @@ const DisburseProfit = () => {
                     </div>
                     <button
                         type="submit"
-                        className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
+                        className="primary-button"
                         disabled={isLoading}
                     >
                         {isLoading ? 'Searching...' : 'Search'}
@@ -207,9 +208,10 @@ const DisburseProfit = () => {
             {isDataLoaded && (
                 <div className="space-y-6">
                     {/* Advisor Commissions */}
+                    {isLoading && <Spinner />}
                     {advCommission.length > 0 && (
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                            <div className="p-4 bg-gray-50 border-b">
+                        <div className="table-shell">
+                            <div className="table-header">
                                 <h2 className="text-lg font-semibold">Financial Advisor Commissions</h2>
                             </div>
                             <div className="overflow-x-auto">
@@ -247,8 +249,8 @@ const DisburseProfit = () => {
 
                     {/* Investor Profits */}
                     {invProfit.length > 0 && (
-                        <div className="bg-white rounded-lg shadow overflow-hidden">
-                            <div className="p-4 bg-gray-50 border-b">
+                        <div className="table-shell">
+                            <div className="table-header">
                                 <h2 className="text-lg font-semibold">Investor Profit Distribution</h2>
                             </div>
                             <div className="overflow-x-auto">
@@ -290,7 +292,7 @@ const DisburseProfit = () => {
 
                     {/* No Data Message */}
                     {advCommission.length === 0 && invProfit.length === 0 && isDataLoaded && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
                             <p className="text-yellow-800">No commission or profit data found for this project.</p>
                         </div>
                     )}
@@ -300,7 +302,7 @@ const DisburseProfit = () => {
                         <div className="flex justify-start">
                             <button
                                 onClick={handleDisburse}
-                                className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg disabled:bg-gray-400"
+                                className="inline-flex items-center justify-center rounded-xl bg-green-600 px-6 py-2.5 text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
                                 disabled={isLoading}
                             >
                                 {isLoading ? 'Processing...' : 'Disburse Profits'}

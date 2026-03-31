@@ -1,21 +1,20 @@
-import { useContext, useState } from "react";
-// import { useTheme } from "../hooks/use-theme";
-import { Bell, ChevronsLeft, Moon, Sun } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Bell, ChevronsLeft, Sparkles } from "lucide-react";
 import profileImg from "../assets/profile-image.jpg";
 import PropTypes from "prop-types";
-import { useNavigate,Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 
 const Header = ({ collapsed, setCollapsed }) => {
-    // const { theme, setTheme } = useTheme();
     const { userData, logout } = useAuth();
-     const navigate = useNavigate();
+    const navigate = useNavigate();
+    const displayName = useMemo(() => {
+        if (!userData?.name) {
+            return "My Profile";
+        }
 
-    // Retrieve the base URL from environment variables
-    const baseURL = import.meta.env.VITE_API_URL;
-
-
-
+        return userData.name.toUpperCase();
+    }, [userData?.name]);
 
     const [isOpen, setIsOpen] = useState(false);
 
@@ -28,77 +27,89 @@ const Header = ({ collapsed, setCollapsed }) => {
 
     const handleLogout = async () => {
         await logout();
+        setIsOpen(false);
         navigate('/login');
     };
 
 
 
     return (
-        <header className="relative z-10 flex h-[60px] items-center justify-between bg-white px-4 shadow-md transition-colors dark:bg-slate-900">
-            <div className="flex items-center gap-x-3">
+        <header className="relative z-10 flex h-[72px] items-center justify-between border-b border-white/50 bg-white/65 px-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl">
+            <div className="flex items-center gap-x-4">
                 <button
-                    className="btn-ghost size-10"
+                    className="flex size-11 items-center justify-center rounded-2xl border border-white/60 bg-white/80 text-slate-600 transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-900"
                     onClick={() => setCollapsed(!collapsed)}
+                    aria-label="Toggle sidebar"
                 >
                     <ChevronsLeft className={collapsed && "rotate-180"} />
                 </button>
-
+                <div className="hidden md:block">
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                        Operations Center
+                    </p>
+                    <p className="text-sm text-slate-700">
+                        Monitor projects, trades, and reporting activity.
+                    </p>
+                </div>
             </div>
 
             <div className="flex items-center gap-x-3">
-
                 <button
-                    className="btn-ghost size-10"
-                    onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                    type="button"
+                    className="hidden items-center gap-2 rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white md:inline-flex"
+                    aria-label="Workspace status"
                 >
-                    <Sun
-                        size={20}
-                        className="dark:hidden"
-                    />
-                    <Moon
-                        size={20}
-                        className="hidden dark:block"
-                    />
+                    <Sparkles size={16} className="text-cyan-600" />
+                    Ready
                 </button>
-                <button className="btn-ghost size-10">
+                <button
+                    type="button"
+                    className="flex size-11 items-center justify-center rounded-2xl border border-white/70 bg-white/80 text-slate-500 transition hover:bg-white hover:text-slate-700"
+                    aria-label="Notifications"
+                >
                     <Bell size={20} />
                 </button>
 
-                {/* <Link to={"logout"} title="logout" className="btn-ghost size-10" ><LogOut /></Link> */}
                 <div className="relative inline-block text-left">
-                    {/* Profile image button */}
                     <button
                         type="button"
-                        className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-gray-300 ring-inset hover:bg-gray-50"
+                        className="inline-flex items-center justify-center rounded-full border border-white/70 bg-white/85 p-1 shadow-sm transition hover:border-slate-300 hover:bg-white"
                         id="menu-button"
                         aria-expanded={isOpen}
                         aria-haspopup="true"
                         onClick={toggleDropdown}
                     >
                         <img
-                            src={userData.profile_image || profileImg} 
+                            src={userData?.profile_image || profileImg}
                             alt="profile"
                             className="size-10 rounded-full object-cover"
                         />
                     </button>
 
-                    {/* Dropdown menu */}
                     {isOpen && (
                         <div
-                            className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white ring-1 shadow-lg ring-black/5 focus:outline-hidden"
+                            className="absolute right-0 z-10 mt-3 w-60 origin-top-right rounded-3xl border border-white/70 bg-white/95 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
                             role="menu"
                             aria-orientation="vertical"
                             aria-labelledby="menu-button"
                             tabIndex="-1"
                         >
                             <div className="py-1" role="none">
-
-                                <Link to="/user-details" title="profile" className="block px-4 py-2 text-sm text-gray-700">
-                                    {userData.name.toUpperCase()}
+                                <Link
+                                    to="/user-details"
+                                    title="profile"
+                                    className="block rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    {displayName}
                                 </Link>
-                                <Link title="logout" className="block px-4 py-2 text-sm text-gray-700" onClick={handleLogout}>
+                                <button
+                                    type="button"
+                                    className="block w-full rounded-2xl px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
+                                    onClick={handleLogout}
+                                >
                                     Logout
-                                </Link>
+                                </button>
                             </div>
                         </div>
                     )}

@@ -1,12 +1,10 @@
-import React, { forwardRef, useState, useEffect, useContext } from "react";
+import React, { forwardRef, useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import menu from "../constants/menu.js";
-import logoLight from "../assets/logo-light.svg";
-import logoDark from "../assets/logo-dark.svg";
 import { cn } from "../utils/cn";
 import PropTypes from "prop-types";
 import { ChevronDown } from "lucide-react";
-import { useAuth } from "@/auth/AuthContext.jsx";
+import { useAuth } from "@/auth/AuthContext";
 
 const Sidebar = forwardRef(({ collapsed }, ref) => {
   const [openMenus, setOpenMenus] = useState({});
@@ -40,19 +38,27 @@ const Sidebar = forwardRef(({ collapsed }, ref) => {
     <aside
       ref={ref}
       className={cn(
-        "fixed z-[100] flex h-full w-[240px] flex-col overflow-x-hidden border-r border-slate-300 bg-white transition-all duration-300 dark:border-slate-700 dark:bg-slate-900",
+        "fixed z-[100] flex h-full w-[268px] flex-col overflow-x-hidden border-r border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,#0f172a_0%,#172554_100%)] text-white transition-all duration-300",
         collapsed ? "md:w-[70px] md:items-center" : "md:w-[240px]",
         collapsed ? "max-md:-left-full" : "max-md:left-0"
       )}
     >
-      <div className="flex gap-x-3 p-3">
-        <img src={logoLight} alt="Logo" className="dark:hidden" />
-        <img src={logoDark} alt="Logo" className="hidden dark:block" />
+      <div className="border-b border-white/10 px-4 py-5">
+        <div className="flex items-center gap-x-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-lg font-semibold text-cyan-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+            FI
+          </div>
         {!collapsed && (
-          <p className="text-lg font-medium text-slate-900 transition-colors dark:text-slate-50">
-            Fast Investment Limited
-          </p>
+            <div>
+              <p className="text-sm font-semibold tracking-[0.18em] text-white/60 uppercase">
+                Fast Investment
+              </p>
+              <p className="text-base font-medium text-white">
+                Backoffice Suite
+              </p>
+            </div>
         )}
+        </div>
       </div>
       <div className="flex w-full flex-col gap-y-4 overflow-y-auto overflow-x-hidden p-3 scrollbar-thin">
         {filteredMenu.map((menuItem) => (
@@ -64,7 +70,7 @@ const Sidebar = forwardRef(({ collapsed }, ref) => {
               <button
                 type="button"
                 onClick={() => toggleMenu(menuItem.menuName)}
-                className="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+                className="flex w-full items-center rounded-2xl p-3 text-white/80 transition duration-150 hover:bg-white/8 hover:text-white"
               >
                 <menuItem.icon size={22} className="flex-shrink-0" />
                 {!collapsed && (
@@ -83,10 +89,10 @@ const Sidebar = forwardRef(({ collapsed }, ref) => {
               <NavLink
                 to={menuItem.url}
                 className={({ isActive }) => cn(
-                  "flex items-center w-full p-2 transition duration-75 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700",
+                  "flex w-full items-center rounded-lg p-2 transition duration-75 hover:bg-slate-100",
                   isActive 
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100"
-                    : "text-gray-900 dark:text-white"
+                    ? "bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                    : "text-white/78"
                 )}
               >
                 <menuItem.icon size={22} className="flex-shrink-0" />
@@ -109,10 +115,10 @@ const Sidebar = forwardRef(({ collapsed }, ref) => {
                     key={child.menuName}
                     to={child.url}
                     className={({ isActive }) => cn(
-                      "flex items-center w-full p-2 transition duration-75 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700",
+                      "flex w-full items-center rounded-2xl p-3 transition duration-150 hover:bg-white/8 hover:text-white",
                       isActive 
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100"
-                        : "text-gray-900 dark:text-white",
+                        ? "bg-white/12 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                        : "text-white/72",
                       collapsed && "md:w-[45px] md:justify-center"
                     )}
                   >

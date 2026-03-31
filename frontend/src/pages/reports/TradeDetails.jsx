@@ -2,10 +2,12 @@
 import { useState, useEffect } from "react";
 import BannerTitle from "../../components/BannerTitle";
 import API from "@/api/axios";
+import Spinner from "@/components/Spinner";
 
 export default function TradeDetailsPage() {
   const [trades, setTrades] = useState([])
   const [filteredTrades, setFilteredTrades] = useState([])
+  const [loading, setLoading] = useState(true)
   const [selectedProject, setSelectedProject] = useState("all")
   const [selectedType, setSelectedType] = useState("all")
   const [selectedInstrument, setSelectedInstrument] = useState("all")
@@ -18,6 +20,7 @@ export default function TradeDetailsPage() {
       const response = await API.get(`api/stock/trade/details/`);
       setTrades(response.data)
       setFilteredTrades(response.data);
+      setLoading(false)
     }
     getTradeData();
 
@@ -120,23 +123,23 @@ export default function TradeDetailsPage() {
   const totals = getTotalsByType()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <BannerTitle titile="Trade Details" />
+    <div>
+      <BannerTitle title="Trade Details" />
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      {loading ? <Spinner /> : <main className="space-y-6">
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="page-card">
             <h2 className="text-lg font-medium text-gray-900 mb-2">Total Buy Value</h2>
             <p className="text-3xl font-bold text-teal-600">{totals.buy}</p>
           </div>
 
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="page-card">
             <h2 className="text-lg font-medium text-gray-900 mb-2">Total Sell Value</h2>
             <p className="text-3xl font-bold text-rose-600">{totals.sell}</p>
           </div>
 
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="page-card">
             <h2 className="text-lg font-medium text-gray-900 mb-2">Net Position</h2>
             <p
               className={`text-3xl font-bold ${Number.parseFloat(totals.net.replace(/[^0-9.-]+/g, "")) >= 0 ? "text-teal-600" : "text-rose-600"}`}
@@ -146,7 +149,7 @@ export default function TradeDetailsPage() {
           </div>
         </div>
         {/* Filters */}
-        <div className="bg-white shadow rounded-lg mb-6 p-4">
+        <div className="page-card-tight">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label htmlFor="project-filter" className="block text-sm font-medium text-gray-700 mb-1">
@@ -207,7 +210,7 @@ export default function TradeDetailsPage() {
 
 
         {/* Trades Table */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="table-shell">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -319,8 +322,7 @@ export default function TradeDetailsPage() {
             </p>
           </div>
         </div>
-      </main>
+      </main>}
     </div>
   )
 }
-

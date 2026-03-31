@@ -4,7 +4,7 @@ import ButtonSpinner from "../../components/ButtonSpinner.jsx";
 import API from "@/api/axios";
 import Swal from "sweetalert2";
 import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
-import { parse } from "papaparse";
+import { SearchBar } from "@/components/ui/search-bar";
 
 
 const CloseProject = () => {
@@ -142,75 +142,66 @@ const CloseProject = () => {
   return (
     <div>
       <BannerTitle title="Close Project" />
-      <form className="max-w-lg mx-auto mb-8" onSubmit={searchProject}>
-        <div className="relative">
-          <label htmlFor="default-search" className="sr-only">Search</label>
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
-            </svg>
-          </div>
-          <input
-            type="search"
-            id="default-search"
+      <div className="mx-auto mb-8 max-w-3xl page-card">
+      <form className="max-w-lg" onSubmit={searchProject}>
+        <SearchBar
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
-            className="block w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             placeholder="Search Project"
+            aria-label="Search project"
             required
+            action={
+              <button
+                type="submit"
+                disabled={loading}
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? <ButtonSpinner /> : 'Search'}
+              </button>
+            }
           />
-          <button
-            type="submit"
-            disabled={loading}
-            className="absolute right-2.5 bottom-2.5 bg-blue-700 text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 disabled:opacity-50"
-          >
-            {loading ? <ButtonSpinner /> : 'Search'}
-          </button>
-        </div>
       </form>
+      </div>
 
       {projectFinDetails && (
-        <>
-          <div className="max-w-lg mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-            <div className="px-6 py-4">
-              <h2 className="text-xl font-semibold text-gray-800">Project ID: {projectFinDetails.project_id}</h2>
+          <div className="mx-auto max-w-3xl page-card">
+            <div className="px-2">
+              <h2 className="section-heading">Project ID: {projectFinDetails.project_id}</h2>
               <div className="mt-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Investment:</span>
-                  <span className="text-gray-800 font-medium">&#2547; {projectFinDetails.total_investment}</span>
+                  <span className="text-slate-600">Total Investment:</span>
+                  <span className="font-medium text-slate-900">&#2547; {projectFinDetails.total_investment}</span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-gray-600">Total Buy Amount:</span>
-                  <span className="text-gray-800 font-medium">&#2547; {projectFinDetails.total_buy_amount}</span>
+                  <span className="text-slate-600">Total Buy Amount:</span>
+                  <span className="font-medium text-slate-900">&#2547; {projectFinDetails.total_buy_amount}</span>
                 </div>
 
 
                 <div className="flex justify-between mt-2">
-                  <span className="text-gray-600">Total Sell Amount:</span>
-                  <span className="text-gray-800 font-medium">&#2547; {projectFinDetails.total_sell_amount}</span>
+                  <span className="text-slate-600">Total Sell Amount:</span>
+                  <span className="font-medium text-slate-900">&#2547; {projectFinDetails.total_sell_amount}</span>
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-gray-600">Accrued Profit:</span>
-                  <span className="text-gray-800 font-medium">&#2547; {projectFinDetails.accrued_profit}</span>
+                  <span className="text-slate-600">Accrued Profit:</span>
+                  <span className="font-medium text-slate-900">&#2547; {projectFinDetails.accrued_profit}</span>
                 </div>
 
-                <hr className="my-4 border-t border-gray-300" />
+                <hr className="my-4 border-t border-slate-200" />
 
                 <div className="flex justify-between mt-2">
-                  <span className="text-gray-600 font-semibold">Closing Balance:</span>
-                  <span className="text-gray-800 font-bold">&#2547; {projectFinDetails.available_balance}</span>
+                  <span className="font-semibold text-slate-700">Closing Balance:</span>
+                  <span className="font-bold text-slate-900">&#2547; {projectFinDetails.available_balance}</span>
                 </div>
               </div>
             </div>
             <button
               onClick={closeProject}
-              className="w-full bg-red-900 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors"
+              className="danger-button mt-6"
             >
               Close Project
             </button>
           </div>
-
-        </>
       )}
     </div>
   )

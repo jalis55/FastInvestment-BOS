@@ -5,15 +5,16 @@ from django.contrib.staticfiles.urls import static, staticfiles_urlpatterns
 from django.urls import include, path
 from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView,
                                    SpectacularSwaggerView)
-from rest_framework_simplejwt.views import (TokenObtainPairView,
-                                            TokenRefreshView)
+
+from user_app.views import CookieTokenObtainPairView, CookieTokenRefreshView, LogoutView
 
 
 
 urlpatterns = [
 
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
+    path('api/logout/', LogoutView.as_view(), name='logout'),
     path('silk/', include('silk.urls', namespace='silk')),
     path('schema-viewer/', include('schema_viewer.urls')),
     # api docs

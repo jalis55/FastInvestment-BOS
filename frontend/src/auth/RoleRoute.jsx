@@ -1,16 +1,20 @@
 // RoleRoute.jsx (independent of RequiredAuth)
-import { Navigate } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/auth/AuthContext';
 
-export default function RoleRoute({ allowedRoles = [], children }) {
+export default function RoleRoute({ roles = [], children }) {
   const { user } = useAuth();
+  const location = useLocation();
 
   const hasAccess =
-    allowedRoles.length === 0 ||
-    (allowedRoles.includes('admin') && user?.isAdmin) ||
-    (allowedRoles.includes('superAdmin') && user?.isSuperAdmin);
-  
+    roles.length === 0 ||
+    (roles.includes('admin') && user?.is_admin) ||
+    (roles.includes('super_admin') && user?.is_super_admin) ||
+    (roles.includes('user') && user && !user.is_admin);
 
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-  return hasAccess ? children : <Navigate to="/unauthorized" replace />;
+  return hasAccess ? children : <Navigate to="/" replace />;
 }

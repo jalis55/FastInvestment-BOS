@@ -3,6 +3,9 @@ import API from "@/api/axios";
 import Swal from "sweetalert2";
 import BannerTitle from "../../components/BannerTitle.jsx";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
+import { Field } from "@/components/ui/field";
+import { PageIntro } from "@/components/ui/page-intro";
+import { SurfaceCard } from "@/components/ui/surface-card";
 
 const CreateProjects = () => {
     // State for form fields
@@ -103,75 +106,58 @@ const CreateProjects = () => {
     return (
         <>
             <BannerTitle title="Create Project" />
-            <form className="max-w-md mx-auto space-y-6" onSubmit={handleSubmit}>
+            <SurfaceCard className="mx-auto max-w-2xl">
+                <PageIntro
+                    eyebrow="Projects"
+                    title="New Project"
+                    description="Create a project with a clear title, description, and responsible contact."
+                />
+            <form className="space-y-6" onSubmit={handleSubmit}>
                 {/* Project Title Field */}
-                <div className="mb-2">
-                    <label htmlFor="projectTitle" className="block text-sm font-medium text-gray-900 dark:text-white">
-                        Project Title
-                    </label>
+                <Field htmlFor="projectTitle" label="Project Title" error={errors.projectTitle}>
                     <input
                         type="text"
                         id="projectTitle"
                         value={formData.projectTitle}
                         onChange={handleInputChange}
-                        className={`bg-gray-50 border ${
-                            errors.projectTitle ? "border-red-500" : "border-gray-300"
-                        } text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`}
+                        className={`field-input ${errors.projectTitle ? "border-red-500" : ""}`}
                     />
-                    {errors.projectTitle && (
-                        <p className="text-red-500 text-sm mt-1">{errors.projectTitle}</p>
-                    )}
-                </div>
+                </Field>
 
                 {/* Project Description Field */}
-                <div className="mb-2">
-                    <label htmlFor="projectDescription" className="block text-sm font-medium text-gray-900 dark:text-white">
-                        Project Short Description
-                    </label>
+                <Field htmlFor="projectDescription" label="Project Short Description" error={errors.projectDescription}>
                     <input
                         type="text"
                         id="projectDescription"
                         value={formData.projectDescription}
                         onChange={handleInputChange}
-                        className={`bg-gray-50 border ${
-                            errors.projectDescription ? "border-red-500" : "border-gray-300"
-                        } text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`}
+                        className={`field-input ${errors.projectDescription ? "border-red-500" : ""}`}
                     />
-                    {errors.projectDescription && (
-                        <p className="text-red-500 text-sm mt-1">{errors.projectDescription}</p>
-                    )}
-                </div>
+                </Field>
 
                 {/* Responsible Mail Field */}
-                <div className="mb-2">
-                    <label htmlFor="responsibleMail" className="block text-sm font-medium text-gray-900 dark:text-white">
-                        Responsible Mail
-                    </label>
+                <Field htmlFor="responsibleMail" label="Responsible Mail" error={errors.responsibleMail}>
                     <input
                         type="email"
                         id="responsibleMail"
                         value={formData.responsibleMail}
                         onChange={handleInputChange}
-                        className={`bg-gray-50 border ${
-                            errors.responsibleMail ? "border-red-500" : "border-gray-300"
-                        } text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`}
+                        className={`field-input ${errors.responsibleMail ? "border-red-500" : ""}`}
                     />
-                    {errors.responsibleMail && (
-                        <p className="text-red-500 text-sm mt-1">{errors.responsibleMail}</p>
-                    )}
-                </div>
+                </Field>
 
                 {/* Submit Button */}
                 <div className="flex justify-center">
                     <button
                         type="submit"
-                        className="w-full bg-blue-700 text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                        className="primary-button"
                         disabled={loading}
                     >
                         {loading ? <ButtonSpinner /> : "Submit"}
                     </button>
                 </div>
             </form>
+            </SurfaceCard>
         </>
     );
 };
