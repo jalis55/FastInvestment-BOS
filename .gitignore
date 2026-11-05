@@ -1,1 +1,41 @@
+# Local agent and cloud configuration
+.agents/
+.agets/
+.aws/
+.codex
+.venv/
+venv/
+
+# Local environment and secrets (keep shareable templates)
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Python caches, tooling, and local databases
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+*.sqlite3
+*.sqlite3-*
+
+# JavaScript dependencies, builds, and test output
 node_modules/
+dist/
+dist-ssr/
+coverage/
+.vite/
+
+# Logs and editor/OS files
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
