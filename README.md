@@ -1,56 +1,83 @@
-# Fast Investment Limited Backoffice Software
+# Fast Investment Backoffice
 
-This repository contains the complete source code for **Fast Investment Limited**'s Backoffice Software. The project is split into a Django-based backend API and a React/Vite-based frontend application.
+Fast Investment Backoffice manages investment projects, trades, customer accounts, advisor commissions, profit disbursement, and reporting. It has a Django REST API and a React/Vite frontend.
 
-## 🗂 Project Structure
+## Repository layout
 
-- **`backend/`**: Contains the Django & Django REST Framework application. Handles authentication, databases, business logic, endpoints, and caching (with Redis).
-- **`frontend/`**: Contains the React + Vite application. Provides an interactive UI built with Tailwind CSS, shadcn/ui, and React Router.
-- **`docker-compose.yaml`**: Root configuration file to spin up the entire software stack (backend, frontend, and a redis cache).
+| Path | Purpose |
+| --- | --- |
+| `backend/` | Django API, business rules, authentication, and market price service |
+| `backend/docs/` | API reference organized by Django app |
+| `frontend/` | React application, shared UI, and frontend tests |
+| `docker-compose.yaml` | Local backend, frontend, and Redis services |
 
-## 🚀 Quick Start with Docker
+## Run locally
 
-The easiest way to get the entire project up and running locally is to use Docker Compose. Ensure you have Docker desktop and Docker Compose installed.
+Use Python 3.12+, Node.js 22+, npm, and Redis. The commands below run the frontend at `http://localhost:5173` and the API at `http://localhost:8000`. Use `localhost` for both so browser cookies work consistently.
 
-### 1. Build and Run the Stack
-From the root of the repository, execute:
-```bash
-docker-compose up --build
+1. Start Redis, for example with `docker compose up -d redis`, or use an existing Redis server.
+2. Create `backend/.env.local` with local settings:
+
+   ```env
+   DEBUG=True
+   REDIS_URL=redis://localhost:6379/0
+   ```
+
+   For a hosted Redis service, use its TLS `rediss://` URL instead. Keep credentials in the ignored `.env.local` file or process environment; never commit them.
+
+3. Install and start the backend from the repository root:
+
+   ```bash
+   uv sync
+   cd backend
+   ../.venv/bin/python manage.py migrate
+   ../.venv/bin/python manage.py runserver
+   ```
+
+   If you do not use `uv`, create a Python virtual environment and install `backend/requirements.txt` instead. The current Django settings use `backend/db.sqlite3`; the PostgreSQL settings in `backend/core/settings.py` are commented out.
+
+4. In another terminal, install and start the frontend:
+
+   ```bash
+   cd frontend
+   npm ci
+   VITE_API_URL=http://localhost:8000 npm run dev
+   ```
+
+`VITE_API_URL` is the backend origin used by the shared HTTP client. If omitted, API requests go to the frontend's own origin and need a reverse proxy for `/api/`. The backend's default CORS and CSRF trusted origins include `localhost:5173` and `127.0.0.1:5173`.
+
+## Run with Docker Compose
+
+The Compose file exposes the frontend at `http://localhost:3000`, the API at `http://localhost:8000`, and Redis at `localhost:6379`. Before starting it, create `backend/.env.local` for local HTTP and the frontend origin:
+
+```env
+DEBUG=True
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+CSRF_TRUSTED_ORIGINS=http://localhost:3000
 ```
-This command will build the backend, the frontend, and start a Redis instance container automatically.
 
-### 2. Access the Application
-- **Frontend App**: Accessible at [http://localhost:3000](http://localhost:3000)
-- **Backend API Server**: Accessible at [http://localhost:8000](http://localhost:8000)
+Then run:
 
-> *Note for Windows users: if you have issues with paths in docker-compose, ensure your Docker Desktop is configured to use WSL2 and files are securely mounted.*
+```bash
+docker compose up --build -d
+docker compose exec backend python manage.py migrate
+```
 
-## 💻 Manual Setup
+The Compose services mount the source directories for local development. Use environment-specific security, database, and web server settings for deployment.
 
-If you prefer to run the components manually without Docker (or are developing specific modules), you can set them up individually.
+## Market prices in Project Details
 
-### Background Services
-You must ideally have a Redis server running locally on port `6379`.
+The Project Details report gets market reference prices through `GET /api/stock/instruments/close/price/`. On the first request of each **Asia/Dhaka calendar day**, the backend reads the full price feed used by [AmarStock's latest share price page](https://www.amarstock.com/latest-share-price). It saves the result in Redis and reuses it for subsequent requests that day. There is no background scheduler; a day with no request makes no scrape.
 
-### Backend Initialization
-1. Navigate to the `backend/` directory: `cd backend`
-2. Create and configure your `.env` file (see backend documentation).
-3. Install Python dependencies: `pip install -r requirements.txt`
-4. Run migrations: `python manage.py migrate`
-5. Start backend server: `python manage.py runserver`
+The API returns `prices`, `fetched_on`, and `stale`. It uses AmarStock's **Close** value, or **YCP** when Close is zero. If a refresh fails, it serves the last successful snapshot with `stale: true`; if no snapshot exists, it returns `503`. The UI labels stale data and leaves missing prices and derived valuations blank. Holding cost is calculated from buy trades in the selected project.
 
-For more details, please refer to the [Backend README](backend/README.md).
+## API and checks
 
-### Frontend Initialization
-1. Navigate to the `frontend/` directory: `cd frontend`
-2. Create and configure your `.env` file (e.g. `VITE_API_BASE_URL=http://localhost:8000`).
-3. Install Node.js dependencies: `npm install`
-4. Start dev server: `npm run dev`
+After the backend starts, open [Swagger UI](http://localhost:8000/), [ReDoc](http://localhost:8000/api/schema/redoc/), or the [OpenAPI schema](http://localhost:8000/api/schema/). The [backend API guide](backend/docs/README.md) links to endpoint references for `user_app`, `accounting`, and `stock_app`. See the [backend setup guide](backend/readme.md) and [frontend guide](frontend/README.md) for component-specific details.
 
-For more details, please refer to the [Frontend README](frontend/README.md).
+Run the checks from the repository root:
 
-## 📄 Documentation Links
-
-- **API Documentation**: The backend auto-generates Swagger and ReDoc schemas. Once running, view it at [http://localhost:8000](http://localhost:8000).
-- **Frontend Details**: Visit [`frontend/README.md`](frontend/README.md).
-- **Backend Details**: Visit [`backend/README.md`](backend/README.md).
+```bash
+cd backend && ../.venv/bin/python manage.py test stock_app.test_market_prices
+cd ../frontend && npm run lint && npm test && npm run build
+```

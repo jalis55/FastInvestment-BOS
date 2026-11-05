@@ -15,7 +15,7 @@ This is the frontend application for Fast Investment Limited. It provides an int
 ## ⚙️ Setup and Installation
 
 ### 1. Prerequisites
-Ensure you have [Node.js](https://nodejs.org/) (v18 or newer recommended) and npm installed.
+Use [Node.js](https://nodejs.org/) 22 or newer and npm.
 
 ### 2. Clone the repository
 ```bash
@@ -26,7 +26,7 @@ cd FAST-Investment-Back-Office-Software/frontend
 ### 3. Environment Variables
 Create a `.env` file in the root of the `frontend` directory. Adjust variables based on the backend server:
 ```env
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_URL=http://localhost:8000
 ```
 *(Check your local `.env` configuration file to ensure all keys match exactly what the frontend requires.)*
 
@@ -59,6 +59,6 @@ npm run preview
 - `src/` - The main application code directory.
   - Contains components, pages/views, routing logic, services (Axios configs), contexts, and the main entry point `main.jsx`.
 - `public/` - Static files that go straight to the root directory (e.g., `favicon.ico`).
-- `package.json` - Defines project dependencies and executable scripts (`dev`, `build`, `lint`).
+- `package.json` - Defines project dependencies and executable scripts (`dev`, `build`, `lint`, `test`).
 - `vite.config.js` - Configuration file for the Vite bundler.
 - `eslint.config.js` - ESLint configuration for code linting and formatting.

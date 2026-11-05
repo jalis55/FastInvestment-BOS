@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useApiQuery } from '@/hooks/use-api-query';
+import { QueryState } from '@/components/ui/query-state';
+import { getApiError } from '@/api/errors';
+import { useState } from "react";
 import { CheckCircleIcon, XCircleIcon } from 'lucide-react';
 import BannerTitle from '../../components/BannerTitle';
 import API from "@/api/axios";
@@ -7,34 +10,22 @@ import { parseISO, format } from 'date-fns';
 import "./PendingPayments.css";
 
 const PendingPayments = () => {
-    const [pendingPaymentList, setPendingPaymentList] = useState([]);
-
-    useEffect(() => {
-        getPendingPaymentList();
-    }, []);
-
-    const getPendingPaymentList = async () => {
-        try {
-            const response = await API.get('/api/acc/user/pending-payments/');
-            console.log(response.data);
-            setPendingPaymentList(response.data);
-        } catch (error) {
-            console.error("Error fetching payments:", error);
-        }
-    };
+    const { data: pendingPaymentList, loading, error, refetch } = useApiQuery('/api/acc/user/pending-payments/');
+    const [busy, setBusy] = useState(false);
 
     const handleApproval = async (paymentId, status) => {
+        if (busy) return;
+        setBusy(true);
         try {
             const response = await API.patch(`/api/acc/user/approve-transaction/${paymentId}/`, { status });
             if (response.status === 200) {
-                setPendingPaymentList(prevList => prevList.filter(payment => payment.id !== paymentId));
                 Swal.fire("Success!", `Transaction ${status} successfully.`, "success");
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.detail || "Failed to update transaction.";
+            const errorMessage = getApiError(error);
             console.error("Error:", errorMessage);
             Swal.fire("Error", errorMessage, "error");
-        }
+        } finally { setBusy(false); }
     };
 
     const confirmAction = (paymentId, status) => {
@@ -55,7 +46,8 @@ const PendingPayments = () => {
     return (
         <div className="p-4">
             <BannerTitle title="Pending Payments" />
-            <div className="overflow-x-auto">
+            <QueryState loading={loading} error={error} onRetry={refetch} empty={!pendingPaymentList.length} emptyTitle="No pending payments">
+            <div className="table-shell overflow-x-auto">
                 {pendingPaymentList.length === 0 ? (
                     <h1 className="text-center text-gray-600 p-5">No Pending Payments</h1>
                 ) : (
@@ -94,6 +86,7 @@ const PendingPayments = () => {
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex justify-end gap-4">
                                                 <button
+                                                    disabled={busy}
                                                     title="Approve"
                                                     onClick={() => confirmAction(payment.id, 'approved')}
                                                     className="text-green-600 hover:text-green-800"
@@ -101,6 +94,7 @@ const PendingPayments = () => {
                                                     <CheckCircleIcon size={20} />
                                                 </button>
                                                 <button
+                                                    disabled={busy}
                                                     title="Cancel"
                                                     onClick={() => confirmAction(payment.id, 'declined')}
                                                     className="text-red-600 hover:text-red-800"
@@ -116,6 +110,7 @@ const PendingPayments = () => {
                     </div>
                 )}
             </div>
+            </QueryState>
         </div>
     );
 };

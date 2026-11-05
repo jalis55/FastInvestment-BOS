@@ -1,3 +1,5 @@
+from .schema import SessionSerializer, LoginResponseSerializer, MessageSerializer, DetailSerializer
+from drf_spectacular.utils import extend_schema
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.cache import cache
@@ -23,6 +25,7 @@ from user_app.serializers import (CustomTokenObtainPairSerializer,
 
 # Create your views here.
 
+@extend_schema(summary='Register a user', description='Create a user with email and name. Password is optional in the current serializer; when supplied it must contain at least eight characters. Use multipart/form-data for profile_image.')
 class UserRegistrationView(CreateAPIView):
     serializer_class=UserSerializer
     permission_classes=[AllowAny]
@@ -89,6 +92,8 @@ def _clear_auth_cookies(response):
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
+@extend_schema(summary='Log in', description='Authenticate with email and password. Sets access and refresh JWT cookies and a CSRF cookie. Returns session details; JWT strings are not included in JSON.')
+@extend_schema(responses={200: LoginResponseSerializer, 401: DetailSerializer})
 class CookieTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
     permission_classes = [AllowAny]
@@ -113,6 +118,8 @@ class CookieTokenObtainPairView(TokenObtainPairView):
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
+@extend_schema(summary='Refresh the session', description='Reads the refresh JWT from its HttpOnly cookie, rotates it, and sets new authentication cookies. No JSON body is required.')
+@extend_schema(request=None, responses={200: MessageSerializer, 401: DetailSerializer})
 class CookieTokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
 
@@ -134,6 +141,8 @@ class CookieTokenRefreshView(TokenRefreshView):
         return response
 
 
+@extend_schema(summary='Log out', description='Clears authentication cookies. Attempts to blacklist a refresh token only when that cookie is received; its default path is /api/token/refresh/.')
+@extend_schema(request=None, responses={200: MessageSerializer})
 class LogoutView(APIView):
     permission_classes = [AllowAny]
 
@@ -151,6 +160,8 @@ class LogoutView(APIView):
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
+@extend_schema(summary='Get the current session', description='Returns authenticated=false and user=null for missing or invalid authentication. Also sets a CSRF cookie. Always returns HTTP 200.')
+@extend_schema(responses={200: SessionSerializer})
 class CurrentSessionView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -168,6 +179,7 @@ class CurrentSessionView(APIView):
         user, _ = auth_result
         return Response(_session_payload(user), status=status.HTTP_200_OK)
 
+@extend_schema(summary='Read or update your profile', description='Acts on the current user. PATCH updates selected fields; PUT uses full serializer validation. Password is write-only. Use multipart/form-data for profile_image.')
 class UserDetailsView(RetrieveUpdateAPIView):
     serializer_class=UserSerializer
     permission_classes=[IsAuthenticated]
@@ -178,6 +190,7 @@ class UserDetailsView(RetrieveUpdateAPIView):
 
 
 
+@extend_schema(summary='Read or update role status', description='GET returns status: superadmin, admin, or user. PUT/PATCH are exposed by the view, but updating status is unsupported by the serializer and currently fails.')
 class UserStatusView(RetrieveUpdateAPIView):
     serializer_class = UserStatusSerializer
     permission_classes = [IsAuthenticated]
@@ -188,11 +201,13 @@ class UserStatusView(RetrieveUpdateAPIView):
         status = _user_role(user)
         return {"status": status}
 
+@extend_schema(summary='List non-superusers', description='Returns all users with is_superuser=false.')
 class UserListView(ListAPIView):
     queryset = CustomUser.objects.filter(is_superuser=False)
     serializer_class = UserListSerializer
     permission_classes = [IsSuperUser]  # Only allow superusers to access this view
 
+@extend_schema(summary='List customers', description='Returns non-staff, non-superuser accounts, cached for 15 minutes.')
 class CustomerListView(ListAPIView):
     serializer_class = UserListSerializer
     permission_classes = [IsAdminUser]
@@ -211,6 +226,7 @@ class CustomerListView(ListAPIView):
             cache.set(cache_key, queryset, timeout=60*15)
         
         return queryset
+@extend_schema(summary='Manage a non-superuser', description='Retrieve, update, or delete a non-superuser by user ID. Email is read-only. Staff and active flags are writable.')
 class UpdateUserStatusView(RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.filter(is_superuser=False)
     serializer_class=UserListSerializer

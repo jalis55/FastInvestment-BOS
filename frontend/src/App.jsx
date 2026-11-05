@@ -1,5 +1,8 @@
 // App.js
-import React from 'react';
+import { lazy, Suspense } from 'react';
+import ErrorBoundary from './components/errors/ErrorBoundary';
+import RouteError from './components/errors/RouteError';
+import Spinner from './components/Spinner';
 import {
   createBrowserRouter,
   RouterProvider,
@@ -9,44 +12,43 @@ import AuthProvider from '@/auth/AuthContext';
 import RedirectRoute from './auth/RedirectRoute';
 import RoleRoute from './auth/RoleRoute';
 import RequiredAuth from './auth/ReuiredRoute';
-import Layout from './pages/layout/Layout';
-import Login from './pages/login/Login';
-import Registration from './pages/register/Register';
+const Layout = lazy(() => import('./pages/layout/Layout'));
+const Login = lazy(() => import('./pages/login/Login'));
 
-import Dashboard from './pages/dashboard/Dashboard';
+const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 
 // USER MANAGEMENT
-import Users from './pages/users/Users';
-import UserDetails from './pages/users/UserDetails';
-import UserRegistration from './pages/users/UserRegistration';
+const Users = lazy(() => import('./pages/users/Users'));
+const UserDetails = lazy(() => import('./pages/users/UserDetails'));
+const UserRegistration = lazy(() => import('./pages/users/UserRegistration'));
 
 // TRADE
-import BuyInstruments from './pages/trade/BuyInstruments';
-import SellInstruments from './pages/trade/SellInstruments';
+const BuyInstruments = lazy(() => import('./pages/trade/BuyInstruments'));
+const SellInstruments = lazy(() => import('./pages/trade/SellInstruments'));
 
 // PROJECT
-import CreateProject from './pages/projects/CreateProject';
-import CloseProject from './pages/projects/CloseProject';
+const CreateProject = lazy(() => import('./pages/projects/CreateProject'));
+const CloseProject = lazy(() => import('./pages/projects/CloseProject'));
 // INVESTMENTS
-import AddInvestments from './pages/investments/AddInvestments';
+const AddInvestments = lazy(() => import('./pages/investments/AddInvestments'));
 // Financial Advisor
-import FinancialAdvisor from './pages/financialAdvisor/FinancialAdvisor';
+const FinancialAdvisor = lazy(() => import('./pages/financialAdvisor/FinancialAdvisor'));
 
 //Disbursement
-import DisburseProfit from './pages/disbursements/DisburseProfit';
+const DisburseProfit = lazy(() => import('./pages/disbursements/DisburseProfit'));
 
 // Accounting
-import Transaction from './pages/transaction/Transaction';
-import FundTransfer from './pages/transaction/FundTransfer';
-import PendingPayments from './pages/pending payments/PendingPayments';
+const Transaction = lazy(() => import('./pages/transaction/Transaction'));
+const FundTransfer = lazy(() => import('./pages/transaction/FundTransfer'));
+const PendingPayments = lazy(() => import('./pages/pending payments/PendingPayments'));
 // Reports
-import TradeDetails from './pages/reports/TradeDetails';
-import AccountReceivableDetails from './pages/reports/AccountReceivableDetails';
-import TransactionHistory from './pages/reports/TransactionHistory';
-import InvestmentHistory from './pages/reports/InvestmentHistory';
-import ProfitDetails from './pages/reports/ProfitDetails';
-import ProjectDetails from './pages/reports/ProjectDetails';
-import ProjectList from './pages/reports/ProjectList';
+const TradeDetails = lazy(() => import('./pages/reports/TradeDetails'));
+const AccountReceivableDetails = lazy(() => import('./pages/reports/AccountReceivableDetails'));
+const TransactionHistory = lazy(() => import('./pages/reports/TransactionHistory'));
+const InvestmentHistory = lazy(() => import('./pages/reports/InvestmentHistory'));
+const ProfitDetails = lazy(() => import('./pages/reports/ProfitDetails'));
+const ProjectDetails = lazy(() => import('./pages/reports/ProjectDetails'));
+const ProjectList = lazy(() => import('./pages/reports/ProjectList'));
 
 
 
@@ -57,6 +59,7 @@ import ProjectList from './pages/reports/ProjectList';
 const router = createBrowserRouter([
   {
     path: '/',
+    errorElement: <RouteError />,
     element: (
       <RequiredAuth>
         <Layout />
@@ -72,8 +75,8 @@ const router = createBrowserRouter([
     { path: 'user-registration',element: <RoleRoute roles={['super_admin']}><UserRegistration /></RoleRoute> },
 
       /* ---- Trade ---- */
-      { path: 'buy-instruments', element: <RoleRoute roles={['user', 'admin']}><BuyInstruments /></RoleRoute> },
-      { path: 'sell-instruments', element: <RoleRoute roles={['user', 'admin']}><SellInstruments /></RoleRoute> },
+      { path: 'buy-instruments', element: <RoleRoute roles={['admin']}><BuyInstruments /></RoleRoute> },
+      { path: 'sell-instruments', element: <RoleRoute roles={['admin']}><SellInstruments /></RoleRoute> },
       /* ---- Project ---- */
       { path: 'create-project', element: <RoleRoute roles={['admin']}><CreateProject /></RoleRoute> },
       { path: 'add-advisor', element: <RoleRoute roles={['admin']}><FinancialAdvisor /></RoleRoute> },
@@ -90,7 +93,7 @@ const router = createBrowserRouter([
 
       /* ---- Reports ---- */
       { path: 'acc-rec-details', element: <RoleRoute roles={['admin']}><AccountReceivableDetails /></RoleRoute> },
-      { path: 'trade-details', element: <RoleRoute roles={['user', 'admin']}><TradeDetails /></RoleRoute> },
+      { path: 'trade-details', element: <RoleRoute roles={['admin']}><TradeDetails /></RoleRoute> },
       { path: 'trans-history', element: <RoleRoute roles={['user']}><TransactionHistory/> </RoleRoute> },
       { path: 'investment-history', element: <RoleRoute roles={['user']}><InvestmentHistory/></RoleRoute> },
       { path: 'profit-details', element: <RoleRoute roles={['user']}><ProfitDetails/></RoleRoute> },
@@ -101,6 +104,7 @@ const router = createBrowserRouter([
   },
   {
     element: <RedirectRoute />,
+    errorElement: <RouteError />,
     children: [
       { path: 'login', element: <Login /> },
       // { path: 'register', element: <Registration /> },
@@ -115,9 +119,11 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Suspense fallback={<Spinner />}><RouterProvider router={router} /></Suspense>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

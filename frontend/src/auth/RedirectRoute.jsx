@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "@/auth/AuthContext";
+import { useAuth } from "@/auth/use-auth";
 import Spinner from "../components/Spinner";
 
 const RedirectRoute = () => {

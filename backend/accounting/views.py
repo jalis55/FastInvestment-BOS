@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -18,12 +19,14 @@ from .serializers import (AccountSerializer, FundTransferSerializer,
                           TransactionDetailsSerializer)
 
 
+@extend_schema(summary='List user balances', description='Returns every account with nested user details and its balance.')
 class AllUserBalanceDetailsView(generics.ListAPIView):
     queryset=Account.objects.all()
     serializer_class=AccountSerializer
     permission_classes=[IsAdminUser]
 
 
+@extend_schema(summary='Get a user balance', description='The path ID is a user ID, not an account ID. Only the owner or staff may read it. A missing account returns HTTP 400.')
 class CheckBalanceView(generics.RetrieveAPIView):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
@@ -46,12 +49,14 @@ class CheckBalanceView(generics.RetrieveAPIView):
 
 
         
+@extend_schema(summary='List your completed transactions', description='Returns only transactions belonging to the current user whose status is completed. Approved payments are not included by this filter.')
 class TransactionDetailsView(generics.ListAPIView):
     serializer_class=TransactionDetailsSerializer
     permission_classes=[IsAuthenticated]
     def get_queryset(self):
         return Transaction.objects.filter(user=self.request.user,status='completed')
 
+@extend_schema(summary='Create a transaction', description='Creates a transaction for the supplied user ID. External deposits credit the account immediately and become completed. Internal transactions become completed without changing balances here. Other payments remain pending.')
 class TransactionCreateView(generics.CreateAPIView):
     serializer_class = TransactionCreateSerializer
     permission_classes = [IsAuthenticated]
@@ -61,6 +66,7 @@ class TransactionCreateView(generics.CreateAPIView):
         serializer.save()
 
 
+@extend_schema(summary='List pending payments', description='Returns pending payment transactions with nested user and issuer details.')
 class PendingPaymentsView(generics.ListAPIView):
     permission_classes = [IsSuperUser]
     serializer_class = PendingPaymentsSerializer
@@ -71,6 +77,7 @@ class PendingPaymentsView(generics.ListAPIView):
                 .select_related('user', 'issued_by'))
 
 
+@extend_schema(summary='Approve or decline a pending transaction', description='Accepts status=approved or declined using PUT/PATCH. Approval withdraws the amount from the account; decline leaves the balance unchanged. Only pending transactions can be selected.')
 class TransactionApproveView(generics.UpdateAPIView):
     queryset = Transaction.objects.filter(status='pending')
     serializer_class = TransactionApproveSerializer
@@ -110,6 +117,7 @@ class TransactionApproveView(generics.UpdateAPIView):
         kwargs['partial'] = True  # Allow partial update
         return super().update(request, *args, **kwargs)
 
+@extend_schema(summary='Transfer funds between users', description='Atomically debits transfer_from, credits transfer_to, and creates completed internal payment/deposit records. IDs identify users. Insufficient funds fail validation.')
 class FundTransferView(generics.CreateAPIView):
     serializer_class = FundTransferSerializer
     permission_classes = [IsAdminUser]

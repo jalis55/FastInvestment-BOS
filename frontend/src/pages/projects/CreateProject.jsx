@@ -1,3 +1,4 @@
+import { getApiError } from '@/api/errors';
 import React, { useState } from "react";
 import API from "@/api/axios";
 import Swal from "sweetalert2";
@@ -96,7 +97,7 @@ const CreateProjects = () => {
             Swal.fire({
                 icon: "error",
                 title: "Oops...",
-                text: error.response?.data?.message || "Something went wrong!",
+                text: getApiError(error),
             });
         } finally {
             setLoading(false);

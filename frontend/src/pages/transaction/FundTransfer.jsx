@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useApiQuery } from '@/hooks/use-api-query';
+import { QueryState } from '@/components/ui/query-state';
+import { getApiError } from '@/api/errors';
+import { useState } from "react";
 import BannerTitle from "../../components/BannerTitle";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
 import API from "@/api/axios";
@@ -8,35 +11,30 @@ import Swal from "sweetalert2";
 const FundTransfer = () => {
 
     const [loading, setLoading] = useState(false);
-    const [users, setUsers] = useState([]);
+    const { data: users, loading: usersLoading, error: usersError, refetch: retryUsers } = useApiQuery('/api/admin/customers/');
     const [fromUser, setFromUser] = useState("");
-    const [fromUserBal, setFormUserBal] = useState(0);
+    const balanceQuery = useApiQuery(fromUser ? `/api/acc/user/${fromUser}/balance/` : null, { staleTime: 0 });
+    const fromUserBal = balanceQuery.error || balanceQuery.loading || balanceQuery.refreshing ? 0 : Number(balanceQuery.data.balance || 0);
     const [toUser, setToUser] = useState("");
     const [amount, setAmount] = useState('');
     const [statusMessage, setStatusMessage] = useState('');
-
-    useEffect(() => {
-        API
-            .get("/api/admin/customers/")
-            .then((response) => setUsers(response.data))
-            .catch((error) => console.error("Error fetching users:", error));
-    }, []);
 
     const getUserName = (userId) => {
         const user = users.find((user) => user.id === Number(userId));
         return user ? user.name : 'Unknown User';
     };
 
-    const handleFromUser = async (userId) => {
-        const response = await API.get(`/api/acc/user/${userId}/balance/`);
-        setFromUser(userId);
-        setFormUserBal(Number(response.data.balance))
-
-    }
+    const handleFromUser = (userId) => { setFromUser(userId); setStatusMessage(''); };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (loading) return;
+        setStatusMessage('');
+        if (!Number.isFinite(Number(amount)) || Number(amount) <= 0 || fromUser === toUser) {
+            setStatusMessage('Select two different users and enter a valid positive amount.');
+            return;
+        }
         // Check if both users are selected
         if (!fromUser) {
             setStatusMessage('Please select a "From" user.');
@@ -88,7 +86,8 @@ const FundTransfer = () => {
             };
 
             try {
-                const response = await API.post('/api/acc/user/fund-transfer/', fundTransferData);
+                setLoading(true);
+                await API.post('/api/acc/user/fund-transfer/', fundTransferData);
 
                 Swal.fire({
                     title: 'Success!',
@@ -104,27 +103,32 @@ const FundTransfer = () => {
                 setStatusMessage('Failed to create transaction');
                 Swal.fire({
                     title: 'Error!',
-                    text: error.response.data.error,
+                    text: getApiError(error),
                     icon: 'error'
                 });
 
+            } finally {
+                setLoading(false);
             }
         }
     };
     return (
         <div>
             <BannerTitle title={"Fund Transfer"} />
-            <form className="max-w-md mx-auto space-y-6" onSubmit={handleSubmit}>
+            <QueryState loading={usersLoading} error={usersError} onRetry={retryUsers}><span /></QueryState>
+            {fromUser && <QueryState loading={balanceQuery.loading} error={balanceQuery.error} onRetry={balanceQuery.refetch}><span /></QueryState>}
+            {statusMessage && <p role="status" className="mb-4 text-sm text-slate-700">{statusMessage}</p>}
+            <form className="page-card max-w-2xl mx-auto space-y-6" onSubmit={handleSubmit}>
 
                 <div className="mb-2">
-                    <label htmlFor="instDropdown" className="block text-sm font-medium text-gray-900 dark:text-white">From</label>
+                    <label htmlFor="from-user" className="field-label">From</label>
                     <select
-                        id="userSelect"
+                        id="from-user"
                         value={fromUser}
                         onChange={(e) => handleFromUser(e.target.value)}
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                        className="field-select">
 
-                        <option>Select User</option>
+                        <option value="">Select User</option>
                         {users
                             .filter((user) => user.id !== Number(toUser))
                             .map((user) => (
@@ -136,7 +140,7 @@ const FundTransfer = () => {
                 </div>
                 {fromUser && fromUserBal>0 ? (
                     <div className="mb-2">
-                        <label htmlFor="website-admin" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Balance</label>
+                        <label htmlFor="amountInput" className="field-label">Balance</label>
                         <div className="flex">
                             <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-s-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600">
                                 {/* Money Icon */}
@@ -147,25 +151,25 @@ const FundTransfer = () => {
                             <input type="text"
                                 id='amountInput'
                                 value={fromUserBal}
-                                className="rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                className="field-input"
                                 disabled />
                         </div>
                     </div>
                 ): 
-                <h1>Available balance not found</h1>
+                <p className="text-sm text-slate-500">{fromUser ? "No available balance." : "Select a source account to view its balance."}</p>
                 }
                 {fromUser && fromUserBal>0 && (
 
                     <>
                         <div className="mb-2">
-                            <label htmlFor="instDropdown" className="block text-sm font-medium text-gray-900 dark:text-white">Select Customer</label>
+                            <label htmlFor="to-user" className="field-label">Select Customer</label>
                             <select
-                                id="userSelect"
+                                id="to-user"
                                 value={toUser}
                                 onChange={(e) => setToUser(e.target.value)}
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                className="field-select">
 
-                                <option>Select User</option>
+                                <option value="">Select User</option>
                                 {users
                                     .filter((user) => user.id !== Number(fromUser))
                                     .map((user) => (
@@ -176,7 +180,7 @@ const FundTransfer = () => {
                             </select>
                         </div>
                         <div className="mb-2">
-                            <label htmlFor="website-admin" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Amount</label>
+                            <label htmlFor="amountInput-1" className="field-label">Amount</label>
                             <div className="flex">
                                 <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-s-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600">
                                     {/* Money Icon */}
@@ -185,17 +189,17 @@ const FundTransfer = () => {
                                     </svg>
                                 </span>
                                 <input type="text"
-                                    id='amountInput'
+                                    id="amountInput-1"
                                     value={amount}
                                     onChange={(e) => setAmount(Number(e.target.value))}
-                                    className="rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block flex-1 min-w-0 w-full text-sm p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="amount" />
+                                    className="field-input" placeholder="amount" />
                             </div>
                         </div>
                         <div className="flex justify-center">
                             <button
                                 type="submit"
-                                className="w-full bg-blue-700 text-white hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                                disabled={loading}
+                                className="primary-button"
+                                disabled={loading || usersLoading || !!usersError || balanceQuery.loading || balanceQuery.refreshing || !!balanceQuery.error}
                             >
                                 {loading ? <ButtonSpinner /> : 'Transfer'}
                             </button>

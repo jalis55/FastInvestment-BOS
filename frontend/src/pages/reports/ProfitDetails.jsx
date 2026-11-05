@@ -1,6 +1,7 @@
-import { useState, useMemo,useEffect } from "react";
+import { useApiQuery } from '@/hooks/use-api-query';
+import { QueryState } from '@/components/ui/query-state';
+import { useState, useMemo } from "react";
 import { ArrowUpDown, PieChart, TrendingUp } from "lucide-react";
-import API from "@/api/axios.js";
 import BannerTitle from "../../components/BannerTitle.jsx";
 import Spinner from "@/components/Spinner";
 
@@ -9,23 +10,8 @@ const ProfitDetails = () => {
       const [sortField, setSortField] = useState(null)
       const [sortDirection, setSortDirection] = useState("asc")
       const [selectedProject, setSelectedProject] = useState("all")
-      const [profitData,setProfitData]=useState([]);
-      const [loading, setLoading] = useState(true);
-    
-        useEffect(() => {
-            const fetchProfitData = async () => {
-                try {
-                    setLoading(true);
-                    const response = await API.get('api/stock/investor/profit-details/');
-                    setProfitData(response.data);
-                } catch (error) {
-                    console.error("Error fetching profit data:", error);
-                } finally {
-                    setLoading(false);
-                }
-            }
-            fetchProfitData();
-        },[])
+  const { data: profitData, loading, error, refetch } = useApiQuery('/api/stock/investor/profit-details/');
+
       // Calculate summary data
       const summaryData = useMemo(() => {
         let totalContribution = 0
@@ -42,7 +28,7 @@ const ProfitDetails = () => {
           totalContribution: totalContribution.toFixed(2),
           totalProfit: totalProfit.toFixed(2),
           projectCount: projectCount.size,
-          roi: ((totalProfit / totalContribution) * 100).toFixed(2),
+          roi: (totalContribution ? (totalProfit / totalContribution) * 100 : 0).toFixed(2),
         }
       }, [profitData])
     
@@ -83,6 +69,8 @@ const ProfitDetails = () => {
           setSortDirection("asc")
         }
       }
+  if (loading || error || !profitData.length) return <><BannerTitle title='Profit Details' /><QueryState loading={loading} error={error} onRetry={refetch} empty={!profitData.length} /></>;
+
   return (
 <div>
         <BannerTitle title="Profit Details" />
@@ -121,14 +109,14 @@ const ProfitDetails = () => {
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-xl font-semibold text-gray-900">Investment Records</h2>
           <div className="flex items-center gap-2">
-            <label htmlFor="project-filter" className="text-sm font-medium text-gray-700">
+            <label htmlFor="project-filter" className="field-label">
               Filter by Project:
             </label>
             <select
               id="project-filter"
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+              className="field-select"
             >
               {projects.map((project) => (
                 <option key={project} value={project}>

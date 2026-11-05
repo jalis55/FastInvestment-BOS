@@ -1,12 +1,11 @@
-import { useState, useEffect, useContext, use } from "react";
+import { useState, useEffect } from "react";
 import { CalendarIcon, UserIcon, SaveIcon, EditIcon } from "lucide-react";
 import { format } from "date-fns";
 import API from "@/api/axios";
-import { useAuth } from "@/auth/AuthContext";
+import { useAuth } from "@/auth/use-auth";
 
 const UserDetails = () => {
   // Retrieve the base URL from environment variables
-  const baseURL = import.meta.env.VITE_API_URL;
   const { userData, setUserData } = useAuth();
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -25,16 +24,7 @@ const UserDetails = () => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      setLoading(true);
-      // const response = await API.get('/api/user-profile/');
-      // const userData = response.data;
-
-      // Format the data for the form
+    if (!userData) return;
       setFormData({
         email: userData.email,
         name: userData.name,
@@ -45,13 +35,8 @@ const UserDetails = () => {
         bio: userData.bio || "",
         dob: userData.dob ? new Date(userData.dob) : null,
       });
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-      setErrors({ general: "Failed to load user profile" });
-    } finally {
-      setLoading(false);
-    }
-  };
+    setLoading(false);
+  }, [userData]);
 
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -229,7 +214,7 @@ const UserDetails = () => {
             <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               {/* Profile Image */}
               <div className="sm:col-span-6">
-                <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
+                <label htmlFor="profile_image" className="field-label">Profile Picture</label>
                 <div className="mt-1 flex items-center space-x-5">
                   <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-300">
                     {formData.profile_image_preview ? (
@@ -272,7 +257,7 @@ const UserDetails = () => {
 
               {/* Email */}
               <div className="sm:col-span-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="email" className="field-label">
                   Email Address <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1">
@@ -302,7 +287,7 @@ const UserDetails = () => {
 
               {/* Name */}
               <div className="sm:col-span-3">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="name" className="field-label">
                   Full Name <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1">
@@ -325,7 +310,7 @@ const UserDetails = () => {
 
               {/* Phone */}
               <div className="sm:col-span-3">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="phone" className="field-label">
                   Phone Number
                 </label>
                 <div className="mt-1">
@@ -335,7 +320,7 @@ const UserDetails = () => {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => handleChange("phone", e.target.value)}
-                      className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+                      className="field-input"
                       placeholder="+1 (555) 123-4567"
                     />
                   ) : (
@@ -346,7 +331,7 @@ const UserDetails = () => {
 
               {/* Sex */}
               <div className="sm:col-span-2">
-                <label htmlFor="sex" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="sex" className="field-label">
                   Sex
                 </label>
                 <div className="mt-1">
@@ -356,7 +341,7 @@ const UserDetails = () => {
                         id="sex"
                         value={formData.sex}
                         onChange={(e) => handleChange("sex", e.target.value)}
-                        className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2 pr-8 appearance-none"
+                        className="field-select"
                       >
                         <option value="M">Male</option>
                         <option value="F">Female</option>
@@ -388,7 +373,7 @@ const UserDetails = () => {
 
               {/* Date of Birth */}
               <div className="sm:col-span-2">
-                <label htmlFor="dob" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="userdetails-field-1" className="field-label">
                   Date of Birth
                 </label>
                 <div className="mt-1 relative">
@@ -407,14 +392,14 @@ const UserDetails = () => {
 
                       {showCalendar && (
                         <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 p-2">
-                          <input
+                          <input id="userdetails-field-1"
                             type="date"
                             value={formData.dob ? format(formData.dob, "yyyy-MM-dd") : ""}
                             onChange={(e) => {
                               handleChange("dob", new Date(e.target.value))
                               setShowCalendar(false)
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            className="field-input"
                           />
                         </div>
                       )}
@@ -429,7 +414,7 @@ const UserDetails = () => {
 
               {/* Bio */}
               <div className="sm:col-span-6">
-                <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="bio" className="field-label">
                   Bio
                 </label>
                 <div className="mt-1">
@@ -439,7 +424,7 @@ const UserDetails = () => {
                       value={formData.bio}
                       onChange={(e) => handleChange("bio", e.target.value)}
                       rows={3}
-                      className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+                      className="field-input"
                       placeholder="Brief description about yourself"
                     />
                   ) : (

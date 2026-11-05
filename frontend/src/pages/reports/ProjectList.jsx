@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import API from '@/api/axios';
+import { useApiQuery } from '@/hooks/use-api-query';
+import { QueryState } from '@/components/ui/query-state';
+
 import BannerTitle from '@/components/BannerTitle';
-import Spinner from '@/components/Spinner';
 import { EmptyState } from '@/components/ui/empty-state';
-import { PageIntro } from '@/components/ui/page-intro';
 import { SurfaceCard } from '@/components/ui/surface-card';
 
 const ProjectList = () => {
@@ -24,48 +23,13 @@ const ProjectList = () => {
         }
     };
 
-    const [projectList, setProjectList] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const { data: projectList, loading, error, refetch } = useApiQuery('/api/stock/project/list/');
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const response = await API.get('/api/stock/project/list/');
-                setProjectList(response.data);
-                setError(null);
-            } catch (err) {
-                console.error('Error fetching projects:', err);
-                setError('Failed to load projects. Please try again.');
-            } finally {
-                setLoading(false);
-            }
-        };
+    if (loading || error || !projectList.length) return <><BannerTitle title='Project List' /><QueryState loading={loading} error={error} onRetry={refetch} empty={!projectList.length} /></>;
 
-        fetchData();
-    }, []);
-
-    if (loading) {
-        return <Spinner />;
-    }
-
-    if (error) {
-        return (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                {error}
-            </div>
-        );
-    }
-
-    return (
+  return (
         <div>
-            <BannerTitle title="Project List" />
-            <PageIntro
-                eyebrow="Reports"
-                title="Project List"
-                description="Review open and closed projects with operational ownership details."
-            />
+            <BannerTitle title="Project List" description="Review open and closed projects with operational ownership details." />
             <SurfaceCard tone="compact" className="p-0">
                 <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left text-gray-500">
@@ -81,7 +45,7 @@ const ProjectList = () => {
                     <tbody>
                         {projectList.length > 0 ? (
                             projectList.map((project, index) => (
-                                <tr key={project.id || index} className="border-b border-slate-200 bg-white">
+                                <tr key={project.project_id || index} className="border-b border-slate-200 bg-white">
                                     <td className="px-6 py-4 font-medium text-gray-900">
                                         {project.project_id}
                                     </td>
@@ -101,7 +65,7 @@ const ProjectList = () => {
                                                     <p className="text-sm font-medium text-green-800">
                                                         Opened: {formatDate(project.project_opening_dt)}
                                                     </p>
-                                                    <p className="text-xs text-slate-500">By {project.created_by.email}</p>
+                                                    <p className="text-xs text-slate-500">By {project.created_by?.email || '—'}</p>
                                                 </>
                                             ) : (
                                                 <>

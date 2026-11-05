@@ -1,15 +1,14 @@
+import { AUTH_EXPIRED_EVENT } from '../api/client';
+import { queryCache } from '../api/query-cache';
 // src/auth/AuthContext.jsx
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useState,
 } from 'react';
 import API from '../api/axios';
 
-const AuthContext = createContext(null);
-export const useAuth = () => useContext(AuthContext);
+import { AuthContext } from './context';
 
 /* ------------------------------------------------------------------ */
 /* Provider                                                           */
@@ -71,9 +70,20 @@ export default function AuthProvider({ children }) {
     }
   }, [applySession]);
 
+  useEffect(() => {
+    const expire = () => applySession(null);
+    window.addEventListener(AUTH_EXPIRED_EVENT, expire);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, expire);
+  }, [applySession]);
+
   /* Hydrate on mount */
   useEffect(() => {
-    fetchSession({ allowRefresh: true }).finally(() => setIsLoading(false));
+    let active = true;
+    // Defer hydration so StrictMode's first, discarded effect never starts a request.
+    const timer = setTimeout(() => {
+      fetchSession({ allowRefresh: true }).finally(() => { if (active) setIsLoading(false); });
+    }, 0);
+    return () => { active = false; clearTimeout(timer); };
   }, [fetchSession]);
 
   const hasRole = useCallback(
@@ -92,46 +102,30 @@ export default function AuthProvider({ children }) {
 
   /* Auth actions */
   const login = async (email, password) => {
-    setIsLoading(true);
     try {
       await ensureCsrfCookie();
       const { data, status } = await API.post('/api/token/', { email, password });
       if (status === 200) {
+        queryCache.clear();
         applySession(data);
-        await fetchSession();
       }
       return status;
     }
     catch (error) {
       return error?.response?.status || error.message;
     }
-    finally {
-      setIsLoading(false);
-    }
   };
 
   const register = async (email, password) => {
-    setIsLoading(true);
-    try {
-      const { status } = await API.post('/api/user-register/', {
-        email,
-        password,
-      });
-      return status;
-    } finally {
-      setIsLoading(false);
-    }
+    const { status } = await API.post('/api/user-register/', { email, password });
+    return status;
   };
 
   const logout = async () => {
-    try {
-      await ensureCsrfCookie();
-      await API.post('/api/logout/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-    setUser(null);
-    setUserData(null);
+    await ensureCsrfCookie();
+    await API.post('/api/logout/');
+    queryCache.clear();
+    applySession(null);
   };
 
   const value = {

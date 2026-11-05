@@ -1,0 +1,56 @@
+[project]
+name = "fastinvestment-bos"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "jalis55", email = "jalismahamud2055@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "asgiref==3.9.2",
+    "attrs==25.3.0",
+    "beautifulsoup4==4.14.2",
+    "certifi==2025.8.3",
+    "charset-normalizer==3.4.3",
+    "django==5.2.7",
+    "django-cors-headers==4.9.0",
+    "django-environ==0.13.0",
+    "django-redis==6.0.0",
+    "django-schema-viewer==0.5.3",
+    "django-silk==5.4.3",
+    "djangorestframework==3.16.1",
+    "djangorestframework-simplejwt==5.5.1",
+    "dotenv==0.9.9",
+    "drf-spectacular==0.28.0",
+    "environ==1.0",
+    "gprof2dot==2025.4.14",
+    "gunicorn==23.0.0",
+    "idna==3.10",
+    "inflection==0.5.1",
+    "isort==6.1.0",
+    "jsonschema==4.25.1",
+    "jsonschema-specifications==2025.9.1",
+    "packaging==25.0",
+    "pillow==11.3.0",
+    "psycopg2-binary==2.9.11",
+    "pyjwt==2.10.1",
+    "python-dotenv==1.2.1",
+    "pyyaml==6.0.3",
+    "redis==6.4.0",
+    "referencing==0.36.2",
+    "requests==2.32.5",
+    "rpds-py==0.27.1",
+    "soupsieve==2.8",
+    "sqlparse==0.5.3",
+    "typing-extensions==4.15.0",
+    "uritemplate==4.2.0",
+    "urllib3==2.5.0",
+]
+
+[project.scripts]
+fastinvestment-bos = "fastinvestment_bos:main"
+
+[build-system]
+requires = ["uv_build>=0.12.20,<0.13.0"]
+build-backend = "uv_build"

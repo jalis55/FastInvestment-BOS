@@ -100,7 +100,7 @@ const UserRegistration = () => {
                     formDataToSend.append("profile_image", formData.profile_image);
                 }
 
-                const response = await API.post('/api/user-register/', formDataToSend, {
+                await API.post('/api/user-register/', formDataToSend, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -195,7 +195,7 @@ const UserRegistration = () => {
 
                             {/* Email */}
                             <div className="sm:col-span-4">
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="email" className="field-label">
                                     Email Address <span className="text-red-500">*</span>
                                 </label>
                                 <div className="mt-1">
@@ -214,7 +214,7 @@ const UserRegistration = () => {
 
                             {/* Password */}
                             <div className="sm:col-span-4">
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="password" className="field-label">
                                     Password <span className="text-red-500">*</span>
                                 </label>
                                 <div className="mt-1 flex rounded-md shadow-sm">
@@ -248,7 +248,7 @@ const UserRegistration = () => {
 
                             {/* Name */}
                             <div className="sm:col-span-3">
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="name" className="field-label">
                                     Full Name <span className="text-red-500">*</span>
                                 </label>
                                 <div className="mt-1">
@@ -267,7 +267,7 @@ const UserRegistration = () => {
 
                             {/* Phone */}
                             <div className="sm:col-span-3">
-                                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="phone" className="field-label">
                                     Phone Number
                                 </label>
                                 <div className="mt-1">
@@ -276,7 +276,7 @@ const UserRegistration = () => {
                                         type="tel"
                                         value={formData.phone}
                                         onChange={(e) => handleChange("phone", e.target.value)}
-                                        className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+                                        className="field-input"
                                         placeholder="+1 (555) 123-4567"
                                     />
                                 </div>
@@ -284,7 +284,7 @@ const UserRegistration = () => {
 
                             {/* Sex */}
                             <div className="sm:col-span-2">
-                                <label htmlFor="sex" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="sex" className="field-label">
                                     Sex
                                 </label>
                                 <div className="mt-1">
@@ -293,7 +293,7 @@ const UserRegistration = () => {
                                             id="sex"
                                             value={formData.sex}
                                             onChange={(e) => handleChange("sex", e.target.value)}
-                                            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2 pr-8 appearance-none"
+                                            className="field-select"
                                         >
                                             <option value="M">Male</option>
                                             <option value="F">Female</option>
@@ -320,7 +320,7 @@ const UserRegistration = () => {
 
                             {/* Date of Birth */}
                             <div className="sm:col-span-2">
-                                <label htmlFor="dob" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="userregistration-field-1" className="field-label">
                                     Date of Birth
                                 </label>
                                 <div className="mt-1 relative">
@@ -337,14 +337,14 @@ const UserRegistration = () => {
 
                                     {showCalendar && (
                                         <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 p-2">
-                                            <input
+                                            <input id="userregistration-field-1"
                                                 type="date"
                                                 value={formData.dob ? format(formData.dob, "yyyy-MM-dd") : ""}
                                                 onChange={(e) => {
                                                     handleChange("dob", new Date(e.target.value))
                                                     setShowCalendar(false)
                                                 }}
-                                                className="w-full px-3 py-1 border border-gray-300 rounded-md"
+                                                className="field-input"
                                             />
                                         </div>
                                     )}
@@ -353,7 +353,7 @@ const UserRegistration = () => {
 
                             {/* Profile Image */}
                             <div className="sm:col-span-6">
-                                <label className="block text-sm font-medium text-gray-700">Profile Picture</label>
+                                <label htmlFor="profile_image" className="field-label">Profile Picture</label>
                                 <div className="mt-1 flex items-center space-x-5">
                                     <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-300">
                                         {formData.profile_image_preview ? (
@@ -387,7 +387,7 @@ const UserRegistration = () => {
 
                             {/* Bio */}
                             <div className="sm:col-span-6">
-                                <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="bio" className="field-label">
                                     Bio
                                 </label>
                                 <div className="mt-1">
@@ -396,7 +396,7 @@ const UserRegistration = () => {
                                         value={formData.bio}
                                         onChange={(e) => handleChange("bio", e.target.value)}
                                         rows={3}
-                                        className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+                                        className="field-input"
                                         placeholder="Brief description about the user"
                                     />
                                 </div>

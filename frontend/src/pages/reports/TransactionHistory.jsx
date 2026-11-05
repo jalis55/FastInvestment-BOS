@@ -1,10 +1,11 @@
+import Swal from 'sweetalert2';
+import { useApiQuery } from '@/hooks/use-api-query';
+import { QueryState } from '@/components/ui/query-state';
 "use client"
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { ArrowDownCircle, ArrowUpCircle, Calendar, ChevronDown, Download, Filter } from "lucide-react";
-import { format, parseISO, eachMonthOfInterval, subMonths } from "date-fns";
-import API from "@/api/axios.js";
-import Swal from "sweetalert2";
+import { format } from "date-fns";
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
 import BannerTitle from "../../components/BannerTitle.jsx";
@@ -12,34 +13,12 @@ import BannerTitle from "../../components/BannerTitle.jsx";
 const TransactionHistory = () => {
   const [filterType, setFilterType] = useState("all");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [allTransactions, setAllTransactions] = useState([]);
   const [filterDate, setFilterDate] = useState(null);
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const transactionsPerPage = 10;
 
-  // Fetch all transactions once on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await API.get(`/api/acc/user/transaction-details/`);
-        setAllTransactions(response.data || []);
-      } catch (error) {
-        console.error("Error fetching transaction data:", error);
-        Swal.fire({
-          icon: 'error',
-          title: 'API Error',
-          text: error.response?.data?.message || 'Something went wrong.'
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []); // Empty dependency array ensures this runs only once
+  const { data: allTransactions, loading, error, refetch } = useApiQuery('/api/acc/user/transaction-details/');
 
   // Calculate available months from transactions
   const availableMonths = useMemo(() => {
@@ -168,6 +147,8 @@ const TransactionHistory = () => {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, "Transaction history.csv");
   };
+
+  if (loading || error || !allTransactions.length) return <><BannerTitle title='Transaction History' /><QueryState loading={loading} error={error} onRetry={refetch} empty={!allTransactions.length} /></>;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -373,10 +354,10 @@ const TransactionHistory = () => {
         <div className="mt-8 flex justify-center">
           <button
             onClick={handleLoadMore}
-            disabled={isLoading}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={loading}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isLoading ? 'Loading...' : 'Load More'} <ChevronDown className="h-4 w-4" />
+            {loading ? 'Loading...' : 'Load More'} <ChevronDown className="h-4 w-4" />
           </button>
         </div>
       )}

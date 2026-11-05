@@ -1,23 +1,11 @@
-import { React, useEffect, useState } from 'react'
-import API from '@/api/axios';
+import { useApiQuery } from '@/hooks/use-api-query';
+import { QueryState } from '@/components/ui/query-state';
+
 import BannerTitle from '../../components/BannerTitle.jsx';
 
 const InvestmentHistory = () => {
 
-  const [investmentData, setInvestmentData] = useState([]);
-  useEffect(() => {
-    const fetchInvestmentData = async () => {
-      try {
-        const response = await API.get("/api/stock/investor/investment-details/");
-        console.log(response.data);
-        setInvestmentData(response.data);
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-      }
-    };
-
-    fetchInvestmentData();
-  }, []);
+  const { data: investmentData, loading, error, refetch } = useApiQuery('/api/stock/investor/investment-details/');
 
     // Format date to be more readable
     const formatDate = (dateString) => {
@@ -43,8 +31,10 @@ const InvestmentHistory = () => {
   const totalAmount = investmentData.reduce((sum, investment) => {
     return sum + Number.parseFloat(investment.amount)
   }, 0)
+  if (loading || error || !investmentData.length) return <><BannerTitle title='Investment History' /><QueryState loading={loading} error={error} onRetry={refetch} empty={!investmentData.length} /></>;
+
   return (
-    <div className="overflow-x-auto">
+    <div className="table-shell overflow-x-auto">
       <BannerTitle title="Investment History" />
       <table className="min-w-full bg-white rounded-lg overflow-hidden">
         <thead className="bg-gray-50 border-b">

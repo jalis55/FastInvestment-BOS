@@ -1,36 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useApiQuery } from '@/hooks/use-api-query';
+import { QueryState } from '@/components/ui/query-state';
+import React, { useState } from 'react';
 import UserCard from './UserCard';
-import API from '@/api/axios';
 import BannerTitle from '../../components/BannerTitle';
-import Spinner from '@/components/Spinner';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageIntro } from '@/components/ui/page-intro';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SurfaceCard } from '@/components/ui/surface-card';
 
 const Users = () => {
-  const [userList, setUserList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    getUserList();
-  }, []);
-
-  const getUserList = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await API.get('/api/admin/users/');
-      setUserList(response.data);
-    } catch (error) {
-      console.error(error);
-      setError('Unable to load users right now.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: userList, loading, error, refetch } = useApiQuery('/api/admin/users/');
 
   // Filter users based on search query (name or email)
   const filteredUsers = userList.filter(
@@ -62,13 +42,7 @@ const Users = () => {
             aria-label="Search users"
           />
 
-        {loading && <Spinner />}
-
-        {!loading && error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        <QueryState loading={loading} error={error} onRetry={refetch}><span /></QueryState>
 
         {!loading && !error && filteredUsers.length === 0 && (
           <EmptyState

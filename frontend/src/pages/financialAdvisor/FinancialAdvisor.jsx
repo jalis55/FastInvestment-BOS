@@ -1,27 +1,36 @@
+import { ProjectSearch } from '@/components/ui/project-search';
+import { getApiError } from '@/api/errors';
+import { useApiQuery } from '@/hooks/use-api-query';
+import { QueryState } from '@/components/ui/query-state';
 import { useState } from "react";
 import BannerTitle from "../../components/BannerTitle";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
 import API from "@/api/axios";
 import Swal from "sweetalert2";
 import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
-import { SearchBar } from "@/components/ui/search-bar";
 
 const FinancialAdvisor = () => {
     const [searchId, setSearchId] = useState('');
-    const [customers, setCustomers] = useState([]);
-    const [projectId, setProjectId] = useState(0);
+    const [projectId, setProjectId] = useState('');
+    const customersQuery = useApiQuery('/api/admin/customers/', { enabled: !!projectId });
+    const customers = customersQuery.data;
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [commPercentage, setComPercentage] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [searching, setSearching] = useState(false);
 
     const searchProject = async (e) => {
         e.preventDefault();
+        if (searching) return;
 
         if (!searchId.trim()) {
             Swal.fire({ icon: 'warning', title: 'Input Required', text: 'Please enter a project ID!' });
             return;
         }
 
+        setSearching(true);
+        setProjectId('');
+        setSelectedCustomer(null);
         try {
 
             const isActive = await checkProjectStatus(searchId);
@@ -29,20 +38,11 @@ const FinancialAdvisor = () => {
 
 
             setProjectId(searchId);
-            getCustomers();
         } catch (error) {
             console.error("Error fetching project data:", error);
-            Swal.fire({ icon: 'error', title: 'API Error', text: error.response?.data?.message || 'Something went wrong.' });
-        }
-    };
-
-    const getCustomers = async () => {
-        try {
-            const response = await API.get(`/api/admin/customers/`);
-            setCustomers(response.data);
-        } catch (error) {
-            console.error("Error fetching customers:", error);
-            Swal.fire({ icon: 'error', title: 'API Error', text: error.response?.data?.message || 'Something went wrong.' });
+            Swal.fire({ icon: 'error', title: 'API Error', text: getApiError(error) });
+        } finally {
+            setSearching(false);
         }
     };
 
@@ -58,6 +58,7 @@ const FinancialAdvisor = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (loading || !selectedCustomer || customersQuery.loading || customersQuery.error) return;
         if (!commPercentage || commPercentage <= 0) {
             Swal.fire({ icon: 'warning', title: 'Invalid Amount', text: 'Please enter a valid amount greater than 0.' });
             return;
@@ -74,17 +75,9 @@ const FinancialAdvisor = () => {
 
 
         try {
-            const response = await API.post(`/api/stock/add/financial/advisor/`, data);
+            await API.post(`/api/stock/add/financial/advisor/`, data);
 
-            if (response.status == 201) {
-                const mailData = {
-                    email: selectedCustomer.email,
-                    subject: "Project Opening",
-                    message: `You have added as Financial Advisor on ${response.data.project_id} and commison percentage is:${commPercentage}`,
-                };
-                // await API.post("/api/mail/send-email/", mailData);
 
-            }
 
 
             Swal.fire({ icon: 'success', title: 'Advisor Added', text: 'Financial Advisor has been successfully added!' });
@@ -92,10 +85,9 @@ const FinancialAdvisor = () => {
             setSelectedCustomer(null);
 
             setSearchId('');
-            document.getElementById('advisorDropdown').value = '';
         } catch (error) {
             console.error("Error adding investment:", error);
-            Swal.fire({ icon: 'error', title: 'API Error', text: error.response?.data?.message || 'Something went wrong.' });
+            Swal.fire({ icon: 'error', title: 'API Error', text: getApiError(error) });
         } finally {
             setLoading(false);
         }
@@ -104,25 +96,8 @@ const FinancialAdvisor = () => {
     return (
         <div>
             <BannerTitle title="Add Financial Advisor" />
-            <div className="mx-auto mb-8 max-w-3xl page-card">
-            <form className="max-w-lg" onSubmit={searchProject}>
-                <SearchBar
-                        value={searchId}
-                        onChange={(e) => setSearchId(e.target.value)}
-                        placeholder="Search Project"
-                        aria-label="Search project"
-                        required
-                        action={
-                            <button
-                                type="submit"
-                                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                Search
-                            </button>
-                        }
-                    />
-            </form>
-            </div>
+            {Boolean(projectId) && <QueryState loading={customersQuery.loading} error={customersQuery.error} onRetry={customersQuery.refetch}><span /></QueryState>}
+            <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)} onSubmit={searchProject} loading={searching} />
             {customers.length > 0 && (
                 <div className="mx-auto max-w-2xl page-card">
                     <div className="mb-6">
@@ -131,7 +106,7 @@ const FinancialAdvisor = () => {
                     </div>
 
                     <div className="mb-4">
-                        <label htmlFor="countries" className="field-label">Select Advisor</label>
+                        <label htmlFor="advisorDropdown" className="field-label">Select Advisor</label>
                         <select
                             id="advisorDropdown"
                             value={selectedCustomer ? selectedCustomer.id : ""}

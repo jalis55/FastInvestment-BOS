@@ -1,10 +1,11 @@
+import { ProjectSearch } from '@/components/ui/project-search';
+import { getApiError } from '@/api/errors';
 import { useState } from "react";
 import BannerTitle from "../../components/BannerTitle";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
 import API from "@/api/axios";
 import Swal from "sweetalert2";
 import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
-import { SearchBar } from "@/components/ui/search-bar";
 
 
 const CloseProject = () => {
@@ -34,26 +35,13 @@ const CloseProject = () => {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.response?.data?.message || 'Failed to fetch project details.'
+        text: getApiError(error)
       });
       setProjectFinDetails(null);
     } finally {
       setLoading(false);
     }
   };
-
-  const calculateClosingBalance = () => {
-    if (!projectFinDetails) return 0;
-    const { available_balance, total_sell_amount, accrued_profit } = projectFinDetails;
-    const closingBal = parseFloat(available_balance) + (parseFloat(total_sell_amount) - parseFloat(accrued_profit));
-    return closingBal;
-  };
-  const calculateGainLose = () => {
-    if (!projectFinDetails) return 0;
-    const { total_buy_amount, total_sell_amount } = projectFinDetails;
-    const gainLose = parseFloat(total_sell_amount) - parseFloat(total_buy_amount);
-    return gainLose.toFixed(2);
-  }
 
   const closeProject = async () => {
     try {
@@ -133,7 +121,7 @@ const CloseProject = () => {
       Swal.fire({
         icon: 'error',
         title: 'Closure Failed',
-        text: error.response?.data?.message || 'Failed to close project',
+        text: getApiError(error),
         confirmButtonText: 'OK'
       });
     }
@@ -142,26 +130,7 @@ const CloseProject = () => {
   return (
     <div>
       <BannerTitle title="Close Project" />
-      <div className="mx-auto mb-8 max-w-3xl page-card">
-      <form className="max-w-lg" onSubmit={searchProject}>
-        <SearchBar
-            value={searchId}
-            onChange={(e) => setSearchId(e.target.value)}
-            placeholder="Search Project"
-            aria-label="Search project"
-            required
-            action={
-              <button
-                type="submit"
-                disabled={loading}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? <ButtonSpinner /> : 'Search'}
-              </button>
-            }
-          />
-      </form>
-      </div>
+      <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)} onSubmit={searchProject} loading={loading} />
 
       {projectFinDetails && (
           <div className="mx-auto max-w-3xl page-card">

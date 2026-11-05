@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import quote
 
 import environ
 
@@ -18,6 +19,7 @@ env = environ.Env(
 )
 
 # Read .env file
+env.read_env(os.path.join(BASE_DIR, '.env.local'))
 env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
@@ -67,7 +69,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser', 
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_SCHEMA_CLASS': 'core.schema.AppAutoSchema',
 }
 
 SIMPLE_JWT = {
@@ -224,11 +226,27 @@ CSRF_TRUSTED_ORIGINS = env.list(
 
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Fast Investment Limited Backoffice Endpoint',
-    'DESCRIPTION': 'An application to track the share market portfolio of group of investors.',
+    'TITLE': 'Fast Investment Backoffice API',
+    'DESCRIPTION': (
+        'API reference grouped by Django app: users and authentication, accounting, '
+        'and stock investments. Login sets HttpOnly JWT cookies; it does not return '
+        'tokens in JSON. Use browser credentials and X-CSRFToken for unsafe '
+        'cookie-authenticated requests, or supply an existing Bearer JWT. '
+        'Amounts are serialized as decimal strings. Dates use YYYY-MM-DD.'
+    ),
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-    # OTHER SETTINGS
+    'TAGS': [
+        {'name': 'user_app', 'description': 'Authentication, sessions, profiles, and user administration.'},
+        {'name': 'accounting', 'description': 'Balances, transactions, approvals, and fund transfers.'},
+        {'name': 'stock_app', 'description': 'Instruments, trades, projects, investments, advisors, and profits.'},
+    ],
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'displayOperationId': True,
+        'docExpansion': 'none',
+        'filter': True,
+    },
 }
 
 
@@ -236,16 +254,21 @@ REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
 REDIS_USERNAME=os.environ.get('REDIS_USERNAME', '')
 REDIS_PASSWORD=os.environ.get('REDIS_PASSWORD', '')
+REDIS_URL = os.environ.get('REDIS_URL') or (
+    f"redis://{quote(REDIS_USERNAME, safe='')}:{quote(REDIS_PASSWORD, safe='')}"
+    f"@{REDIS_HOST}:{REDIS_PORT}/0"
+)
 
 
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0",  # Changed from /1 to /0
+        "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": REDIS_PASSWORD,
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
         }
     }
 }

@@ -1,3 +1,5 @@
+from .schema import ProjectClosedSerializer, StockMessageSerializer, ErrorSerializer
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 import json
 from decimal import Decimal
 
@@ -14,12 +16,10 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-import requests
-from bs4 import BeautifulSoup
-from django.core.cache import cache
 
 from accounting.models import Account, Transaction
 from stock_app.utils import investor_contributions_map, update_customer_balance
+from stock_app.market_prices import MarketPriceError, get_daily_prices
 from user_app.permissions import IsSuperUser
 
 from .models import (AccountReceivable, FinAdvisorCommission, FinancialAdvisor,
@@ -42,6 +42,7 @@ from .serializers import (AccountReceivableDetailsSerializer,
 User=get_user_model()
 
 
+@extend_schema(summary='Create a project', description='Creates a project and records the current user as creator.')
 class ProjectCreateView(generics.CreateAPIView):
     serializer_class=ProjectCreateSerializer
     permission_classes=[IsAdminUser]
@@ -50,18 +51,21 @@ class ProjectCreateView(generics.CreateAPIView):
         serializer.save(created_by=self.request.user)
 
 
+@extend_schema(summary='List projects', description='Lists all projects, active first, then newest opening date. Includes creator and closer details.')
 class ProjectListView(generics.ListAPIView):
     queryset = Project.objects.all().order_by('-project_active_status', '-project_opening_dt')
     serializer_class=ProjectListSerializer
     permission_classes=[AllowAny]
     
 
+@extend_schema(summary='Get project status', description='Returns the project ID and active status.')
 class ProjectStatusRetriveView(generics.RetrieveAPIView):
     queryset=Project.objects.all()
     serializer_class=ProjectStatusSerializer
     permission_classes=[IsAdminUser]
 
 
+@extend_schema(summary='Get project balances', description='Aggregates investments, buy/sell amounts, and accrued profit. Available balance is clamped to zero.')
 class ProjectBalanceDetailsView(generics.RetrieveAPIView):
     serializer_class = ProjectBalanceDetailsSerializer
     permission_classes = [AllowAny]
@@ -94,6 +98,8 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
 
 
 
+@extend_schema(summary='Close a project', description='Closes a project and credits investor returns. Supply total_investment and closing_balance even for PATCH: the implementation reads both directly. Other totals are optional. Already closed projects return 400; missing projects return 404. This view uses the default authenticated permission.')
+@extend_schema(request=ProjectCloseSerializer, responses={200: ProjectClosedSerializer, 400: ErrorSerializer, 404: ErrorSerializer, 500: ErrorSerializer}, parameters=[OpenApiParameter("pk", OpenApiTypes.STR, OpenApiParameter.PATH, description="Eight-digit project ID.")])
 class ProjectCloseView(APIView):
     @transaction.atomic
     def __prepare_transactions(self, project, closing_bal, total_investment):
@@ -185,44 +191,32 @@ class ProjectCloseView(APIView):
 
 
 
+@extend_schema(summary='List instruments', description='Returns instrument IDs and names.')
 class InstrumentListView(generics.ListAPIView):
     queryset = Instrument.objects.all()
     serializer_class = InstrumentSerializer
     permission_classes = [IsAdminUser]  # Allow any user to view instruments
 
+@extend_schema(summary='Get daily market reference prices', description='Returns AmarStock Close prices, falling back to YCP when Close is zero. The source is fetched at most once per Asia/Dhaka calendar day. A stale flag indicates the last successful snapshot is being served after an upstream failure.')
+@extend_schema(responses={200: {'type': 'object', 'properties': {
+    'prices': {'type': 'object', 'additionalProperties': {'type': 'string'}},
+    'fetched_on': {'type': 'string', 'format': 'date'},
+    'stale': {'type': 'boolean'},
+}}, 503: {'type': 'object', 'properties': {'detail': {'type': 'string'}}}})
 class InstrumentClosePriceView(APIView):
     permission_classes=[AllowAny]
-    
+
     def get(self, request):
-        cache_key = 'close_price'
-        queryset = cache.get(cache_key)
-        
-        if queryset is None:
-            url = "https://dsebd.org/dse_close_price.php"
-            page_content = requests.get(url)
-            page_soup = BeautifulSoup(page_content.text, "html.parser")
-
-            table_content = page_soup.find("div", {"id": "RightBody"})
-            tables = table_content.find_all("table")
-            trs = tables[1].find_all("tr")
-            data = {}
-            
-            for tr in trs[1:]:
-                tds = tr.find_all("td")
-                data[tds[1].text.strip()] = tds[2].text
-            
-            # Set the data in cache
-            cache.set(cache_key, data, timeout=60*15)
-            
-            # Return the freshly fetched data
-            return Response(data)
-        
-        # Return data from cache if it exists
-        return Response(queryset)
+        try:
+            return Response(get_daily_prices())
+        except MarketPriceError:
+            return Response({'detail': 'Market prices are temporarily unavailable.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 
 
+@extend_schema(summary='List sellable holdings', description='Returns instruments with positive remaining quantity for the project. Average buy unit price is weighted from that project’s buy trades.')
+@extend_schema(responses=SellableInstrumentSerializer(many=True))
 class SellableInstrumentView(APIView):
     permission_classes = [IsAdminUser]
     serializer_class = SellableInstrumentSerializer
@@ -233,9 +227,10 @@ class SellableInstrumentView(APIView):
         except Project.DoesNotExist:
             raise NotFound("Project not found.")
 
-    def get_average_buy_unit_price(self, instrument_id):
+    def get_average_buy_unit_price(self, project_id, instrument_id):
         totals = (
             Trade.objects.filter(
+                project_id=project_id,
                 instrument_id=instrument_id,
                 trns_type=Trade.BUY,
                 actual_unit_price__isnull=False
@@ -271,12 +266,13 @@ class SellableInstrumentView(APIView):
                 results.append({
                     'instrument': instruments.get(t['instrument_id']),
                     'available_quantity': available,
-                    'average_buy_unit_price': self.get_average_buy_unit_price(t['instrument_id'])
+                    'average_buy_unit_price': self.get_average_buy_unit_price(project_id, t['instrument_id'])
                 })
 
         serializer = self.serializer_class(results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+@extend_schema(summary='Record a trade', description='Records a buy or sell trade. Trade date and authorizer are assigned by the server; commission and actual unit price are calculated on save.')
 class TradeCreateView(generics.CreateAPIView):
     queryset = Trade.objects.all()
     serializer_class = TradeSerializer
@@ -285,6 +281,7 @@ class TradeCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(authorized_by=self.request.user)
 
+@extend_schema(summary='Delete a trade', description='Deletes a trade by UUID. Returns HTTP 204 without a response body.')
 class TradeDeleteView(generics.DestroyAPIView):
     queryset=Trade.objects.all()
     serializer_class=TradeSerializer
@@ -293,6 +290,8 @@ class TradeDeleteView(generics.DestroyAPIView):
 
 
 
+@extend_schema(summary='List trade details', description='Optionally filters by project_id. Date filtering is applied only when from_dt, to_dt, and project_id are all supplied.')
+@extend_schema(parameters=[OpenApiParameter('project_id', OpenApiTypes.STR, description='Project ID (eight digits).'), OpenApiParameter('from_dt', OpenApiTypes.DATE, description='Inclusive start trade date (YYYY-MM-DD).'), OpenApiParameter('to_dt', OpenApiTypes.DATE, description='Inclusive end trade date (YYYY-MM-DD).')])
 class TradeDetailsListView(generics.ListAPIView):
     serializer_class = TradeDetailsSerializer
     permission_classes=[IsAdminUser]
@@ -320,11 +319,13 @@ class TradeDetailsListView(generics.ListAPIView):
 
 
 
+@extend_schema(summary='Record accrued profit', description='Creates a profit record linked to a project and trade.')
 class ProfitCreateView(generics.CreateAPIView):
     queryset = Profit.objects.all()
     serializer_class = ProfitSerializer
     permission_classes=[IsAdminUser]
 
+@extend_schema(summary='Add an investment', description='Requires a positive amount. Withdraws funds from the investor account and records a completed payment and investment atomically.')
 class InvestmentCreateAPIView(generics.CreateAPIView):
     queryset = Investment.objects.all()
     serializer_class = InvestmentSerializer
@@ -333,6 +334,7 @@ class InvestmentCreateAPIView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(authorized_by=self.request.user)
 
+@extend_schema(summary='List your investments', description='Returns investments belonging to the current user.')
 class ClientInvestmentDetailsListView(generics.ListAPIView):
     serializer_class = ClientInvestmentDetailsSerializer
     permission_classes = [IsAuthenticated]
@@ -340,6 +342,8 @@ class ClientInvestmentDetailsListView(generics.ListAPIView):
         queryset=Investment.objects.filter(investor=self.request.user)
         return queryset
     
+@extend_schema(summary='Get investor contributions', description='Returns nested investor details, contribution amounts, and percentages for a project.')
+@extend_schema(responses=InvestmentContributionSerializer(many=True))
 class InvestorContributionRetrieveAPI(APIView):
     permission_classes = [IsAdminUser]
     serializer_class = InvestmentContributionSerializer
@@ -364,6 +368,7 @@ class InvestorContributionRetrieveAPI(APIView):
 
 
 
+@extend_schema(summary='List your investor profits', description='Returns profit allocations belonging to the current user.')
 class InvestorProfitDetailsView(generics.ListAPIView):
     serializer_class=InvestorProfitSerializer
     permission_classes=[IsAuthenticated]
@@ -373,6 +378,7 @@ class InvestorProfitDetailsView(generics.ListAPIView):
     
 
 
+@extend_schema(summary='List or assign financial advisors', description='GET lists all advisor assignments. POST assigns an advisor user to a project with a commission percentage.')
 class AddFinancialAdvisorListCreateView(generics.ListCreateAPIView):
     queryset = FinancialAdvisor.objects.all()
     serializer_class = FinancialAdvisorAddSerializer
@@ -382,6 +388,7 @@ class AddFinancialAdvisorListCreateView(generics.ListCreateAPIView):
 
 
 
+@extend_schema(summary='List project advisor assignments', description='Returns assignments and configured percentages, with nested advisor details. This endpoint does not return paid commission records.')
 class FinancialAdvisorListView(generics.ListAPIView):
     serializer_class = FinancialAdvisorSerializer
     permission_classes = [IsAdminUser]
@@ -393,6 +400,7 @@ class FinancialAdvisorListView(generics.ListAPIView):
 
 
     
+@extend_schema(summary='Record a receivable', description='Creates a project/trade gain or loss record; authorized_by is assigned to the current user.')
 class AccountReceivableCreateApiView(generics.CreateAPIView):
     queryset = Trade.objects.all()
     serializer_class = AccountReceivableSerializer
@@ -402,6 +410,8 @@ class AccountReceivableCreateApiView(generics.CreateAPIView):
         serializer.save(authorized_by=self.request.user)
     
 
+@extend_schema(summary='List accrued profit records', description='Returns individual records, not an aggregated total. Optional project_id, from_dt/to_dt, and is_disbursed filters. Both dates must be supplied for date filtering.')
+@extend_schema(parameters=[OpenApiParameter('project_id', OpenApiTypes.STR, description='Project ID (eight digits).'), OpenApiParameter('from_dt', OpenApiTypes.DATE, description='Inclusive start trade date (YYYY-MM-DD).'), OpenApiParameter('to_dt', OpenApiTypes.DATE, description='Inclusive end trade date (YYYY-MM-DD).'), OpenApiParameter('is_disbursed', OpenApiTypes.BOOL, description='Filter disbursement status: true or false.')])
 class ProjectProfitTotalListApiView(generics.ListAPIView):
     serializer_class=ProfitSerializer
     permission_classes = [IsAdminUser]
@@ -432,6 +442,8 @@ class ProjectProfitTotalListApiView(generics.ListAPIView):
 
     
 
+@extend_schema(summary='List receivables', description='Filters by project_id and optionally an inclusive trade date range. Omitting project_id yields no matching project records.')
+@extend_schema(parameters=[OpenApiParameter('project_id', OpenApiTypes.STR, description='Project ID (eight digits).'), OpenApiParameter('from_dt', OpenApiTypes.DATE, description='Inclusive start trade date (YYYY-MM-DD).'), OpenApiParameter('to_dt', OpenApiTypes.DATE, description='Inclusive end trade date (YYYY-MM-DD).')])
 class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
     serializer_class=AccountReceivableDetailsSerializer
@@ -453,6 +465,8 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
 
 
+@extend_schema(summary='Disburse project profits', description='Distributes undistributed profits in an inclusive trade date range to advisors and investors, creates ledger records, and marks profits as disbursed. Permission is currently AllowAny, but creating ledger entries uses request.user; use an authenticated session. No matching profits returns 404. This implementation does not directly credit Account balances.')
+@extend_schema(request=ProfitDisburseSerializer, responses={200: StockMessageSerializer, 404: StockMessageSerializer, 500: ErrorSerializer})
 class ProfitDisburse(APIView):
     permission_classes = [AllowAny]
 

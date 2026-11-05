@@ -74,7 +74,7 @@ const menu = [
 
 
   {
-    menuName: "Project",
+    menuName: "Projects",
     roles: ["admin", "super_admin"], // Available to all but different access
     icon: AppWindow,
     children: [
@@ -106,7 +106,7 @@ const menu = [
   },
 
   {
-    menuName: "Trade",
+    menuName: "Trading",
     roles: ["admin", "super_admin"], // Available to all but different access
     icon: TrendingUp,
     children: [
@@ -137,7 +137,7 @@ const menu = [
     icon: FileSpreadsheet,
     children: [
       {
-        menuName: "Acc Receivable Details",
+        menuName: "Account Receivables",
         url: "/acc-rec-details",
         roles: ["admin", "super_admin"],
         icon: SquarePercent,
@@ -167,7 +167,7 @@ const menu = [
         icon: BadgePlus,
       },
       {
-        menuName:"Project Detaitls",
+        menuName:"Project Details",
         url:"/project-details",
         roles:["admin"],
         icon:BadgeInfoIcon

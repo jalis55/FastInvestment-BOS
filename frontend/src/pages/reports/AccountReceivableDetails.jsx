@@ -6,15 +6,22 @@ import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { ProjectPicker } from '@/components/ui/project-search';
+import { SurfaceCard } from '@/components/ui/surface-card';
+import { Button } from '@/components/ui/button';
 
 const AccountReceivableDetails = () => {
   const [searchId, setSearchId] = useState('');
   const [fromDt, setFromDt] = useState('');
   const [toDate, setToDate] = useState('');
   const [recvableData, setRecvableData] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [reportProjectId, setReportProjectId] = useState('');
 
   const searchProject = async (e) => {
     e.preventDefault();
+    setRecvableData([]);
+    setSearching(true);
     try {
       const response = await API.get(`/api/stock/acc/recvable/details/`, {
         params: {
@@ -30,9 +37,12 @@ const AccountReceivableDetails = () => {
       }
 
       setRecvableData(response.data);
+      setReportProjectId(searchId.trim());
     } catch (error) {
       console.error("Error fetching data:", error.response?.data || error.message);
       Swal.fire("Error", "Failed to fetch project details", "error");
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -76,7 +86,7 @@ const AccountReceivableDetails = () => {
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     doc.text('Report Title: Account receivable report', 20, 18);
-    doc.text(`Project Id: ${searchId}`, 20, 22.5);
+    doc.text(`Project Id: ${reportProjectId}`, 20, 22.5);
     doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 200, 22.5, { align: "right" });
 
     // Prepare table data
@@ -117,46 +127,37 @@ const AccountReceivableDetails = () => {
   return (
     <>
     <BannerTitle title="Account Receivable Details"/>
-      <form className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-lg" onSubmit={searchProject}>
+      <SurfaceCard className="relative z-20 mx-auto max-w-4xl">
+      <form onSubmit={searchProject} aria-label="Find account receivables" aria-busy={searching}>
         <div className="space-y-6">
-          <div className="form-group">
-            <input
-              type="search"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Search Project"
-              value={searchId}
-              onChange={(e) => setSearchId(e.target.value)}
-            />
-          </div>
+          <ProjectPicker value={searchId} onChange={(e) => { setSearchId(e.target.value); setRecvableData([]); }} disabled={searching} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700">From Date</label>
-              <input
+              <label htmlFor="accountreceivabledetails-field-2" className="field-label">From Date</label>
+              <input id="accountreceivabledetails-field-2"
                 type="date"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="field-input"
                 value={fromDt}
-                onChange={(e) => setFromDt(e.target.value)}
+                onChange={(e) => { setFromDt(e.target.value); setRecvableData([]); }}
               />
             </div>
             <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700">To Date</label>
-              <input
+              <label htmlFor="accountreceivabledetails-field-3" className="field-label">To Date</label>
+              <input id="accountreceivabledetails-field-3"
                 type="date"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="field-input"
                 value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
+                onChange={(e) => { setToDate(e.target.value); setRecvableData([]); }}
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Search
-          </button>
+          <Button type="submit" disabled={searching || !searchId.trim()}>
+            {searching ? 'Searching…' : 'Search'}
+          </Button>
         </div>
       </form>
+      </SurfaceCard>
       {recvableData.length > 0 && (
         <div className="mt-6 flex space-x-4 justify-center">
           <button

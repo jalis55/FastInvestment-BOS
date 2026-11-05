@@ -1,38 +1,22 @@
-"use client"
-import { useState, useEffect } from "react";
+import { useApiQuery } from '@/hooks/use-api-query';
+import { QueryState } from '@/components/ui/query-state';
+import { useState, useMemo } from "react";
 import BannerTitle from "../../components/BannerTitle";
-import API from "@/api/axios";
-import Spinner from "@/components/Spinner";
+import { ProjectSearch } from '@/components/ui/project-search';
+import { SurfaceCard } from '@/components/ui/surface-card';
+import { Search } from 'lucide-react';
 
 export default function TradeDetailsPage() {
-  const [trades, setTrades] = useState([])
-  const [filteredTrades, setFilteredTrades] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [selectedProject, setSelectedProject] = useState("all")
+  const [projectId, setProjectId] = useState("")
+  const [searchedProject, setSearchedProject] = useState("")
+  const url = searchedProject ? `/api/stock/trade/details/?project_id=${encodeURIComponent(searchedProject)}` : null;
+  const { data: trades, loading, error, refetch } = useApiQuery(url, { enabled: Boolean(searchedProject) });
   const [selectedType, setSelectedType] = useState("all")
   const [selectedInstrument, setSelectedInstrument] = useState("all")
   const [sortConfig, setSortConfig] = useState({ key: "trade_date", direction: "desc" })
 
-  useEffect(() => {
-    // In a real app, this would be a fetch call to an API
-    
-    const getTradeData=async ()=>{
-      const response = await API.get(`api/stock/trade/details/`);
-      setTrades(response.data)
-      setFilteredTrades(response.data);
-      setLoading(false)
-    }
-    getTradeData();
-
-  }, [])
-
-  useEffect(() => {
+  const filteredTrades = useMemo(() => {
     let result = [...trades]
-
-    // Filter by project
-    if (selectedProject !== "all") {
-      result = result.filter((trade) => trade.project === selectedProject)
-    }
 
     // Filter by transaction type
     if (selectedType !== "all") {
@@ -68,12 +52,8 @@ export default function TradeDetailsPage() {
         : b[sortConfig.key].localeCompare(a[sortConfig.key])
     })
 
-    setFilteredTrades(result)
-  }, [trades, selectedProject, selectedType, selectedInstrument, sortConfig])
-
-  const getUniqueProjects = () => {
-    return [...new Set(trades.map((trade) => trade.project))]
-  }
+    return result
+  }, [trades, selectedType, selectedInstrument, sortConfig])
 
   const getUniqueInstruments = () => {
     return [...new Set(trades.map((trade) => trade.instrument.name))]
@@ -95,7 +75,7 @@ export default function TradeDetailsPage() {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "BDT",
       minimumFractionDigits: 2,
     }).format(value)
   }
@@ -122,61 +102,74 @@ export default function TradeDetailsPage() {
 
   const totals = getTotalsByType()
 
+  const searchProject = (event) => {
+    event.preventDefault();
+    const id = projectId.trim();
+    if (!id) return;
+    setSelectedType('all');
+    setSelectedInstrument('all');
+    if (id === searchedProject) refetch();
+    else setSearchedProject(id);
+  }
+
+  const changeProject = (event) => {
+    setProjectId(event.target.value);
+    setSearchedProject('');
+    setSelectedType('all');
+    setSelectedInstrument('all');
+  }
+
   return (
     <div>
-      <BannerTitle title="Trade Details" />
+      <BannerTitle title="Trade Details" description="Search a project to review its trades, values, and instruments." />
+      <ProjectSearch value={projectId} onChange={changeProject} onSubmit={searchProject} loading={loading} />
 
-      {loading ? <Spinner /> : <main className="space-y-6">
+      {!searchedProject && <SurfaceCard className="mx-auto max-w-3xl py-14 text-center">
+        <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><Search size={22} aria-hidden="true" /></span>
+        <h2 className="mt-4 text-lg font-semibold text-slate-900">Find a project to view its trades</h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Enter a project ID or choose one from the list, then select Search.</p>
+      </SurfaceCard>}
+
+      {searchedProject && <QueryState loading={loading} error={error} onRetry={refetch} empty={!trades.length}
+        emptyTitle="No trades found" emptyDescription={`Project ${searchedProject} has no trade records.`}>
+        <main className="space-y-6">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Project trade report</p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-900">Project {searchedProject}</h2></div>
+            <p className="text-sm text-slate-500">{trades.length} {trades.length === 1 ? 'trade' : 'trades'} found</p>
+          </div>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="page-card">
-            <h2 className="text-lg font-medium text-gray-900 mb-2">Total Buy Value</h2>
-            <p className="text-3xl font-bold text-teal-600">{totals.buy}</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="metric-card-soft">
+            <h2 className="text-sm font-medium text-slate-500 mb-2">Buy value</h2>
+            <p className="text-2xl font-bold text-blue-700">{totals.buy}</p>
           </div>
 
-          <div className="page-card">
-            <h2 className="text-lg font-medium text-gray-900 mb-2">Total Sell Value</h2>
-            <p className="text-3xl font-bold text-rose-600">{totals.sell}</p>
+          <div className="metric-card-soft">
+            <h2 className="text-sm font-medium text-slate-500 mb-2">Sell value</h2>
+            <p className="text-2xl font-bold text-emerald-700">{totals.sell}</p>
           </div>
 
-          <div className="page-card">
-            <h2 className="text-lg font-medium text-gray-900 mb-2">Net Position</h2>
+          <div className="metric-card-soft">
+            <h2 className="text-sm font-medium text-slate-500 mb-2">Net trade value</h2>
             <p
-              className={`text-3xl font-bold ${Number.parseFloat(totals.net.replace(/[^0-9.-]+/g, "")) >= 0 ? "text-teal-600" : "text-rose-600"}`}
+              className={`text-2xl font-bold ${Number.parseFloat(totals.net.replace(/[^0-9.-]+/g, "")) >= 0 ? "text-emerald-700" : "text-rose-700"}`}
             >
               {totals.net}
             </p>
           </div>
         </div>
         {/* Filters */}
-        <div className="page-card-tight">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="page-card-tight">
+          <h3 className="mb-4 text-base font-semibold text-slate-900">Filter trade history</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="project-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                Project
-              </label>
-              <select
-                id="project-filter"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-                value={selectedProject}
-                onChange={(e) => setSelectedProject(e.target.value)}
-              >
-                <option value="all">All Projects</option>
-                {getUniqueProjects().map((project) => (
-                  <option key={project} value={project}>
-                    {project}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="type-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="type-filter" className="field-label">
                 Transaction Type
               </label>
               <select
                 id="type-filter"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                className="field-select"
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
               >
@@ -187,12 +180,12 @@ export default function TradeDetailsPage() {
             </div>
 
             <div>
-              <label htmlFor="instrument-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="instrument-filter" className="field-label">
                 Instrument
               </label>
               <select
                 id="instrument-filter"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+                className="field-select"
                 value={selectedInstrument}
                 onChange={(e) => setSelectedInstrument(e.target.value)}
               >
@@ -210,10 +203,14 @@ export default function TradeDetailsPage() {
 
 
         {/* Trades Table */}
-        <div className="table-shell">
+        <div className="table-shell overflow-hidden">
+          <div className="border-b border-slate-200 px-6 py-4">
+            <h3 className="font-semibold text-slate-900">Trade history</h3>
+            <p className="mt-1 text-sm text-slate-500">Showing {filteredTrades.length} of {trades.length} trades</p>
+          </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-[860px] w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
                 <tr>
                   <th
                     scope="col"
@@ -221,13 +218,6 @@ export default function TradeDetailsPage() {
                     onClick={() => handleSort("trade_date")}
                   >
                     Date {getSortIndicator("trade_date")}
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("project")}
-                  >
-                    Project {getSortIndicator("project")}
                   </th>
                   <th
                     scope="col"
@@ -278,18 +268,17 @@ export default function TradeDetailsPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-100">
                 {filteredTrades.map((trade) => (
-                  <tr key={trade.id} className="hover:bg-gray-50">
+                  <tr key={trade.id} className="hover:bg-slate-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(trade.trade_date).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{trade.project}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{trade.instrument.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          trade.trns_type === "buy" ? "bg-teal-100 text-teal-800" : "bg-rose-100 text-rose-800"
+                          trade.trns_type === "buy" ? "bg-blue-50 text-blue-700" : "bg-emerald-50 text-emerald-700"
                         }`}
                       >
                         {trade.trns_type.toUpperCase()}
@@ -312,17 +301,13 @@ export default function TradeDetailsPage() {
                     </td>
                   </tr>
                 ))}
+                {!filteredTrades.length && <tr><td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500">No trades match these filters.</td></tr>}
               </tbody>
             </table>
           </div>
 
-          <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{filteredTrades.length}</span> trades
-            </p>
-          </div>
         </div>
-      </main>}
+      </main></QueryState>}
     </div>
   )
 }

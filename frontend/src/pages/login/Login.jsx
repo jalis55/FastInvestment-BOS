@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/auth/AuthContext';
+import { useAuth } from '@/auth/use-auth';
 import ButtonSpinner from '@/components/ButtonSpinner';
 
 
@@ -116,7 +116,7 @@ const Login = () => {
                                         data-testid="password"
                                         autoComplete="current-password"
                                         required
-                                        className="field-input pr-11"
+                                        className="field-input"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="demo@123"
@@ -148,7 +148,7 @@ const Login = () => {
                                 <button
                                     data-testid="login"
                                     type="submit"
-                                    className="primary-button group relative"
+                                    className="primary-button"
                                 >
                                     <span className="absolute inset-y-0 left-0 flex items-center pl-4">
                                         <svg className="h-5 w-5 text-blue-100/80 group-hover:text-white"

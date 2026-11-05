@@ -1,9 +1,9 @@
+import { getApiError } from '@/api/errors';
 import { useMemo, useState } from "react";
-import { Bell, ChevronsLeft, Sparkles } from "lucide-react";
-import profileImg from "../assets/profile-image.jpg";
+import { Bell, ChevronsLeft, Sparkles, UserRound } from "lucide-react";
 import PropTypes from "prop-types";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "@/auth/AuthContext";
+import { useAuth } from "@/auth/use-auth";
 
 const Header = ({ collapsed, setCollapsed }) => {
     const { userData, logout } = useAuth();
@@ -16,6 +16,8 @@ const Header = ({ collapsed, setCollapsed }) => {
         return userData.name.toUpperCase();
     }, [userData?.name]);
 
+    const [logoutError, setLogoutError] = useState('');
+    const [loggingOut, setLoggingOut] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
 
     // Function to toggle the dropdown's visibility
@@ -26,12 +28,16 @@ const Header = ({ collapsed, setCollapsed }) => {
 
 
     const handleLogout = async () => {
-        await logout();
-        setIsOpen(false);
-        navigate('/login');
+        if (loggingOut) return;
+        setLoggingOut(true);
+        setLogoutError('');
+        try {
+            await logout();
+            setIsOpen(false);
+            navigate('/login');
+        } catch (error) { setLogoutError(getApiError(error)); }
+        finally { setLoggingOut(false); }
     };
-
-
 
     return (
         <header className="relative z-10 flex h-[72px] items-center justify-between border-b border-white/50 bg-white/65 px-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl">
@@ -40,6 +46,8 @@ const Header = ({ collapsed, setCollapsed }) => {
                     className="flex size-11 items-center justify-center rounded-2xl border border-white/60 bg-white/80 text-slate-600 transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-900"
                     onClick={() => setCollapsed(!collapsed)}
                     aria-label="Toggle sidebar"
+                    aria-expanded={!collapsed}
+                    aria-controls="main-sidebar"
                 >
                     <ChevronsLeft className={collapsed && "rotate-180"} />
                 </button>
@@ -53,6 +61,7 @@ const Header = ({ collapsed, setCollapsed }) => {
                 </div>
             </div>
 
+            {logoutError && <p role="alert" className="max-w-xs text-sm text-red-700">{logoutError}</p>}
             <div className="flex items-center gap-x-3">
                 <button
                     type="button"
@@ -75,15 +84,12 @@ const Header = ({ collapsed, setCollapsed }) => {
                         type="button"
                         className="inline-flex items-center justify-center rounded-full border border-white/70 bg-white/85 p-1 shadow-sm transition hover:border-slate-300 hover:bg-white"
                         id="menu-button"
+                        aria-label="Open profile menu"
                         aria-expanded={isOpen}
                         aria-haspopup="true"
                         onClick={toggleDropdown}
                     >
-                        <img
-                            src={userData?.profile_image || profileImg}
-                            alt="profile"
-                            className="size-10 rounded-full object-cover"
-                        />
+                        {userData?.profile_image ? <img src={userData.profile_image} alt="Your profile" className="size-10 rounded-full object-cover" /> : <span className="flex size-10 items-center justify-center rounded-full bg-blue-100 text-blue-700"><UserRound aria-hidden="true" size={20} /></span>}
                     </button>
 
                     {isOpen && (
@@ -106,7 +112,8 @@ const Header = ({ collapsed, setCollapsed }) => {
                                 <button
                                     type="button"
                                     className="block w-full rounded-2xl px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-slate-50"
-                                    onClick={handleLogout}
+                                    disabled={loggingOut}
+                            onClick={handleLogout}
                                 >
                                     Logout
                                 </button>

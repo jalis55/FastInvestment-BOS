@@ -5,7 +5,7 @@ This is the backend API for Fast Investment Limited. It is built using Django an
 ## 🚀 Technologies Used
 - **Backend:** Django, Django REST Framework (DRF)
 - **Authentication:** JWT (JSON Web Tokens) via `djangorestframework-simplejwt`
-- **Database:** PostgreSQL (configured via `.env`)
+- **Database:** SQLite in the current settings; PostgreSQL configuration is present but commented out.
 - **API Documentation:** drf-spectacular (Swagger UI / ReDoc)
 - **Caching:** Redis
 
@@ -23,6 +23,7 @@ This is the backend API for Fast Investment Limited. It is built using Django an
    - Manage financial instruments and live trades.
    - Create and track investment projects and investor contributions.
    - Financial advisor commissions and profit disbursement.
+   - Daily AmarStock market reference prices for Project Details, cached in Redis.
 
 ## ⚙️ Setup and Installation
 
@@ -46,6 +47,11 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
+For Upstash, put `REDIS_URL=rediss://default:YOUR_PASSWORD@YOUR_HOST:6379/0`
+in `backend/.env.local` (ignored by Git). The `rediss://` scheme enables TLS
+with certificate verification. Local overrides are loaded before `.env`;
+environment variables supplied by the process take precedence over both files.
+
 ### 3. Create a Virtual Environment & Install Dependencies
 ```bash
 python -m venv venv
@@ -55,7 +61,6 @@ pip install -r requirements.txt
 
 ### 4. Database Migrations
 ```bash
-python manage.py makemigrations
 python manage.py migrate
 ```
 
@@ -74,31 +79,14 @@ This project uses `drf-spectacular` to auto-generate API documentation. Once the
 
 ---
 
-### Core Endpoint Overview
+### Reference by Django app
 
-#### Authentication & Users (`/api/`)
-- `POST /api/user-register/` - Register a new user
-- `POST /api/token/` - Obtain JWT tokens (Login)
-- `POST /api/token/refresh/` - Refresh JWT token
-- `GET/PUT /api/user-profile/` - Retrieve or update user profile
-- `GET /api/admin/users/` - List all users (Admin only)
-- `GET /api/admin/customers/` - List all customers (Admin only)
+See the [backend API guide](docs/README.md) for authentication, CSRF, data conventions, and error handling.
 
-#### Accounting (`/api/acc/`)
-- `GET /api/acc/user/<id>/balance/` - Check user balance
-- `POST /api/acc/user/create-transaction/` - Create a new transaction
-- `GET /api/acc/user/pending-payments/` - View pending payments
-- `POST /api/acc/user/fund-transfer/` - Transfer funds between accounts
+| App | Detailed reference |
+| --- | --- |
+| `user_app` | [Authentication, sessions, profiles, and user administration](docs/user_app.md) |
+| `accounting` | [Balances, transactions, approvals, and fund transfers](docs/accounting.md) |
+| `stock_app` | [Instruments, trades, projects, investments, advisors, and profits](docs/stock_app.md) |
 
-#### Stock & Projects (`/api/stock/`)
-- `GET /api/stock/instruments/` - View all financial instruments
-- `POST /api/stock/create/trade/` - Record a new stock trade
-- `POST /api/stock/create/project/` - Create a new investment project
-- `POST /api/stock/add/investment/` - Add investor to a project
-- `POST /api/stock/profit/disburse/` - Disburse project profits
-
-## 🛡️ Error Handling
-- **400 Bad Request:** Validation errors or missing fields payload.
-- **401 Unauthorized:** Authentication/JWT token is missing or invalid.
-- **403 Forbidden:** User lacks the necessary permissions (e.g., trying to access admin routes).
-- **404 Not Found:** Resource does not exist.
+Swagger UI and ReDoc group endpoints by the same three app names. The references include all routed business endpoints, request and response fields, permissions, filters, examples, and current implementation limitations.
