@@ -342,6 +342,7 @@ FRONTEND_ORIGINS = (
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://fast-investment-bos-ppdu.vercel.app",
+    "https://fastinv.netlify.app",
 )
 for origin in FRONTEND_ORIGINS:
     if origin not in CORS_ALLOWED_ORIGINS:
