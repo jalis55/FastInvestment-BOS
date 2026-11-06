@@ -40,6 +40,11 @@ ALLOWED_HOSTS = env.list(
     default=["localhost", "127.0.0.1"],
 )
 
+# Keep the production domain allowed even when local hosts are set in the environment.
+PRODUCTION_HOST = "fast-investment-bos.vercel.app"
+if PRODUCTION_HOST not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(PRODUCTION_HOST)
+
 SECURE_PROXY_SSL_HEADER = (
     "HTTP_X_FORWARDED_PROTO",
     "https",
