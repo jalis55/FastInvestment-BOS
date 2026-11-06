@@ -37,7 +37,7 @@ DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env.list(
     "ALLOWED_HOSTS",
-    default=["localhost", "127.0.0.1"],
+    default=["*"],
 )
 
 # Keep the production domain allowed even when local hosts are set in the environment.
