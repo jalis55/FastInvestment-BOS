@@ -57,7 +57,7 @@ CSRF_COOKIE_SECURE = env.bool(
 
 
 # ============================================================
-# INSTALLED APPLICATIONS — SILK REMOVED
+# INSTALLED APPLICATIONS
 # ============================================================
 
 INSTALLED_APPS = [
@@ -86,7 +86,7 @@ INSTALLED_APPS = [
 
 
 # ============================================================
-# MIDDLEWARE — SILK REMOVED
+# MIDDLEWARE
 # ============================================================
 
 MIDDLEWARE = [
