@@ -1,0 +1,24 @@
+
+# Django
+DJANGO_SECRET_KEY=UuE5hGnqtvUOxWGyUO021BrQxbE%XTB3jp/aUKVYhhfkU=
+DEBUG=False
+ALLOWED_HOSTS=fastinvestment-api.vercel.app,localhost,127.0.0.1
+
+# Neon PostgreSQL
+DB_NAME=fastinvestment_db
+DB_USER=neondb_owner
+DB_PASSWORD=npg_N1slQieIaPR8
+DB_HOST=ep-wild-shadow-bd8oirml-pooler.c-8.us-east-2.aws.neon.tech
+DB_PORT=5432
+
+# Production frontend
+CORS_ALLOWED_ORIGINS=https://fast-investment-bos.vercel.app
+CSRF_TRUSTED_ORIGINS=https://fast-investment-bos.vercel.app
+
+# HTTPS cookies
+AUTH_COOKIE_SECURE=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+
+# Redis (configure if required)
+REDIS_URL=rediss://default:gQAAAAAAAb0gAAIgcDFjNWM4N2IwMDdkZmM0MDIwYTQ0MzA2NzE2YzVmYmIyOA@meet-flamingo-113952.upstash.io:6379
