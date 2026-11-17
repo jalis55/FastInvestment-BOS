@@ -5,13 +5,33 @@ from urllib.parse import quote
 
 import environ
 
+
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+
 
 MEDIA_DIR=BASE_DIR / "media"
 
 
-SECRET_KEY = 'django-insecure-mn4n+k$qbm!ee=61cjs)a92m#rdfu+2c7%)^_9gqlvijahcxz%'
+# SECRET_KEY = 'django-insecure-mn4n+k$qbm!ee=61cjs)a92m#rdfu+2c7%)^_9gqlvijahcxz%'
+
+SECRET_KEY = env("DJANGO_SECRET_KEY")
+
+
+DEBUG = env.bool("DEBUG", default=False)
+
+
+
 
 # Initialise environment
 env = environ.Env(
@@ -139,12 +159,32 @@ WSGI_APPLICATION = 'core.wsgi.application'
 #     }
 # }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+
+
+
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("DB_NAME"),
+        "USER": env("DB_USER"),
+        "PASSWORD": env("DB_PASSWORD"),
+        "HOST": env("DB_HOST"),
+        "PORT": env("DB_PORT", default="5432"),
+        "OPTIONS": {
+            "sslmode": "require"
+        },
+        "CONN_MAX_AGE": 0,
     }
 }
+
 
 
 # Password validation
@@ -181,7 +221,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
+
+
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 EMAIL_BACKEND = env(
     'EMAIL_BACKEND',
@@ -197,8 +240,12 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 EMAIL_TIMEOUT = env.int('EMAIL_TIMEOUT', default=30)
 
 # media files
-MEDIA_ROO=[MEDIA_DIR,]
-MEDIA_URL="/media/"
+# MEDIA_ROO=[MEDIA_DIR,]
+# MEDIA_URL="/media/"
+
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
