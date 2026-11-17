@@ -18,7 +18,7 @@ Paths below are relative to that prefix. Project IDs are eight-digit strings, in
 | GET | `project/status/{pk}/` | Staff | Project active status |
 | GET | `project/balance/details/{pk}/` | Public | Aggregated project balances |
 | GET | `project/list/` | Public | All projects |
-| PATCH | `close/project/{pk}/` | Authenticated | Close project and return investor funds |
+| PATCH | `close/project/{pk}/` | Staff | Close project and return investor funds |
 | POST | `add/investment/` | Staff | Invest funds from an investor's account |
 | GET | `investor/contrib/percent/{project_id}/` | Staff | Investor contributions and percentages |
 | GET | `investor/investment-details/` | Authenticated | Current user's investments |
@@ -29,7 +29,7 @@ Paths below are relative to that prefix. Project IDs are eight-digit strings, in
 | GET | `investor/profit-details/` | Authenticated | Current user's profit allocations |
 | POST | `create/acc/recvable/` | Staff | Record a receivable gain/loss |
 | GET | `acc/recvable/details/` | Staff | Receivables with nested trade details |
-| POST | `profit/disburse/` | Public permission; see below | Disburse eligible profit |
+| POST | `profit/disburse/` | Staff | Disburse eligible profit |
 
 The spellings `recvable`, `recivable` in code, and `gain_lose` reflect the existing API. Use the paths and field names documented here exactly.
 
@@ -111,7 +111,7 @@ Content-Type: application/json
 
 Supply `total_investment` and `closing_balance` even for PATCH: the implementation reads both directly despite the serializer marking them optional. The other shown totals are optional. The serializer also exposes `project_id`; clients should leave it unchanged and identify the project through the path.
 
-The operation closes the project, records closing information and gain/loss from receivables, creates completed investor-return deposits, and updates investor account balances. Success returns `{"status": "closed", "data": {...}}`, where `data` contains `project_id`, `total_investment`, `total_buy`, `total_sell`, `total_sell_profit`, and `closing_balance`. Already closed projects return `400`, missing projects `404`, and processing failures `500`. This endpoint currently requires authentication rather than staff permission.
+The operation closes the project, records closing information and gain/loss from receivables, creates completed investor-return deposits, and updates investor account balances. Success returns `{"status": "closed", "data": {...}}`, where `data` contains `project_id`, `total_investment`, `total_buy`, `total_sell`, `total_sell_profit`, and `closing_balance`. Already closed projects return `400`, missing projects `404`, and processing failures `500`. This endpoint requires staff permission.
 
 ## Investments
 
@@ -178,4 +178,4 @@ The operation calculates advisor commissions, allocates the remainder to investo
 
 Success: `200` with `{"message": "Profit disbursement completed successfully"}`. No eligible profits: `404` with `{"message": "No profits found for disbursement"}`. Invalid input: `400` with serializer errors. Processing failures: `500` with an `error` message.
 
-The view currently declares `AllowAny`, but creating ledger entries uses `request.user` as issuer. Use authenticated requests; anonymous execution is not a reliable supported workflow. This documentation preserves the existing permission behavior.
+Only authenticated staff can disburse profits. Anonymous and non-staff requests are rejected before any ledger records or balances are changed.

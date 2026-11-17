@@ -98,9 +98,11 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
 
 
 
-@extend_schema(summary='Close a project', description='Closes a project and credits investor returns. Supply total_investment and closing_balance even for PATCH: the implementation reads both directly. Other totals are optional. Already closed projects return 400; missing projects return 404. This view uses the default authenticated permission.')
+@extend_schema(summary='Close a project', description='Closes a project and credits investor returns. Supply total_investment and closing_balance even for PATCH: the implementation reads both directly. Other totals are optional. Already closed projects return 400; missing projects return 404. This view requires staff access.')
 @extend_schema(request=ProjectCloseSerializer, responses={200: ProjectClosedSerializer, 400: ErrorSerializer, 404: ErrorSerializer, 500: ErrorSerializer}, parameters=[OpenApiParameter("pk", OpenApiTypes.STR, OpenApiParameter.PATH, description="Eight-digit project ID.")])
 class ProjectCloseView(APIView):
+    permission_classes = [IsAdminUser]
+
     @transaction.atomic
     def __prepare_transactions(self, project, closing_bal, total_investment):
         """Prepare investor transactions atomically"""
@@ -465,10 +467,10 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
 
 
-@extend_schema(summary='Disburse project profits', description='Distributes undistributed profits in an inclusive trade date range to advisors and investors, credits account balances with matching ledger records, and marks profits as disbursed atomically. Permission is currently AllowAny, but creating ledger entries uses request.user; use an authenticated session. No matching profits returns 404.')
+@extend_schema(summary='Disburse project profits', description='Distributes undistributed profits in an inclusive trade date range to advisors and investors, credits account balances with matching ledger records, and marks profits as disbursed atomically. Requires staff access. No matching profits returns 404.')
 @extend_schema(request=ProfitDisburseSerializer, responses={200: StockMessageSerializer, 404: StockMessageSerializer, 500: ErrorSerializer})
 class ProfitDisburse(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminUser]
 
     def post(self, request, format=None):
         serializer = ProfitDisburseSerializer(data=request.data)

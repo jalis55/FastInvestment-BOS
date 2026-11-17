@@ -28,7 +28,7 @@ from user_app.serializers import (CustomTokenObtainPairSerializer,
 @extend_schema(summary='Register a user', description='Create a user with email and name. Password is optional in the current serializer; when supplied it must contain at least eight characters. Use multipart/form-data for profile_image.')
 class UserRegistrationView(CreateAPIView):
     serializer_class=UserSerializer
-    permission_classes=[AllowAny]
+    permission_classes=[IsAdminUser]
 
 
 def _user_role(user):
