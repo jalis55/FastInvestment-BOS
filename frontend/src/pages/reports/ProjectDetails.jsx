@@ -1,10 +1,11 @@
+import { LoadingState } from '@/components/ui/loading-state';
 import React, { useState, useCallback, useMemo } from 'react';
 import BannerTitle from '@/components/BannerTitle';
 import API from '@/api/axios';
 import Swal from 'sweetalert2';
 import { ProjectSearch } from '@/components/ui/project-search';
 import { SurfaceCard } from '@/components/ui/surface-card';
-import { LoaderCircle, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 const currency = new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' });
 const money = (value) => currency.format(Number(value) || 0);
@@ -47,9 +48,9 @@ const ProjectDetails = () => {
      * Search handler
      * ------------------------------------------------- */
     const searchProject = useCallback(
-        async (e) => {
+        async (e, projectId) => {
             e.preventDefault();
-            const id = searchId.trim();
+            const id = projectId || searchId.trim();
             if (!id) return toast('warning', 'Input Required', 'Please enter a project ID.');
 
             setProjectBalance(null);
@@ -101,7 +102,7 @@ const ProjectDetails = () => {
             const rawPrice = priceSnapshot?.prices?.[item.instrument?.name?.toUpperCase()];
             const price = rawPrice == null ? null : Number(rawPrice);
 
-            const totalCost = qty * cost;
+            const totalCost = Number(item.total_cost ?? qty * cost);
             const marketValue = price == null ? null : qty * price;
             const gainLoss = marketValue == null ? null : marketValue - totalCost;
 
@@ -125,7 +126,7 @@ const ProjectDetails = () => {
             <BannerTitle title="Project Details" description="Review project balances and the market value of its current holdings." />
             <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)}
                 onSubmit={searchProject} loading={loadingProject || loadingInstruments} />
-            {loadingProject && <div role="status" className="page-card flex items-center justify-center gap-3 text-sm text-slate-600"><LoaderCircle className="size-5 animate-spin" aria-hidden="true" />Loading project…</div>}
+            {loadingProject && <LoadingState label="Loading project…" description="Preparing balances and investment totals." />}
             {!projectBalance && !loadingProject && <SurfaceCard className="mx-auto max-w-3xl py-14 text-center">
                 <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><Search size={22} aria-hidden="true" /></span>
                 <h2 className="mt-4 text-lg font-semibold text-slate-900">Find a project to view its details</h2>
@@ -173,7 +174,7 @@ const ProjectDetails = () => {
             {projectBalance &&  (
                 <>
                     {loadingInstruments ? (
-                        <div role="status" className="page-card flex items-center justify-center gap-3 text-sm text-slate-600"><LoaderCircle className="size-5 animate-spin" aria-hidden="true" />Loading holdings and market prices…</div>
+                        <LoadingState label="Loading holdings and market prices…" description="Calculating current values for this project." />
                     ) : instrumentsError ? (
                         <div role="alert" className="page-card border-red-200 text-sm text-red-700">Holdings could not be loaded. Search the project again to retry.</div>
                     ) : rows.length ? (

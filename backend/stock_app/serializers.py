@@ -38,12 +38,12 @@ class FinancialAdvisorSerializer(serializers.ModelSerializer):
 class FinAdvisorCommissionSerializer(serializers.ModelSerializer):
     class Meta:
         model=FinAdvisorCommission
-        fields=('advisor','project','trade','com_percent','com_amount')
+        fields=('advisor','project','trade','dividend','com_percent','com_amount')
 
 class InvestorProfitSerializer(serializers.ModelSerializer):
     class Meta:
         model=InvestorProfit
-        fields=('investor','project','trade','contribute_amount','percentage','profit_amount')
+        fields=('investor','project','trade','dividend','contribute_amount','percentage','profit_amount')
 
         
 class InvestmentSerailizer(serializers.ModelField):
@@ -163,7 +163,8 @@ class SimplifiedTradeDetailsSerializer(serializers.ModelSerializer):
 class SellableInstrumentSerializer(serializers.Serializer):
     instrument = InstrumentSerializer(read_only=True)
     available_quantity = serializers.IntegerField()
-    average_buy_unit_price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    average_buy_unit_price = serializers.DecimalField(max_digits=20, decimal_places=8, required=False)
+    total_cost = serializers.DecimalField(max_digits=20, decimal_places=2)
 
 
 
@@ -177,9 +178,16 @@ class AccountReceivableSerializer(serializers.ModelSerializer):
 
 
 class ProfitSerializer(serializers.ModelSerializer):
+    def validate(self, data):
+        trade = data.get('trade')
+        if trade is None or trade.project_id != data['project'].pk:
+            raise serializers.ValidationError('A trade belonging to this project is required. Record cash dividends through the dividends endpoint.')
+        return data
+
     class Meta:
         model=Profit
-        fields=('project','trade','amount')       
+        fields=('project','trade','dividend','amount')
+        read_only_fields = ('dividend',)
 
         
 class AccountReceivableDetailsSerializer(serializers.ModelSerializer):
@@ -211,6 +219,7 @@ class ProjectStatusSerializer(serializers.ModelSerializer):
         fields=('project_id','project_active_status')
 
 class ProjectBalanceDetailsSerializer(serializers.Serializer):
+    cash_dividends = serializers.DecimalField(max_digits=100, decimal_places=2)
     project_id = serializers.CharField()
     total_investment=serializers.DecimalField(max_digits=10,decimal_places=2)
     total_buy_amount=serializers.DecimalField(max_digits=10,decimal_places=2)

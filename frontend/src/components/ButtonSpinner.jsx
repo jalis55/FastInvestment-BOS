@@ -1,13 +1,5 @@
-import React from 'react'
+import { LoaderCircle } from 'lucide-react';
 
-const ButtonSpinner = () => {
-  return (
-    <span
-      className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
-      role="status"
-      aria-label="Loading"
-    />
-  )
+export default function ButtonSpinner({ label = 'Processing…' }) {
+  return <span role="status" aria-live="polite" className="inline-flex items-center justify-center gap-2 whitespace-nowrap"><LoaderCircle className="size-4 shrink-0 motion-safe:animate-spin" aria-hidden="true" /><span>{label}</span></span>;
 }
-
-export default ButtonSpinner

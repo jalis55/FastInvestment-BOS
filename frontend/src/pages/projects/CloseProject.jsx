@@ -100,7 +100,7 @@ export default function CloseProject() {
 
   const balance = review?.balance;
   const ready = review?.active && !review.holdings.length && !review.unpaidCount && review.investors.length > 0;
-  const beforeProfit = balance ? Number(balance.total_investment) - Number(balance.total_buy_amount) + Number(balance.total_sell_amount) : 0;
+  const beforeProfit = balance ? Number(balance.total_investment) - Number(balance.total_buy_amount) + Number(balance.total_sell_amount) + Number(balance.cash_dividends || 0) : 0;
 
   return <div className="mx-auto max-w-7xl space-y-6 pb-8">
     <BannerTitle title="Close a project" description="Review the money, check that profit payouts are complete, then return the remaining capital to investors." />
@@ -140,6 +140,7 @@ export default function CloseProject() {
               <AmountRow label="Investor contributions" value={balance.total_investment} />
               <AmountRow label="Share purchases" value={balance.total_buy_amount} sign="−" detail="Purchase costs include trading commissions." />
               <AmountRow label="Share sale proceeds" value={balance.total_sell_amount} sign="+" detail="After selling commissions. This amount already includes profits from the sales." />
+              <AmountRow label="Cash dividends received" value={balance.cash_dividends || 0} sign="+" detail="Dividend income included in profit payouts." />
               <AmountRow label="Cash before profit payouts" value={beforeProfit} strong />
               <AmountRow label="Profit already disbursed" value={review.paid} sign="−" detail="Deducted because this money has already gone to recipient accounts." />
               {review.unpaidCount > 0 && <AmountRow label="Profit reserved for disbursement" value={review.unpaid} sign="−" detail="Reserved separately. Complete this payout before returning capital." />}

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/auth/use-auth';
 import { ProjectSearch } from '@/components/ui/project-search';
 import { getApiError } from '@/api/errors';
 import { useApiQuery } from '@/hooks/use-api-query';
@@ -10,6 +12,7 @@ import Swal from "sweetalert2";
 import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
 
 const AddInvestments = () => {
+    const { user } = useAuth();
     const [searchId, setSearchId] = useState('');
     const [projectId, setProjectId] = useState('');
     const customersQuery = useApiQuery('/api/admin/customers/', { enabled: !!projectId });
@@ -34,6 +37,7 @@ const AddInvestments = () => {
         setSearching(true);
         setProjectId('');
         setSelectedCustomer(null);
+        setAmount(0);
         try {
 
             const isActive = await checkProjectStatus(searchId);
@@ -103,7 +107,14 @@ const AddInvestments = () => {
             {selectedCustomer && <QueryState loading={balanceQuery.loading} error={balanceQuery.error} onRetry={balanceQuery.refetch}><span /></QueryState>}
             {Boolean(projectId) && <QueryState loading={customersQuery.loading} error={customersQuery.error} onRetry={customersQuery.refetch}><span /></QueryState>}
             <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)} onSubmit={searchProject} loading={searching} />
-            {customers.length > 0 && (
+            {projectId && !customersQuery.loading && !customersQuery.error && customers.length === 0 && (
+                <div role="alert" className="page-card mx-auto max-w-2xl border-amber-200 bg-amber-50">
+                    <h2 className="font-semibold text-amber-950">No investors available</h2>
+                    <p className="mt-2 text-sm text-amber-900">This database has no customer accounts. Register an investor and deposit funds into their account before adding an investment to project {projectId}.</p>
+                    {user?.is_super_admin ? <Link to="/user-registration" className="primary-button mt-4 inline-flex">Register investor</Link> : <p className="mt-3 text-sm text-amber-900">Ask a super administrator to register an investor.</p>}
+                </div>
+            )}
+            {projectId && !customersQuery.loading && !customersQuery.error && customers.length > 0 && (
                 <div className="page-card max-w-2xl mx-auto space-y-6">
                     <div className="border p-4 flex justify-between items-center mb-4">
                         <h6 className="text-sm font-medium text-gray-900 dark:text-white">Project Id: {projectId}</h6>
@@ -120,7 +131,7 @@ const AddInvestments = () => {
                             onChange={handleInvestorChange}
                             className="field-select"
                         >
-                            <option>Select Investor</option>
+                            <option value="">Select Investor</option>
                             {customers.map((customer) => (
                                 <option key={customer.id} value={customer.id}>
                                     {customer.name}
@@ -155,17 +166,21 @@ const AddInvestments = () => {
                                     placeholder="Enter Amount"
                                 />
                             </div>
-                            {selectedCustomerBal > 0 &&
+                            {!balanceQuery.loading && !balanceQuery.refreshing && !balanceQuery.error && selectedCustomerBal <= 0 && (
+                                <p role="alert" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">This investor has no available balance. Deposit funds into their account before adding an investment.</p>
+                            )}
+                            {!balanceQuery.loading && !balanceQuery.refreshing && !balanceQuery.error && selectedCustomerBal > 0 && Number(amount) > selectedCustomerBal && (
+                                <p role="alert" className="mb-4 text-sm text-red-700">The investment amount exceeds the investor’s available balance of {selectedCustomerBal.toFixed(2)} BDT.</p>
+                            )}
                                 <div className="flex justify-center">
                                     <button
                                         type="submit"
                                         className="primary-button"
-                                        disabled={loading}
+                                        disabled={loading || balanceQuery.loading || balanceQuery.refreshing || !!balanceQuery.error || selectedCustomerBal <= 0 || Number(amount) <= 0 || Number(amount) > selectedCustomerBal}
                                     >
                                         {loading ? <ButtonSpinner /> : 'Submit'}
                                     </button>
                                 </div>
-                            }
                         </form>
                     )}
                 </div>

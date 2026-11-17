@@ -8,7 +8,7 @@ export function buildProfitDistribution(profits, advisors, investors) {
       const percentage = Number(assignment.com_percentage);
       const amount = remaining * percentage / 100;
       advisorRows.push({
-        trade: profit.trade, user: assignment.advisor,
+        trade: profit.trade || `Dividend ${profit.dividend}`, user: assignment.advisor,
         percentage, amount: Number(amount.toFixed(2)),
       });
       remaining -= amount;
@@ -16,7 +16,7 @@ export function buildProfitDistribution(profits, advisors, investors) {
     for (const contribution of investors) {
       const percentage = Number(contribution.contribution_percentage);
       investorRows.push({
-        trade: profit.trade, user: contribution.investor,
+        trade: profit.trade || `Dividend ${profit.dividend}`, user: contribution.investor,
         contribution: Number(contribution.contribute_amount), percentage,
         amount: Number((remaining * percentage / 100).toFixed(2)),
       });
