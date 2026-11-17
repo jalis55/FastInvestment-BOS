@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | GET | `user/{pk}/balance/` | Owner or staff | Get balance by **user ID** |
 | GET | `users/balance-details/` | Staff | List all user balances |
-| POST | `user/create-transaction/` | Authenticated | Create a deposit/payment |
+| POST | `user/create-transaction/` | Staff | Create a deposit/payment |
 | GET | `user/transaction-details/` | Authenticated | List current user's completed transactions |
 | GET | `user/pending-payments/` | Superuser | List pending payments |
 | PUT, PATCH | `user/approve-transaction/{pk}/` | Staff | Approve/decline a pending transaction |
@@ -49,7 +49,7 @@ The path ID identifies the user, not the account. A missing account returns `400
 | Either type with `trans_mode=internal` | No balance adjustment in this endpoint | `completed` |
 | Payment with a mode other than `internal` | No immediate balance adjustment | `pending` |
 
-The current authenticated-only permission allows a caller to submit a user ID; it is not restricted to the caller's own ID. Use the fund-transfer endpoint for transfers that must change both balances.
+Staff can submit a customer user ID to record a deposit or payment. Use the fund-transfer endpoint for transfers that must change both balances.
 
 ## Transaction history and approvals
 

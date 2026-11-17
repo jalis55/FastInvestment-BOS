@@ -21,13 +21,13 @@ function DistributionTable({ rows, investor }) {
   return <div className="overflow-x-auto"><table className="w-full text-left text-sm">
     <caption className="sr-only">{investor ? 'Investor profit allocations' : 'Financial advisor commissions'}</caption>
     <thead className="border-y border-slate-100 bg-slate-50/80 text-[10px] font-semibold uppercase tracking-wider text-slate-500"><tr>
-      <th scope="col" className="px-6 py-3">{investor ? 'Investor' : 'Advisor'}</th><th scope="col" className="px-4 py-3">Trade</th>
+      <th scope="col" className="px-6 py-3">{investor ? 'Investor' : 'Advisor'}</th><th scope="col" className="px-4 py-3">Trade / Dividend</th>
       {investor && <th scope="col" className="px-4 py-3 text-right">Contribution</th>}
       <th scope="col" className="px-4 py-3 text-right">{investor ? 'Share' : 'Rate'}</th><th scope="col" className="px-6 py-3 text-right">Allocation</th>
     </tr></thead>
     <tbody className="divide-y divide-slate-100">{rows.map((row, index) => <tr key={`${row.trade}-${row.user.id}-${index}`} className="hover:bg-slate-50/60">
       <td className="px-6 py-4"><p className="whitespace-nowrap font-medium text-slate-800">{row.user.name || row.user.email}</p><p className="mt-1 text-xs text-slate-500">{row.user.email}</p></td>
-      <td className="px-4 py-4 font-mono text-xs text-slate-500"><span title={row.trade}>{String(row.trade).slice(0, 8)}…</span></td>
+      <td className="px-4 py-4 font-mono text-xs text-slate-500"><span title={row.trade}>{String(row.trade).startsWith('Dividend ') ? row.trade : `${String(row.trade).slice(0, 8)}…`}</span></td>
       {investor && <td className="whitespace-nowrap px-4 py-4 text-right tabular-nums text-slate-600">{money(row.contribution)}</td>}
       <td className="px-4 py-4 text-right tabular-nums text-slate-500">{row.percentage.toFixed(2)}%</td>
       <td className="whitespace-nowrap px-6 py-4 text-right font-semibold tabular-nums text-slate-900">{money(row.amount)}</td>
@@ -100,7 +100,7 @@ export default function DisburseProfit() {
   };
 
   return <div className="mx-auto max-w-7xl space-y-6">
-    <BannerTitle title="Disburse Profit" description="Review project earnings, advisor commissions, and investor allocations before disbursing." />
+    <BannerTitle title="Disbursement" description="Review project earnings, advisor commissions, and investor allocations before disbursing." />
     <ol aria-label="Disbursement progress" className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium">
       {['Select period', 'Review allocation', 'Disburse profits'].map((label, index) => {
         const step = completed ? 3 : review ? 1 : 0;
@@ -109,7 +109,7 @@ export default function DisburseProfit() {
     </ol>
 
     <SurfaceCard className="relative z-20 p-0">
-      <div className="flex items-start gap-3 border-b border-slate-100 px-6 py-5"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><CalendarRange size={20} aria-hidden="true" /></span><div><h2 className="font-semibold text-slate-900">Choose a distribution period</h2><p className="mt-1 text-sm text-slate-500">Only undistributed profits from trades in this date range are included.</p></div></div>
+      <div className="flex items-start gap-3 border-b border-slate-100 px-6 py-5"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><CalendarRange size={20} aria-hidden="true" /></span><div><h2 className="font-semibold text-slate-900">Choose a distribution period</h2><p className="mt-1 text-sm text-slate-500">Undistributed trade profits and cash dividends received in this date range are included.</p></div></div>
       <form onSubmit={preview} className="p-6" aria-label="Profit distribution criteria" aria-busy={previewing}>
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]">
           <ProjectPicker value={criteria.projectId} onChange={(event) => change('projectId', event.target.value)} disabled={busy} />
@@ -133,7 +133,7 @@ export default function DisburseProfit() {
           { label: 'Advisor commissions', value: money(review.advisorTotal), detail: 'Allocated before investor shares', icon: Wallet },
           { label: 'Investor allocations', value: money(review.investorTotal), detail: 'Based on contribution percentage', icon: Users },
         ].map((metric) => <SurfaceCard key={metric.label} tone="compact"><div className="mb-3 flex items-center justify-between"><p className="text-xs font-medium text-slate-500">{metric.label}</p><metric.icon size={16} className="text-slate-400" aria-hidden="true" /></div><p className="break-words text-xl font-semibold tracking-tight text-slate-900 tabular-nums">{metric.value}</p><p className="mt-2 text-[11px] text-slate-500">{metric.detail}</p></SurfaceCard>)}</div>
-        <div className="table-shell"><div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5"><div><h2 className="font-semibold text-slate-900">Allocation details</h2><p className="mt-1 text-xs text-slate-500">Review individual allocations for each trade.</p></div><div role="group" aria-label="Allocation type" className="flex rounded-xl bg-slate-100 p-1">{[['investors', 'Investors'], ['advisors', 'Advisors']].map(([key, label]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)} className={cn('rounded-lg px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400', view === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900')}>{label}</button>)}</div></div><DistributionTable rows={view === 'investors' ? review.investorRows : review.advisorRows} investor={view === 'investors'} /></div>
+        <div className="table-shell"><div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5"><div><h2 className="font-semibold text-slate-900">Allocation details</h2><p className="mt-1 text-xs text-slate-500">Review individual allocations for each trade or cash dividend.</p></div><div role="group" aria-label="Allocation type" className="flex rounded-xl bg-slate-100 p-1">{[['investors', 'Investors'], ['advisors', 'Advisors']].map(([key, label]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)} className={cn('rounded-lg px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400', view === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900')}>{label}</button>)}</div></div><DistributionTable rows={view === 'investors' ? review.investorRows : review.advisorRows} investor={view === 'investors'} /></div>
       </div>
       <SurfaceCard className="border-slate-800 bg-slate-900 text-white xl:sticky xl:top-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">Distribution summary</p><h2 className="mt-3 text-lg font-semibold">Project {review.criteria.projectId}</h2><p className="mt-2 text-xs leading-5 text-slate-400">{dateLabel(review.criteria.from)} – {dateLabel(review.criteria.to)}</p>

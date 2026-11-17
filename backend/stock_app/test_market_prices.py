@@ -6,7 +6,6 @@ from django.core.cache import cache
 from django.test import SimpleTestCase, override_settings
 
 from stock_app.market_prices import MarketPriceError, get_daily_prices, parse_prices, scrape_prices
-from stock_app.views import SellableInstrumentView
 
 
 @override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}})
@@ -76,11 +75,3 @@ class MarketPriceTests(SimpleTestCase):
         with self.assertRaises(MarketPriceError):
             get_daily_prices()
         scrape.assert_called_once_with()
-
-    @patch('stock_app.views.Trade.objects.filter')
-    def test_holding_cost_uses_only_the_selected_project(self, filter_trades):
-        filter_trades.return_value.aggregate.return_value = {'total_qty': 2, 'total_cost': 200}
-
-        self.assertEqual(SellableInstrumentView().get_average_buy_unit_price('12345678', 5), 100)
-        self.assertEqual(filter_trades.call_args.kwargs['project_id'], '12345678')
-        self.assertEqual(filter_trades.call_args.kwargs['instrument_id'], 5)

@@ -10,7 +10,7 @@
 | POST | `/api/token/refresh/` | Public; refresh cookie required | Rotate refresh token and issue access cookie |
 | POST | `/api/logout/` | Public | Clear authentication cookies |
 | GET | `/api/session/` | Public | Return authenticated session or anonymous state |
-| POST | `/api/user-register/` | Public | Register a user (`201`) |
+| POST | `/api/user-register/` | Staff | Register a user (`201`) |
 | GET, PUT, PATCH | `/api/user-profile/` | Authenticated | Read/update the current user's profile |
 | GET, PUT, PATCH | `/api/user-status/` | Authenticated | Read role; update methods currently fail |
 | GET | `/api/admin/users/` | Superuser | List non-superusers |

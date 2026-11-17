@@ -1,4 +1,6 @@
 from django.urls import path
+from .dividends import DividendListCreateView
+from .profit_report import ProfitReportView
 
 from .views import (AccountReceivableCreateApiView,
                     AccountRecivableDetailsListApiView,
@@ -13,6 +15,8 @@ from .views import (AccountReceivableCreateApiView,
                     TradeCreateView, TradeDeleteView, TradeDetailsListView)
 
 urlpatterns = [
+    path('profit/report/', ProfitReportView.as_view(), name='profit-report'),
+    path('dividends/', DividendListCreateView.as_view(), name='dividends'),
 
 
 

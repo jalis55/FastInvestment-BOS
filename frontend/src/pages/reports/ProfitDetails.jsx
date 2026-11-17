@@ -1,222 +1,53 @@
-import { useApiQuery } from '@/hooks/use-api-query';
+import { useRef, useState } from 'react';
+import API from '@/api/axios';
+import { ProjectSearch } from '@/components/ui/project-search';
 import { QueryState } from '@/components/ui/query-state';
-import { useState, useMemo } from "react";
-import { ArrowUpDown, PieChart, TrendingUp } from "lucide-react";
-import BannerTitle from "../../components/BannerTitle.jsx";
-import Spinner from "@/components/Spinner";
+import { SurfaceCard } from '@/components/ui/surface-card';
+import BannerTitle from '@/components/BannerTitle';
 
-const ProfitDetails = () => {
+const money = (value) => new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' }).format(Number(value));
+const types = { trade_profit: 'Trade profit', cash_dividend: 'Cash dividend', share_dividend: 'Bonus shares' };
+const statuses = { disbursed: 'Disbursed', undisbursed: 'Awaiting disbursement', added_to_holdings: 'Added to project holdings' };
 
-      const [sortField, setSortField] = useState(null)
-      const [sortDirection, setSortDirection] = useState("asc")
-      const [selectedProject, setSelectedProject] = useState("all")
-  const { data: profitData, loading, error, refetch } = useApiQuery('/api/stock/investor/profit-details/');
-
-      // Calculate summary data
-      const summaryData = useMemo(() => {
-        let totalContribution = 0
-        let totalProfit = 0
-        const projectCount = new Set()
-    
-        profitData.forEach((item) => {
-          totalContribution += Number.parseFloat(item.contribute_amount)
-          totalProfit += Number.parseFloat(item.profit_amount)
-          projectCount.add(item.project)
-        })
-    
-        return {
-          totalContribution: totalContribution.toFixed(2),
-          totalProfit: totalProfit.toFixed(2),
-          projectCount: projectCount.size,
-          roi: (totalContribution ? (totalProfit / totalContribution) * 100 : 0).toFixed(2),
-        }
-      }, [profitData])
-    
-      // Get unique projects for filter
-      const projects = useMemo(() => {
-        return ["all", ...new Set(profitData.map((item) => item.project))]
-      }, [profitData])
-    
-      // Sort and filter data
-      const sortedData = useMemo(() => {
-        let filteredData = [...profitData]
-    
-        if (selectedProject !== "all") {
-          filteredData = filteredData.filter((item) => item.project === selectedProject)
-        }
-    
-        if (sortField) {
-          filteredData.sort((a, b) => {
-            const aValue = Number.parseFloat(a[sortField]) || a[sortField]
-            const bValue = Number.parseFloat(b[sortField]) || b[sortField]
-    
-            if (sortDirection === "asc") {
-              return aValue > bValue ? 1 : -1
-            } else {
-              return aValue < bValue ? 1 : -1
-            }
-          })
-        }
-    
-        return filteredData
-      }, [profitData, sortField, sortDirection, selectedProject])
-    
-      const handleSort = (field) => {
-        if (sortField === field) {
-          setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-        } else {
-          setSortField(field)
-          setSortDirection("asc")
-        }
-      }
-  if (loading || error || !profitData.length) return <><BannerTitle title='Profit Details' /><QueryState loading={loading} error={error} onRetry={refetch} empty={!profitData.length} /></>;
-
-  return (
-<div>
-        <BannerTitle title="Profit Details" />
-        {loading ? <Spinner /> : <div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-
-          <div className="page-card">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Profit</p>
-                <p className="text-2xl font-semibold text-gray-900">${summaryData.totalProfit}</p>
-              </div>
-            </div>
-          </div>
-
-
-          <div className="page-card">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-amber-100 text-amber-600">
-                <PieChart className="h-6 w-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Projects</p>
-                <p className="text-2xl font-semibold text-gray-900">{summaryData.projectCount}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-xl font-semibold text-gray-900">Investment Records</h2>
-          <div className="flex items-center gap-2">
-            <label htmlFor="project-filter" className="field-label">
-              Filter by Project:
-            </label>
-            <select
-              id="project-filter"
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="field-select"
-            >
-              {projects.map((project) => (
-                <option key={project} value={project}>
-                  {project === "all" ? "All Projects" : `Project ${project}`}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="table-shell">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("project")}
-                  >
-                    <div className="flex items-center">
-                      Project ID
-                      {sortField === "project" && <ArrowUpDown className="ml-1 h-4 w-4" />}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("trade")}
-                  >
-                    <div className="flex items-center">
-                      Trade ID
-                      {sortField === "trade" && <ArrowUpDown className="ml-1 h-4 w-4" />}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("contribute_amount")}
-                  >
-                    <div className="flex items-center">
-                      Contribution
-                      {sortField === "contribute_amount" && <ArrowUpDown className="ml-1 h-4 w-4" />}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("percentage")}
-                  >
-                    <div className="flex items-center">
-                      Percentage
-                      {sortField === "percentage" && <ArrowUpDown className="ml-1 h-4 w-4" />}
-                    </div>
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("profit_amount")}
-                  >
-                    <div className="flex items-center">
-                      Profit
-                      {sortField === "profit_amount" && <ArrowUpDown className="ml-1 h-4 w-4" />}
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {sortedData.map((item, index) => (
-                  <tr key={item.trade} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.project}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className="truncate max-w-[120px] inline-block" title={item.trade}>
-                        {item.trade.substring(0, 8)}...
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${Number.parseFloat(item.contribute_amount).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.percentage}%</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                      ${Number.parseFloat(item.profit_amount).toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>
-            Showing {sortedData.length} of {profitData.length} investment records
-          </p>
-        </div>
-      </div>}
-    </div>
-  )
+export default function ProfitDetails() {
+  const [searchId, setSearchId] = useState('');
+  const [searchedId, setSearchedId] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const lock = useRef(false);
+  const load = async (id) => {
+    if (lock.current || !id.trim()) return;
+    lock.current = true;
+    setSearchedId(id.trim()); setData(null); setError(null); setLoading(true);
+    try {
+      const response = await API.get('/api/stock/profit/report/', { params: { project_id: id.trim() } });
+      setData(response.data);
+    } catch (failure) { setError(failure); }
+    finally { lock.current = false; setLoading(false); }
+  };
+  const search = (event) => { event.preventDefault(); load(searchId); };
+  const visible = data?.projects || [];
+  const personal = data?.scope === 'investor';
+  return <div>
+    <BannerTitle title="Profit Details" description={personal ? 'Your cash profit payouts and bonus shares received by projects you invest in.' : 'Review trade profits, cash dividends, and bonus shares together by project.'} />
+    <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)} onSubmit={search} loading={loading} />
+    {!searchedId && <SurfaceCard className="mx-auto max-w-3xl py-12 text-center"><h2 className="text-lg font-semibold text-slate-900">Find a project to view its profit details</h2><p className="mt-2 text-sm text-slate-500">Search by project ID to see its cash profits, dividends, and bonus shares.</p></SurfaceCard>}
+    {searchedId && <QueryState loadingLabel={`Loading project ${searchedId}…`} loadingDescription="Preparing cash profits, dividends, and bonus shares." loading={loading} error={error} onRetry={() => load(searchedId)} empty={!visible.length} emptyTitle={`No profit or bonus shares found for project ${searchedId}`} emptyDescription="Check the project ID. Records appear here when profits or dividends are recorded for a project you can access.">
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <Metric label={personal ? 'Your cash profit paid' : 'Cash profit earned'} value={money(visible.reduce((sum, p) => sum + Number(p.cash_profit), 0))} />
+        <Metric label="Project bonus shares received" value={visible.reduce((sum, p) => sum + p.bonus_shares, 0)} />
+        <Metric label="Profit and bonus records" value={visible.reduce((sum, p) => sum + p.records.length, 0)} />
+      </div>
+      <p className="mb-6 text-sm text-slate-500">Bonus shares belong to project holdings and carry no cash payout. Quantities are shown separately from BDT totals.{personal && ' Cash amounts below are your allocations; bonus quantities are for the whole project.'}</p>
+      {visible.map((project) => <SurfaceCard key={project.project} className="mb-6">
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold text-slate-900">Project {project.project}</h2><p className="mt-1 text-sm text-slate-500">{project.project_title}</p></div><div className="text-sm text-slate-600"><p>{personal ? 'Your cash profit' : 'Cash profit'}: <strong>{money(project.cash_profit)}</strong></p><p className="mt-1">Project bonus shares: <strong>{project.bonus_shares}</strong></p></div></div>
+        <div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead className="border-y border-slate-200 bg-slate-50 text-xs uppercase text-slate-500"><tr>{['Date', 'Instrument', 'Type', personal ? 'Your cash profit (BDT)' : 'Cash profit (BDT)', 'Bonus shares', 'Status'].map((label) => <th key={label} className="px-4 py-3">{label}</th>)}</tr></thead><tbody>{project.records.map((record) => <tr key={record.id} className="border-b border-slate-100"><td className="px-4 py-4 whitespace-nowrap">{record.date}</td><td className="px-4 py-4 font-medium">{record.instrument || '—'}</td><td className="px-4 py-4">{types[record.type]}</td><td className="px-4 py-4 tabular-nums">{record.amount == null ? '—' : money(record.amount)}</td><td className="px-4 py-4 tabular-nums">{record.qty ?? '—'}</td><td className="px-4 py-4">{statuses[record.status]}</td></tr>)}</tbody></table></div>
+      </SurfaceCard>)}
+    </QueryState>}
+  </div>;
 }
 
-export default ProfitDetails;
+function Metric({ label, value }) {
+  return <SurfaceCard><p className="text-sm text-slate-500">{label}</p><p className="mt-3 text-2xl font-semibold text-slate-900">{value}</p></SurfaceCard>;
+}

@@ -59,7 +59,7 @@ class TransactionDetailsView(generics.ListAPIView):
 @extend_schema(summary='Create a transaction', description='Creates a transaction for the supplied user ID. External deposits credit the account immediately and become completed. Internal transactions become completed without changing balances here. Other payments remain pending.')
 class TransactionCreateView(generics.CreateAPIView):
     serializer_class = TransactionCreateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     @db_transaction.atomic
     def perform_create(self, serializer):

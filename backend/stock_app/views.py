@@ -84,7 +84,8 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
 
         total_profit=project.profit_project_details.aggregate(t=Sum('amount'))['t'] or 0
 
-        available_balance = (total_investment - total_buy + (total_sell-total_profit))
+        cash_dividends = project.dividends.filter(dividend_type='cash').aggregate(t=Sum('amount'))['t'] or 0
+        available_balance = total_investment - total_buy + total_sell + cash_dividends - total_profit
 
         return {
             "project_id": project_id,
@@ -92,15 +93,18 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
             "total_buy_amount": total_buy,
             "total_sell_amount": total_sell,
             "accrued_profit": total_profit,
+            "cash_dividends": cash_dividends,
             "available_balance": max(available_balance, Decimal('0.00'))
         }
 
 
 
 
-@extend_schema(summary='Close a project', description='Closes a project and credits investor returns. Supply total_investment and closing_balance even for PATCH: the implementation reads both directly. Other totals are optional. Already closed projects return 400; missing projects return 404. This view uses the default authenticated permission.')
+@extend_schema(summary='Close a project', description='Closes a project and credits investor returns. Supply total_investment and closing_balance even for PATCH: the implementation reads both directly. Other totals are optional. Already closed projects return 400; missing projects return 404. This view requires staff access.')
 @extend_schema(request=ProjectCloseSerializer, responses={200: ProjectClosedSerializer, 400: ErrorSerializer, 404: ErrorSerializer, 500: ErrorSerializer}, parameters=[OpenApiParameter("pk", OpenApiTypes.STR, OpenApiParameter.PATH, description="Eight-digit project ID.")])
 class ProjectCloseView(APIView):
+    permission_classes = [IsAdminUser]
+
     @transaction.atomic
     def __prepare_transactions(self, project, closing_bal, total_investment):
         """Prepare investor transactions atomically"""
@@ -215,7 +219,7 @@ class InstrumentClosePriceView(APIView):
 
 
 
-@extend_schema(summary='List sellable holdings', description='Returns instruments with positive remaining quantity for the project. Average buy unit price is weighted from that project’s buy trades.')
+@extend_schema(summary='List sellable holdings', description='Returns instruments with positive remaining quantity for the project. Moving average cost includes bonus shares at zero added cost and removes sold quantities at their average cost.')
 @extend_schema(responses=SellableInstrumentSerializer(many=True))
 class SellableInstrumentView(APIView):
     permission_classes = [IsAdminUser]
@@ -227,50 +231,11 @@ class SellableInstrumentView(APIView):
         except Project.DoesNotExist:
             raise NotFound("Project not found.")
 
-    def get_average_buy_unit_price(self, project_id, instrument_id):
-        totals = (
-            Trade.objects.filter(
-                project_id=project_id,
-                instrument_id=instrument_id,
-                trns_type=Trade.BUY,
-                actual_unit_price__isnull=False
-            )
-            .aggregate(
-                total_qty=Sum('qty'),
-                total_cost=Sum(F('qty') * F('actual_unit_price'))
-            )
-        )
-        total_qty = totals.get('total_qty') or 0
-        if total_qty > 0:
-            return round(totals['total_cost'] / total_qty, 2)
-        return None
-
     def get(self, request, project_id, *args, **kwargs):
+        from .holdings import project_holdings
         project = self.get_project(project_id)
-
-        trades = (
-            Trade.objects.filter(project=project)
-            .values('instrument_id')
-            .annotate(
-                total_buy=Sum(Case(When(trns_type='buy', then='qty'), default=0, output_field=IntegerField())),
-                total_sell=Sum(Case(When(trns_type='sell', then='qty'), default=0, output_field=IntegerField()))
-            )
-        )
-
-        instruments = Instrument.objects.in_bulk([t['instrument_id'] for t in trades])
-
-        results = []
-        for t in trades:
-            available = t['total_buy'] - t['total_sell']
-            if available > 0:
-                results.append({
-                    'instrument': instruments.get(t['instrument_id']),
-                    'available_quantity': available,
-                    'average_buy_unit_price': self.get_average_buy_unit_price(project_id, t['instrument_id'])
-                })
-
-        serializer = self.serializer_class(results, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        rows = [row for row in project_holdings(project).values() if row['available_quantity'] > 0]
+        return Response(self.serializer_class(rows, many=True).data)
 
 @extend_schema(summary='Record a trade', description='Records a buy or sell trade. Trade date and authorizer are assigned by the server; commission and actual unit price are calculated on save.')
 class TradeCreateView(generics.CreateAPIView):
@@ -428,7 +393,7 @@ class ProjectProfitTotalListApiView(generics.ListAPIView):
 
         # Apply date range filtering if both from_dt and to_dt are provided
         if from_dt and to_dt:
-            queryset = queryset.filter(trade__trade_date__gte=from_dt, trade__trade_date__lte=to_dt)
+            queryset = queryset.filter(Q(trade__trade_date__range=(from_dt, to_dt)) | Q(dividend__received_date__range=(from_dt, to_dt)))
 
         # If project_id is provided, filter by project_id and calculate the total profit for that project
         if project_id:
@@ -465,10 +430,10 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
 
 
-@extend_schema(summary='Disburse project profits', description='Distributes undistributed profits in an inclusive trade date range to advisors and investors, creates ledger records, and marks profits as disbursed. Permission is currently AllowAny, but creating ledger entries uses request.user; use an authenticated session. No matching profits returns 404. This implementation does not directly credit Account balances.')
+@extend_schema(summary='Disburse project profits', description='Distributes undistributed profits in an inclusive trade date range to advisors and investors, credits account balances with matching ledger records, and marks profits as disbursed atomically. Requires staff access. No matching profits returns 404.')
 @extend_schema(request=ProfitDisburseSerializer, responses={200: StockMessageSerializer, 404: StockMessageSerializer, 500: ErrorSerializer})
 class ProfitDisburse(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminUser]
 
     def post(self, request, format=None):
         serializer = ProfitDisburseSerializer(data=request.data)
@@ -490,7 +455,10 @@ class ProfitDisburse(APIView):
 
     def _process_profit_disbursement(self, project_id, from_dt, to_dt, request):
         # --- fetch the project once -------------------------------------------------
-        project_instance = get_object_or_404(Project, project_id=project_id)
+        # Serialize disbursements for this project before selecting unpaid profits.
+        project_instance = get_object_or_404(
+            Project.objects.select_for_update(), project_id=project_id
+        )
         total_investment = project_instance.investment_project_details.aggregate(
             total=Sum('amount')
         )['total'] or 0
@@ -539,10 +507,12 @@ class ProfitDisburse(APIView):
         """Retrieve profits eligible for disbursement"""
         filters = Q(
             project=project_instance,
-            trade__trade_date__range=(from_dt, to_dt),
             disburse_st=0
         )
-        return Profit.objects.filter(filters)
+        return Profit.objects.filter(filters).filter(
+            Q(trade__trade_date__range=(from_dt, to_dt)) |
+            Q(dividend__received_date__range=(from_dt, to_dt))
+        )
 
     def _prepare_advisors_data(self, advisor_ids):
         """Prepare advisor data structure"""
@@ -556,22 +526,22 @@ class ProfitDisburse(APIView):
         """Process advisor commissions and investor profits"""
         for profit in profits:
             total_profit_amount = profit.amount
-            trade_instance = trades[profit.trade_id]
+            trade_instance = trades.get(profit.trade_id)
 
             # Process advisor commissions
             total_profit_amount = self._process_advisor_commissions(
                 fin_advisors, advisors, total_profit_amount, 
-                trade_instance, project_instance
+                trade_instance, project_instance, profit.dividend
             )
 
             # Process investor profits
             self._process_investor_profits(
                 investors, investors_profit, total_investment, 
-                total_profit_amount, trade_instance, project_instance
+                total_profit_amount, trade_instance, project_instance, profit.dividend
             )
 
     def _process_advisor_commissions(self, fin_advisors, advisors, total_profit_amount, 
-                                   trade_instance, project_instance):
+                                   trade_instance, project_instance, dividend=None):
         """Process financial advisor commissions"""
         for fa in fin_advisors:
             profit_amount = total_profit_amount * fa['com_percentage'] / 100
@@ -583,6 +553,7 @@ class ProfitDisburse(APIView):
                 com_percent=fa['com_percentage'],
                 com_amount=profit_amount,
                 trade=trade_instance,
+                dividend=dividend,
                 disburse_dt=timezone.now(),
             )
             user_instance['amount'] += profit_amount
@@ -591,7 +562,7 @@ class ProfitDisburse(APIView):
         return total_profit_amount
 
     def _process_investor_profits(self, investors, investors_profit, total_investment, 
-                                total_profit_amount, trade_instance, project_instance):
+                                total_profit_amount, trade_instance, project_instance, dividend=None):
         """Process investor profit distribution"""
         for investor_id, cont_amount in investors.items():
             percentage = round(cont_amount * 100 / total_investment, 2) if total_investment else 0
@@ -603,6 +574,7 @@ class ProfitDisburse(APIView):
                 investor=User.objects.get(id=investor_id),
                 project=project_instance,
                 trade=trade_instance,
+                dividend=dividend,
                 contribute_amount=cont_amount,
                 percentage=percentage,
                 profit_amount=inv_profit_amt,
@@ -610,28 +582,27 @@ class ProfitDisburse(APIView):
             )
 
     def _create_transactions(self, advisors, investors_profit, project_id):
-        """Create transactions for advisors and investors"""
+        """Credit each payout and its ledger entry in the enclosing transaction."""
         # Create transactions for advisors
         for advisor in advisors.values():
-            Transaction.objects.create(
-                user=advisor['user'],
-                amount=advisor['amount'],
-                transaction_type='deposit',
+            self._credit_payout(
+                user=advisor['user'], amount=advisor['amount'],
                 narration=f'Commission from project {project_id}',
-                status='completed',
-                issued_date=timezone.now(),
-                issued_by=self.request.user
             )
         
         # Create transactions for investors
         for investor_id, amount in investors_profit.items():
             investor_user = User.objects.get(id=investor_id)
-            Transaction.objects.create(
-                user=investor_user,
-                amount=amount,
-                transaction_type='deposit',
+            self._credit_payout(
+                user=investor_user, amount=amount,
                 narration=f'Profit from project {project_id}',
-                status='completed',
-                issued_date=timezone.now(),
-                issued_by=self.request.user,
             )
+
+    def _credit_payout(self, user, amount, narration):
+        amount = Decimal(amount).quantize(Decimal('0.01'))
+        account = Account.objects.select_for_update().get(user=user)
+        Transaction.objects.create(
+            user=user, amount=amount, transaction_type='deposit',
+            narration=narration, status='completed', issued_by=self.request.user,
+        )
+        account.deposit(amount)

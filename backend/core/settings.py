@@ -23,7 +23,7 @@ default_env = BASE_DIR / ".env"
 
 if local_env.exists():
     environ.Env.read_env(local_env, overwrite=False)
-elif default_env.exists():
+if default_env.exists():
     environ.Env.read_env(default_env, overwrite=False)
 
 
@@ -44,6 +44,10 @@ ALLOWED_HOSTS = env.list(
 PRODUCTION_HOST = "fast-investment-bos.vercel.app"
 if PRODUCTION_HOST not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(PRODUCTION_HOST)
+for name in ('VERCEL_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'VERCEL_BRANCH_URL'):
+    host = os.environ.get(name)
+    if host and host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
 
 SECURE_PROXY_SSL_HEADER = (
     "HTTP_X_FORWARDED_PROTO",
@@ -219,24 +223,36 @@ AUTH_COOKIE_DOMAIN = env(
 # NEON POSTGRESQL DATABASE
 # ============================================================
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-
-        "NAME": env("DB_NAME"),
-        "USER": env("DB_USER"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_HOST"),
-        "PORT": env("DB_PORT", default="5432"),
-
-        "OPTIONS": {
-            "sslmode": "require",
-        },
-
-        # Recommended for serverless database connections
-        "CONN_MAX_AGE": 0,
+# Debug mode always uses a local database without requiring hosted credentials.
+if DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+elif env("DATABASE_URL", default=""):
+    DATABASES = {"default": env.db_url("DATABASE_URL")}
+else:
+    # Supabase / PostgreSQL configuration used by existing deployments.
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DB_NAME"),
+            "USER": env("DB_USER"),
+            "PASSWORD": env("DB_PASSWORD"),
+            "HOST": env("DB_HOST"),
+            "PORT": env("DB_PORT", default="5432"),
+            "OPTIONS": {"sslmode": "require"},
+            "CONN_MAX_AGE": 0,
+            "DISABLE_SERVER_SIDE_CURSORS": True,
+        }
+    }
+
+if DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
+    DATABASES["default"].setdefault("OPTIONS", {}).setdefault("sslmode", "require")
+    DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+
 
 
 # ============================================================

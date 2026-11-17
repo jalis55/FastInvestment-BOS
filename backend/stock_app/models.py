@@ -128,9 +128,23 @@ class Trade(models.Model):
 
 
 
+class Dividend(models.Model):
+    CASH = 'cash'
+    SHARE = 'share'
+    project = models.ForeignKey(Project, on_delete=models.PROTECT, related_name='dividends')
+    instrument = models.ForeignKey(Instrument, on_delete=models.PROTECT)
+    dividend_type = models.CharField(max_length=5, choices=[(CASH, 'Cash'), (SHARE, 'Share')])
+    amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    qty = models.PositiveIntegerField(default=0)
+    received_date = models.DateField(default=timezone.localdate)
+    created_at = models.DateTimeField(auto_now_add=True)
+    authorized_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+
 class Profit(models.Model):
+    dividend = models.ForeignKey(Dividend, on_delete=models.PROTECT, null=True, blank=True)
     project=models.ForeignKey(Project,on_delete=models.CASCADE,related_name='profit_project_details')
-    trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name="profit_trade_details")
+    trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name="profit_trade_details", null=True, blank=True)
     amount=models.DecimalField(max_digits=1000,decimal_places=2)
     accrued_dt=models.DateTimeField(auto_now_add=True)
     disburse_st=models.BooleanField(default=False)
@@ -139,18 +153,20 @@ class Profit(models.Model):
 
 
 class FinAdvisorCommission(models.Model):
+    dividend = models.ForeignKey(Dividend, on_delete=models.PROTECT, null=True, blank=True)
     advisor=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='fin_advisor_com')
     project=models.ForeignKey(Project,on_delete=models.CASCADE,related_name='fin_project')
-    trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name='com_trade_details')
+    trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name='com_trade_details', null=True, blank=True)
     com_percent=models.DecimalField(max_digits=100,decimal_places=2)
     com_amount=models.DecimalField(max_digits=1000,decimal_places=2)
     disburse_dt = models.DateTimeField(null=True, blank=True)
     authorized_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='commission_authorizer_details')
 
 class InvestorProfit(models.Model):
+    dividend = models.ForeignKey(Dividend, on_delete=models.PROTECT, null=True, blank=True)
     project=models.ForeignKey(Project,on_delete=models.CASCADE,related_name="inv_profit_project_details")
     investor=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="ben_investor_details")
-    trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name='inv_profit_trade_details')
+    trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name='inv_profit_trade_details', null=True, blank=True)
     contribute_amount=models.DecimalField(max_digits=1000,decimal_places=2)
     percentage=models.DecimalField(max_digits=1000,decimal_places=2)
     profit_amount=models.DecimalField(max_digits=1000,decimal_places=2)

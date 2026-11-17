@@ -188,3 +188,16 @@
     @apply rounded-[28px] border border-white/60 bg-linear-to-br from-white to-slate-50 p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)];
   }
 }
+
+/* Loading placeholders use a quiet pulse, with a static reduced-motion fallback. */
+.loading-bone {
+  border-radius: 0.375rem;
+  background: #e8eef5;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .loading-placeholder { animation: loading-breathe 1.8s ease-in-out infinite; }
+}
+@keyframes loading-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

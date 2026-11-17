@@ -34,7 +34,7 @@ Use Python 3.12+, Node.js 22+, npm, and Redis. The commands below run the fronte
    ../.venv/bin/python manage.py runserver
    ```
 
-   If you do not use `uv`, create a Python virtual environment and install `backend/requirements.txt` instead. The current Django settings use `backend/db.sqlite3`; the PostgreSQL settings in `backend/core/settings.py` are commented out.
+   If you do not use `uv`, create a Python virtual environment and install `backend/requirements.txt` instead. `DEBUG=True` always uses local SQLite at `backend/db.sqlite3`, even when hosted database credentials are present. Run `migrate` to initialize its schema; hosted data is not copied automatically. With `DEBUG=False`, set `DATABASE_URL` for a supported Django database, or use the existing `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and optional `DB_PORT` variables for Supabase/PostgreSQL (SSL required).
 
 4. In another terminal, install and start the frontend:
 
@@ -80,4 +80,43 @@ Run the checks from the repository root:
 ```bash
 cd backend && ../.venv/bin/python manage.py test stock_app.test_market_prices
 cd ../frontend && npm run lint && npm test && npm run build
+```
+
+## Vercel deployment
+
+The root `vercel.json` deploys the Vite frontend and Django API as two services
+within one Vercel project. Set the Vercel Root Directory to the repository root.
+Route `/api/`, `/admin/`, and `/static/` to Django; other paths go to the frontend.
+The frontend build uses `VITE_API_URL=/`, keeping cookies and CSRF on one origin.
+
+Configure Production and Preview environment variables using
+`backend/.env.example` as a name reference. Use actual Supabase pooler credentials
+and a TLS Redis URL; the placeholders are not valid credentials. With Supabase
+transaction pooling, the backend disables server-side cursors and persistent
+connections. Verify the provider's current connection panel for host, user, and port.
+
+Before promoting a deployment, check database connectivity and migration status,
+run outstanding migrations against the intended hosted database, then verify
+login and a protected API request. Local SQLite data is not uploaded or copied
+into Supabase. Existing hosted records are preserved.
+
+Django uses secure cookies by default when debug is disabled. Vercel's generated
+hosts are included in the allowed host list, and Django recognizes forwarded
+HTTPS. User-uploaded media requires persistent external storage; Vercel's runtime
+filesystem must not be used as a durable media store.
+## Dividends
+
+Open **Dividend** in the sidebar and search for a project to record either a cash amount in BDT or the actual number of bonus shares received (not a percentage). Staff access is required.
+
+Cash dividends become undistributed profits. Use **Disbursement** with the dividend's received date to allocate them using the project's existing advisor and investor rules. They are excluded from capital available for trading or closure so they cannot be returned twice.
+
+Share dividends add quantity without cost or commission. For example, 100 shares costing BDT 1,000 plus 10 bonus shares become 110 shares costing BDT 1,000, averaging BDT 9.09090909 each. Holdings use moving average cost, including partial sales and later purchases. A bonus receipt changes holdings when recorded; its received date is for reference and does not rewrite earlier sales. Existing buy commissions remain part of cost.
+
+`GET /api/stock/dividends/?project_id=...` lists receipts. `POST /api/stock/dividends/` accepts `project`, `instrument`, `dividend_type` (`cash` or `share`), `amount`, `qty`, and `received_date`. Cash requires positive `amount` and zero `qty`; shares require positive whole `qty` and zero `amount`, and both dividend types require an available holding in the selected project. Closed projects and future receipt dates are rejected. Receipts are append-only through this API.
+
+Apply backend migrations before running the updated app:
+
+```bash
+cd backend
+../.venv/bin/python manage.py migrate
 ```

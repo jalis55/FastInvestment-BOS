@@ -34,6 +34,8 @@ const AddInvestments = lazy(() => import('./pages/investments/AddInvestments'));
 // Financial Advisor
 const FinancialAdvisor = lazy(() => import('./pages/financialAdvisor/FinancialAdvisor'));
 
+const Dividends = lazy(() => import('./pages/dividends/Dividends'));
+
 //Disbursement
 const DisburseProfit = lazy(() => import('./pages/disbursements/DisburseProfit'));
 
@@ -82,6 +84,7 @@ const router = createBrowserRouter([
       { path: 'add-advisor', element: <RoleRoute roles={['admin']}><FinancialAdvisor /></RoleRoute> },
       { path: 'add-investments', element: <RoleRoute roles={['admin']}><AddInvestments /></RoleRoute> },
       { path: 'close-project', element: <RoleRoute roles={['admin']}><CloseProject /></RoleRoute> },
+      { path: 'dividends', element: <RoleRoute roles={['admin']}><Dividends /></RoleRoute> },
       { path: 'disburse-profit', element: <RoleRoute roles={['admin']}><DisburseProfit /></RoleRoute> },
 
 
@@ -96,7 +99,7 @@ const router = createBrowserRouter([
       { path: 'trade-details', element: <RoleRoute roles={['admin']}><TradeDetails /></RoleRoute> },
       { path: 'trans-history', element: <RoleRoute roles={['user']}><TransactionHistory/> </RoleRoute> },
       { path: 'investment-history', element: <RoleRoute roles={['user']}><InvestmentHistory/></RoleRoute> },
-      { path: 'profit-details', element: <RoleRoute roles={['user']}><ProfitDetails/></RoleRoute> },
+      { path: 'profit-details', element: <RoleRoute roles={['user', 'admin']}><ProfitDetails/></RoleRoute> },
       { path: 'project-details', element: <RoleRoute roles={['admin']}><ProjectDetails/></RoleRoute> },
       { path: 'project-list', element: <RoleRoute roles={['admin']}><ProjectList/></RoleRoute> },
       

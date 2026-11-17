@@ -97,7 +97,7 @@ export function ProjectPicker({ value, onChange, disabled = false, action, optio
                 </li>
               ))}
             </ul>
-            {projectsQuery.loading && <p role="status" className="flex items-center gap-2 px-4 pb-4 text-sm text-slate-500"><LoaderCircle size={16} className="animate-spin" aria-hidden="true" />Loading projects…</p>}
+            {projectsQuery.loading && <p role="status" className="flex items-center gap-2 px-4 pb-4 text-sm text-slate-500"><LoaderCircle size={16} className="motion-safe:animate-spin" aria-hidden="true" />Loading projects…</p>}
             {projectsQuery.error && <div role="alert" className="space-y-2 px-4 pb-4 text-sm text-red-700"><p>{getApiError(projectsQuery.error)}</p><Button type="button" size="sm" variant="outline" onClick={projectsQuery.refetch}>Try again</Button></div>}
             {!projectsQuery.loading && !projectsQuery.error && !projects.length && <p role="status" className="px-4 pb-4 text-sm text-slate-500">No projects match your search.</p>}
           </div>}
@@ -112,7 +112,7 @@ export function ProjectSearch({ value, onChange, onSubmit, loading = false }) {
     <form onSubmit={onSubmit} aria-label="Find a project" aria-busy={loading}>
       <ProjectPicker value={value} onChange={onChange} disabled={loading} action={
         <Button type="submit" size="sm" disabled={loading || !value.trim()}>
-          {loading && <LoaderCircle size={14} className="animate-spin" aria-hidden="true" />}
+          {loading && <LoaderCircle size={14} className="motion-safe:animate-spin" aria-hidden="true" />}
           {loading ? 'Searching…' : 'Search'}
         </Button>
       } />
