@@ -93,6 +93,7 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
             "total_buy_amount": total_buy,
             "total_sell_amount": total_sell,
             "accrued_profit": total_profit,
+            "cash_dividends": cash_dividends,
             "available_balance": max(available_balance, Decimal('0.00'))
         }
 
