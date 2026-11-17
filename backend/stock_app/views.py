@@ -465,7 +465,7 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
 
 
-@extend_schema(summary='Disburse project profits', description='Distributes undistributed profits in an inclusive trade date range to advisors and investors, creates ledger records, and marks profits as disbursed. Permission is currently AllowAny, but creating ledger entries uses request.user; use an authenticated session. No matching profits returns 404. This implementation does not directly credit Account balances.')
+@extend_schema(summary='Disburse project profits', description='Distributes undistributed profits in an inclusive trade date range to advisors and investors, credits account balances with matching ledger records, and marks profits as disbursed atomically. Permission is currently AllowAny, but creating ledger entries uses request.user; use an authenticated session. No matching profits returns 404.')
 @extend_schema(request=ProfitDisburseSerializer, responses={200: StockMessageSerializer, 404: StockMessageSerializer, 500: ErrorSerializer})
 class ProfitDisburse(APIView):
     permission_classes = [AllowAny]
@@ -490,7 +490,10 @@ class ProfitDisburse(APIView):
 
     def _process_profit_disbursement(self, project_id, from_dt, to_dt, request):
         # --- fetch the project once -------------------------------------------------
-        project_instance = get_object_or_404(Project, project_id=project_id)
+        # Serialize disbursements for this project before selecting unpaid profits.
+        project_instance = get_object_or_404(
+            Project.objects.select_for_update(), project_id=project_id
+        )
         total_investment = project_instance.investment_project_details.aggregate(
             total=Sum('amount')
         )['total'] or 0
@@ -610,28 +613,27 @@ class ProfitDisburse(APIView):
             )
 
     def _create_transactions(self, advisors, investors_profit, project_id):
-        """Create transactions for advisors and investors"""
+        """Credit each payout and its ledger entry in the enclosing transaction."""
         # Create transactions for advisors
         for advisor in advisors.values():
-            Transaction.objects.create(
-                user=advisor['user'],
-                amount=advisor['amount'],
-                transaction_type='deposit',
+            self._credit_payout(
+                user=advisor['user'], amount=advisor['amount'],
                 narration=f'Commission from project {project_id}',
-                status='completed',
-                issued_date=timezone.now(),
-                issued_by=self.request.user
             )
         
         # Create transactions for investors
         for investor_id, amount in investors_profit.items():
             investor_user = User.objects.get(id=investor_id)
-            Transaction.objects.create(
-                user=investor_user,
-                amount=amount,
-                transaction_type='deposit',
+            self._credit_payout(
+                user=investor_user, amount=amount,
                 narration=f'Profit from project {project_id}',
-                status='completed',
-                issued_date=timezone.now(),
-                issued_by=self.request.user,
             )
+
+    def _credit_payout(self, user, amount, narration):
+        amount = Decimal(amount).quantize(Decimal('0.01'))
+        account = Account.objects.select_for_update().get(user=user)
+        Transaction.objects.create(
+            user=user, amount=amount, transaction_type='deposit',
+            narration=narration, status='completed', issued_by=self.request.user,
+        )
+        account.deposit(amount)

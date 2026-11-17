@@ -174,7 +174,7 @@ Content-Type: application/json
 
 All three fields are required. The project must exist and `from_dt` must not be after `to_dt`. The inclusive date range is matched against trade dates, selecting only undistributed profits.
 
-The operation calculates advisor commissions, allocates the remainder to investors by contribution percentage, creates commission/profit/transaction records, and marks the selected profits as disbursed. Advisor commissions are applied sequentially to the remaining amount. The current implementation creates deposit ledger records without directly crediting `Account.balance`.
+The operation calculates advisor commissions, allocates the remainder to investors by contribution percentage, creates commission/profit/transaction records, credits the recipient account balances, and marks the selected profits as disbursed in one atomic transaction. Each payout credits the same two-decimal amount recorded in its completed deposit ledger entry. Advisor commissions are applied sequentially to the remaining amount. The project is locked before selecting eligible profits to serialize disbursements on databases supporting row locks. Retrying an already disbursed period does not pay it again.
 
 Success: `200` with `{"message": "Profit disbursement completed successfully"}`. No eligible profits: `404` with `{"message": "No profits found for disbursement"}`. Invalid input: `400` with serializer errors. Processing failures: `500` with an `error` message.
 
