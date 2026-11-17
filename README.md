@@ -81,3 +81,26 @@ Run the checks from the repository root:
 cd backend && ../.venv/bin/python manage.py test stock_app.test_market_prices
 cd ../frontend && npm run lint && npm test && npm run build
 ```
+
+## Vercel deployment
+
+The root `vercel.json` deploys the Vite frontend and Django API as two services
+within one Vercel project. Set the Vercel Root Directory to the repository root.
+Route `/api/`, `/admin/`, and `/static/` to Django; other paths go to the frontend.
+The frontend build uses `VITE_API_URL=/`, keeping cookies and CSRF on one origin.
+
+Configure Production and Preview environment variables using
+`backend/.env.example` as a name reference. Use actual Supabase pooler credentials
+and a TLS Redis URL; the placeholders are not valid credentials. With Supabase
+transaction pooling, the backend disables server-side cursors and persistent
+connections. Verify the provider's current connection panel for host, user, and port.
+
+Before promoting a deployment, check database connectivity and migration status,
+run outstanding migrations against the intended hosted database, then verify
+login and a protected API request. Local SQLite data is not uploaded or copied
+into Supabase. Existing hosted records are preserved.
+
+Django uses secure cookies by default when debug is disabled. Vercel's generated
+hosts are included in the allowed host list, and Django recognizes forwarded
+HTTPS. User-uploaded media requires persistent external storage; Vercel's runtime
+filesystem must not be used as a durable media store.

@@ -12,44 +12,26 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-env = environ.Env(
-    DEBUG=(bool, False)
-)
-
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
-
-
-
-MEDIA_DIR=BASE_DIR / "media"
-
-
-# SECRET_KEY = 'django-insecure-mn4n+k$qbm!ee=61cjs)a92m#rdfu+2c7%)^_9gqlvijahcxz%'
-
-SECRET_KEY = env("DJANGO_SECRET_KEY")
-
-
-DEBUG = env.bool("DEBUG", default=False)
-
-
-
-
-# Initialise environment
-env = environ.Env(
-    DEBUG=(bool, False)
-)
-
-# Read .env file
-env.read_env(os.path.join(BASE_DIR, '.env.local'))
-env.read_env(os.path.join(BASE_DIR, '.env'))
-
-
-DEBUG = env('DEBUG')
-
-
-ALLOWED_HOSTS = ['*']
-
-
-
+env = environ.Env(DEBUG=(bool, False))
+# Environment variables set by the host take priority over local files.
+env.read_env(BASE_DIR / '.env.local')
+env.read_env(BASE_DIR / '.env')
+MEDIA_DIR = BASE_DIR / 'media'
+SECRET_KEY = env('DJANGO_SECRET_KEY', default=env('SECRET_KEY', default=''))
+if not SECRET_KEY:
+    raise ValueError('Set DJANGO_SECRET_KEY before starting Django.')
+DEBUG = env.bool('DEBUG', default=False)
+_vercel_hosts = [os.environ.get(name, '') for name in
+                 ('VERCEL_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'VERCEL_BRANCH_URL')]
+ALLOWED_HOSTS = list(dict.fromkeys([
+    *env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1']),
+    *[host for host in _vercel_hosts if host],
+]))
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=not DEBUG)
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=not DEBUG)
+# Vercel terminates TLS before forwarding requests to Django.
+if os.environ.get('VERCEL'):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
 
@@ -118,7 +100,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'silk.middleware.SilkyMiddleware',
+    *(['silk.middleware.SilkyMiddleware'] if DEBUG else []),
 ]
 
 AUTH_USER_MODEL = 'user_app.CustomUser'
@@ -182,6 +164,7 @@ DATABASES = {
             "sslmode": "require"
         },
         "CONN_MAX_AGE": 0,
+        "DISABLE_SERVER_SIDE_CURSORS": True,
     }
 }
 
