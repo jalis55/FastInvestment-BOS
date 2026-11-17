@@ -37,3 +37,15 @@ test('rounding happens per trade and empty allocations cannot create recipients'
   assert.equal(empty.recipientCount, 0);
   assert.equal(empty.gross, 0);
 });
+
+test('cash dividends retain their source and share the trade payout rules', () => {
+  const result = buildProfitDistribution([
+    { trade: null, dividend: 42, amount: '1000.00' },
+    { trade: 'sale-1', amount: '100.00' },
+  ], [{ advisor: { id: 3 }, com_percentage: '10' }], investors);
+  assert.equal(result.advisorRows[0].trade, 'Dividend 42');
+  assert.equal(result.investorRows[0].trade, 'Dividend 42');
+  assert.equal(result.gross, 1100);
+  assert.equal(result.advisorTotal, 110);
+  assert.equal(result.investorTotal, 990);
+});

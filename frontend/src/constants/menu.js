@@ -126,7 +126,13 @@ const menu = [
   },
 
   {
-    menuName: "Disburse Profit",
+    menuName: "Dividend",
+    url: "/dividends",
+    roles: ["admin", "super_admin"],
+    icon: BadgeDollarSign,
+  },
+  {
+    menuName: "Disbursement",
     url: "/disburse-profit",
     roles: ["admin", "super_admin"],
     icon: BadgePercent,
@@ -163,7 +169,7 @@ const menu = [
       {
         menuName: "Profit Details",
         url: "/profit-details",
-        roles: ["user"],
+        roles: ["user", "admin", "super_admin"],
         icon: BadgePlus,
       },
       {
