@@ -129,7 +129,7 @@ class CookieTokenRefreshView(TokenRefreshView):
         )
         try:
             serializer.is_valid(raise_exception=True)
-        except ValidationError:
+        except (ValidationError, TokenError):
             response = Response({'detail': 'Invalid refresh token.'}, status=status.HTTP_401_UNAUTHORIZED)
             _clear_auth_cookies(response)
             return response
