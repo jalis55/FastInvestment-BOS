@@ -20,6 +20,8 @@ const Header = ({ collapsed, setCollapsed }) => {
     const [logoutError, setLogoutError] = useState('');
     const [loggingOut, setLoggingOut] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+    const [failedPhoto, setFailedPhoto] = useState(null);
+    const profilePhoto = userData?.profile_image;
 
     // Function to toggle the dropdown's visibility
     const toggleDropdown = () => setIsOpen(!isOpen);
@@ -88,7 +90,11 @@ const Header = ({ collapsed, setCollapsed }) => {
                         aria-haspopup="true"
                         onClick={toggleDropdown}
                     >
-                        {userData?.profile_image ? <img src={userData.profile_image} alt="Your profile" className="size-10 rounded-full object-cover" /> : <span className="flex size-10 items-center justify-center rounded-full bg-blue-100 text-blue-700"><UserRound aria-hidden="true" size={20} /></span>}
+                        {profilePhoto && profilePhoto !== failedPhoto ? (
+                            <img src={profilePhoto} alt="" className="size-10 rounded-full object-cover" onError={() => setFailedPhoto(profilePhoto)} />
+                        ) : (
+                            <span className="flex size-10 items-center justify-center rounded-full bg-blue-100 text-blue-700"><UserRound aria-hidden="true" size={20} /></span>
+                        )}
                     </button>
 
                     {isOpen && (

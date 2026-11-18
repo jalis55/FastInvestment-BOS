@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Camera } from 'lucide-react';
+import Swal from 'sweetalert2';
 import UserImage from './UserImage';
 
 export default function ProfilePhotoPicker({ src, disabled, form, onSelect }) {
@@ -12,6 +13,11 @@ export default function ProfilePhotoPicker({ src, disabled, form, onSelect }) {
         const [file] = input.files;
         setPreview(null);
         if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+            input.value = '';
+            Swal.fire({ icon: 'error', title: 'Photo is too large', text: 'Choose a photo up to 2 MB.' });
+            return;
+        }
 
         onSelect?.();
         const reader = new FileReader();

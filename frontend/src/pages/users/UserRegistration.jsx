@@ -87,6 +87,9 @@ export default function UserRegistration() {
         if (data.get("nid_scan_copy").size > 2 * 1024 * 1024) {
             validationErrors.nid_scan_copy = "The scan must be 2 MB or smaller.";
         }
+        if (data.get("profile_image").size > 2 * 1024 * 1024) {
+            validationErrors.profile_image = "The photo must be 2 MB or smaller.";
+        }
         const [firstInvalidField] = Object.keys(validationErrors);
         if (firstInvalidField) {
             setErrors(validationErrors);
@@ -161,7 +164,7 @@ export default function UserRegistration() {
                                     </select>
                                 )}
                             </RegistrationField>
-                            <RegistrationField name="profile_image" label="Profile photo" error={errors.profile_image}>
+                            <RegistrationField name="profile_image" label="Profile photo" hint="Up to 2 MB." error={errors.profile_image}>
                                 {(attributes) => (
                                     <div className="flex items-center gap-3">
                                         {profilePreview && <img src={profilePreview} alt="Profile preview" className="size-10 rounded-full object-cover" />}

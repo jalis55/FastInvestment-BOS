@@ -2,13 +2,14 @@
 from django.urls import path
 
 from user_app.views import (AdminUserNidScanView, ChangePasswordView, CurrentSessionView, CustomerListView, UpdateUserStatusView,
-                            UserDetailsView, UserListView, UserNidScanView,
+                            ProfilePhotoView, UserDetailsView, UserListView, UserNidScanView,
                             UserRegistrationView, UserStatusView)
 
 urlpatterns = [
     path('user-register/',UserRegistrationView.as_view(),name='user_registration'),
     path('session/',CurrentSessionView.as_view(),name='current_session'),
     path('user-profile/',UserDetailsView.as_view(),name='user_profile'),
+    path('profile-photos/<uuid:photo_id>/', ProfilePhotoView.as_view(), name='profile-photo'),
     path('user-profile/password/', ChangePasswordView.as_view(), name='user-change-password'),
     path('user-profile/nid-scan/', UserNidScanView.as_view(), name='user-nid-scan'),
     path('user-status/',UserStatusView.as_view(),name='user_status'),

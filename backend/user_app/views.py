@@ -19,7 +19,8 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from user_app.models import CustomUser, UserIdentityDocument
+from user_app.models import CustomUser, ProfilePhoto, UserIdentityDocument
+from user_app.photo_storage import PHOTO_PREFIX
 from user_app.authentication import CookieJWTAuthentication
 from user_app.permissions import IsSuperUser
 from user_app.serializers import (AdminUserDetailsSerializer, ChangePasswordSerializer,
@@ -39,9 +40,9 @@ def _user_role(user):
     return "superadmin" if user.is_superuser else "admin" if user.is_staff else "user"
 
 
-def _session_payload(user):
+def _session_payload(user, request):
     role = _user_role(user)
-    serialized_user = UserSerializer(user).data
+    serialized_user = UserSerializer(user, context={'request': request}).data
     return {
         'authenticated': True,
         'user': {
@@ -113,7 +114,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
         response = Response(
             {
                 'message': 'Login successful',
-                **_session_payload(user),
+                **_session_payload(user, request),
             },
             status=status.HTTP_200_OK,
         )
@@ -181,7 +182,7 @@ class CurrentSessionView(APIView):
             return Response({'authenticated': False, 'user': None}, status=status.HTTP_200_OK)
 
         user, _ = auth_result
-        return Response(_session_payload(user), status=status.HTTP_200_OK)
+        return Response(_session_payload(user, request), status=status.HTTP_200_OK)
 
 @method_decorator(never_cache, name='dispatch')
 @extend_schema(summary='Read or update your profile', description='Acts on the current user. Use multipart/form-data for profile_image or nid_scan_copy. Change your password through the dedicated password endpoint.')
@@ -192,6 +193,23 @@ class UserDetailsView(RetrieveUpdateAPIView):
     #currently logged in user
     def get_object(self):
         return self.request.user
+
+
+@method_decorator(never_cache, name='dispatch')
+class ProfilePhotoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, photo_id):
+        owners = CustomUser.objects.filter(profile_image=f'{PHOTO_PREFIX}{photo_id}')
+        if not (request.user.is_staff or request.user.is_superuser):
+            owners = owners.filter(pk=request.user.pk)
+        if not owners.exists():
+            raise NotFound('No profile photo is available.')
+
+        photo = ProfilePhoto.objects.filter(pk=photo_id).first()
+        if photo is None:
+            raise NotFound('No profile photo is available.')
+        return HttpResponse(bytes(photo.content), content_type=photo.content_type, headers={'X-Content-Type-Options': 'nosniff'})
 
 
 @method_decorator(never_cache, name='dispatch')

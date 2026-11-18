@@ -102,8 +102,10 @@ into Supabase. Existing hosted records are preserved.
 
 Django uses secure cookies by default when debug is disabled. Vercel's generated
 hosts are included in the allowed host list, and Django recognizes forwarded
-HTTPS. User-uploaded media requires persistent external storage; Vercel's runtime
-filesystem must not be used as a durable media store.
+HTTPS. New profile photos are stored in the database and served by Django under
+`/api/profile-photos/`. Apply the profile photo migration before deploying.
+Existing local media paths still work in development. If an older photo was lost
+from the Vercel runtime filesystem, upload it again after deployment.
 ## Dividends
 
 Open **Dividend** in the sidebar and search for a project to record either a cash amount in BDT or the actual number of bonus shares received (not a percentage). Staff access is required.

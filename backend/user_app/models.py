@@ -1,8 +1,12 @@
+from uuid import uuid4
+
 from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager,
                                         PermissionsMixin)
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+from .photo_storage import ProfilePhotoStorage, validate_profile_photo_size
 
 
 class CustomUserManager(BaseUserManager):
@@ -34,7 +38,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    profile_image = models.ImageField(upload_to='media/profile_images/', blank=True, null=True)
+    profile_image = models.ImageField(
+        upload_to='media/profile_images/', storage=ProfilePhotoStorage(),
+        validators=[validate_profile_photo_size], blank=True, null=True,
+    )
     sex = models.CharField(max_length=1, choices=SEX_CHOICES, blank=True, null=True)
     
     bio = models.TextField(blank=True, null=True)
@@ -56,3 +63,9 @@ class UserIdentityDocument(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     nid = models.CharField(max_length=17, blank=True)
     nid_scan_copy = models.BinaryField(null=True)
+
+
+class ProfilePhoto(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    content = models.BinaryField()
+    content_type = models.CharField(max_length=100)

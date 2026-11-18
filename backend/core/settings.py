@@ -317,10 +317,8 @@ MEDIA_URL = "/media/"
 
 MEDIA_ROOT = BASE_DIR / "media"
 
-# IMPORTANT:
-# Vercel does not provide persistent local file storage.
-# Use S3, Cloudinary, or another external storage provider
-# for production user uploads.
+# Local paths remain available for legacy media. New profile photos use
+# database storage and are served through the authenticated API.
 
 
 # ============================================================

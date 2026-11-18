@@ -1,7 +1,76 @@
+from io import BytesIO
+from unittest.mock import patch
+from urllib.parse import urlsplit
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from PIL import Image
 from rest_framework.test import APIClient
+
+from .models import ProfilePhoto
+
+
+class ProfilePhotoTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_superuser('photo-staff@example.test', 'Test-password-57!')
+        self.other = User.objects.create_user('photo-other@example.test')
+        self.client = APIClient()
+
+    def photo(self, color):
+        buffer = BytesIO()
+        Image.new('RGB', (4, 4), color).save(buffer, format='PNG')
+        content = buffer.getvalue()
+        return SimpleUploadedFile('photo.png', content, content_type='image/png'), content
+
+    def test_registration_serves_a_persistent_photo_to_owner_and_staff(self):
+        self.client.force_authenticate(self.staff)
+        upload, content = self.photo('red')
+        response = self.client.post('/api/user-register/', {
+            'name': 'Photo owner', 'email': 'photo-owner@example.test', 'password': 'Test-password-57!',
+            'profile_image': upload,
+        }, format='multipart')
+        self.assertEqual(response.status_code, 201, response.data)
+        url = urlsplit(response.data['profile_image']).path
+        self.assertTrue(url.startswith('/api/profile-photos/'))
+        self.assertEqual(bytes(ProfilePhoto.objects.get().content), content)
+        self.assertEqual(self.client.get(url).content, content)
+
+        self.client.force_authenticate(self.other)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.get(url).status_code, 401)
+        login = self.client.post('/api/token/', {
+            'email': 'photo-owner@example.test', 'password': 'Test-password-57!',
+        }, format='json')
+        self.assertEqual(login.status_code, 200, login.data)
+        self.assertEqual(urlsplit(login.data['user']['profile_image']).path, url)
+        image = self.client.get(url, HTTP_ACCEPT='image/avif,image/webp,image/png,image/*,*/*;q=0.8')
+        self.assertEqual(image.status_code, 200)
+        self.assertEqual(image['Content-Type'], 'image/png')
+        self.assertEqual(image.content, content)
+
+    def test_photo_replacement_invalidates_old_url_and_rejects_oversized_files(self):
+        self.client.force_authenticate(self.other)
+        upload, _ = self.photo('red')
+        original = self.client.patch('/api/user-profile/', {'profile_image': upload}, format='multipart')
+        self.assertEqual(original.status_code, 200, original.data)
+        upload, content = self.photo('blue')
+        with patch('user_app.signals.cache.delete_pattern'), self.captureOnCommitCallbacks(execute=True):
+            result = self.client.patch('/api/user-profile/', {'profile_image': upload}, format='multipart')
+        self.assertEqual(result.status_code, 200, result.data)
+        self.assertNotEqual(result.data['profile_image'], original.data['profile_image'])
+        self.assertEqual(self.client.get(urlsplit(original.data['profile_image']).path).status_code, 404)
+        self.assertEqual(ProfilePhoto.objects.count(), 1)
+        self.assertEqual(self.client.get(urlsplit(result.data['profile_image']).path).content, content)
+
+        oversized = SimpleUploadedFile('oversized.png', content + b'\0' * (2 * 1024 * 1024), content_type='image/png')
+        response = self.client.patch('/api/user-profile/', {'profile_image': oversized}, format='multipart')
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn('2 MB', str(response.data['profile_image']))
+        self.assertEqual(ProfilePhoto.objects.count(), 1)
 
 
 class RefreshCookieTests(TestCase):
