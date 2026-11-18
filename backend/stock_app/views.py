@@ -1,6 +1,7 @@
-from .schema import ProjectClosedSerializer, StockMessageSerializer, ErrorSerializer
+from .schema import ErrorSerializer, ProfitDisbursementResultSerializer, ProjectClosedSerializer, StockMessageSerializer
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 import json
+import logging
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -9,10 +10,11 @@ from django.db import transaction
 from django.db.models import (Case, DecimalField, ExpressionWrapper, F,
                               FloatField, IntegerField, Q, Sum, When)
 from django.db.models.functions import Coalesce
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -22,12 +24,14 @@ from stock_app.utils import investor_contributions_map, update_customer_balance
 from stock_app.market_prices import MarketPriceError, get_daily_prices
 from user_app.permissions import IsSuperUser
 
+from .distribution import allocation_row, calculate_distribution, recorded_allocation_rows
 from .models import (AccountReceivable, FinAdvisorCommission, FinancialAdvisor,
                      Instrument, Investment, InvestorProfit, Profit, Project,
                      Trade)
 from .serializers import (AccountReceivableDetailsSerializer,
                           AccountReceivableSerializer,
                           ClientInvestmentDetailsSerializer,
+                          DisbursementReportFilterSerializer,
                           FinancialAdvisorAddSerializer,
                           FinancialAdvisorSerializer, InstrumentSerializer,
                           InvestmentContributionSerializer,
@@ -37,9 +41,10 @@ from .serializers import (AccountReceivableDetailsSerializer,
                           ProjectCloseSerializer, ProjectCommissionSerializer, ProjectCreateSerializer,
                           ProjectStatusSerializer,ProjectListSerializer,
                           SellableInstrumentSerializer, TradeDetailsSerializer,
-                          TradeSerializer)
+                          TradeSerializer, UserDetailsSerializer)
 
 User=get_user_model()
+logger = logging.getLogger(__name__)
 
 
 @extend_schema(summary='Create a project', description='Creates a project and records the current user as creator.')
@@ -330,8 +335,8 @@ class InvestorContributionRetrieveAPI(APIView):
 
     def get(self, request, project_id, *args, **kwargs):
         project = get_object_or_404(Project, project_id=project_id)
-        total = project.investment_project_details.aggregate(t=Sum('amount'))['t'] or 0
         contrib_map = investor_contributions_map(project)
+        total = sum(contrib_map.values())
 
         # build payload
         users = User.objects.in_bulk(contrib_map.keys())
@@ -445,179 +450,152 @@ class AccountRecivableDetailsListApiView(generics.ListAPIView):
 
 
 
-@extend_schema(summary='Disburse project profits', description='Distributes undistributed profits in an inclusive trade date range to advisors and investors, credits account balances with matching ledger records, and marks profits as disbursed atomically. Requires staff access. No matching profits returns 404.')
-@extend_schema(request=ProfitDisburseSerializer, responses={200: StockMessageSerializer, 404: StockMessageSerializer, 500: ErrorSerializer})
+class DisbursementDetailsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(summary='Report recorded disbursements for a project', parameters=[DisbursementReportFilterSerializer])
+    def get(self, request, project_id):
+        serializer = DisbursementReportFilterSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        project = get_object_or_404(Project, pk=project_id)
+        filters = {'project': project, 'disburse_dt__isnull': False}
+        if 'from_dt' in serializer.validated_data:
+            filters['disburse_dt__date__gte'] = serializer.validated_data['from_dt']
+        if 'to_dt' in serializer.validated_data:
+            filters['disburse_dt__date__lte'] = serializer.validated_data['to_dt']
+
+        return Response({
+            'project_title': project.project_title,
+            'investor_rows': recorded_allocation_rows(InvestorProfit, 'investor', **filters),
+            'advisor_rows': recorded_allocation_rows(FinAdvisorCommission, 'advisor', **filters),
+        })
+
+
 class ProfitDisburse(APIView):
     permission_classes = [IsAdminUser]
 
-    def post(self, request, format=None):
+    @extend_schema(summary='Preview project profit disbursement', parameters=[ProfitDisburseSerializer])
+    def get(self, request):
+        serializer = ProfitDisburseSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        project, profits, commissions, allocations, payouts = self._prepare_distribution(serializer.validated_data)
+        users = User.objects.in_bulk(payouts)
+        return Response({
+            'project_active': project.project_active_status,
+            'profit_count': len(profits),
+            'gross': sum(profit.amount for profit in profits),
+            'advisor_rows': [allocation_row(row, users[row.advisor_id]) for row in commissions],
+            'investor_rows': [allocation_row(row, users[row.investor_id]) for row in allocations],
+            'recipients': [
+                {
+                    'user': UserDetailsSerializer(users[user_id]).data,
+                    'advisor_amount': advisor_amount,
+                    'investor_amount': investor_amount,
+                }
+                for user_id, (advisor_amount, investor_amount) in payouts.items()
+            ],
+        })
+
+    @extend_schema(
+        summary='Disburse project profits',
+        description='Pays accrued trade profits and cash dividends to wallets, reinvests them, or splits each payout between both.',
+        request=ProfitDisburseSerializer,
+        responses={200: ProfitDisbursementResultSerializer, 404: StockMessageSerializer, 500: ErrorSerializer},
+    )
+    def post(self, request):
         serializer = ProfitDisburseSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        from_dt = request.data.get("from_dt")
-        to_dt = request.data.get("to_dt")
-        project_id = request.data.get("project_id")
-
+        serializer.is_valid(raise_exception=True)
         try:
-            with transaction.atomic():  # Ensure all operations succeed or fail together
-                return self._process_profit_disbursement(project_id, from_dt, to_dt, request)
-        except Exception as e:
+            with transaction.atomic():
+                return self._disburse(serializer.validated_data, request.user)
+        except (Http404, ValidationError):
+            raise
+        except Exception:
+            logger.exception('Project profit disbursement failed')
             return Response(
-                {"error": f"An error occurred during profit disbursement: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {'error': 'An error occurred during profit disbursement.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _process_profit_disbursement(self, project_id, from_dt, to_dt, request):
-        # --- fetch the project once -------------------------------------------------
-        # Serialize disbursements for this project before selecting unpaid profits.
-        project_instance = get_object_or_404(
-            Project.objects.select_for_update(), project_id=project_id
+    def _prepare_distribution(self, criteria, *, lock=False):
+        projects = Project.objects.select_for_update() if lock else Project.objects.all()
+        project = get_object_or_404(projects, pk=criteria['project_id'])
+        date_range = (criteria['from_dt'], criteria['to_dt'])
+        profits = list(Profit.objects.filter(project=project, disburse_st=False).filter(
+            Q(trade__trade_date__range=date_range) | Q(dividend__received_date__range=date_range),
+        ).select_related('trade', 'dividend').order_by('pk'))
+        commissions, allocations, payouts = calculate_distribution(
+            project, profits, FinancialAdvisor.objects.filter(project=project).order_by('pk'),
+            project.investment_project_details.all(),
         )
-        total_investment = project_instance.investment_project_details.aggregate(
-            total=Sum('amount')
-        )['total'] or 0
+        return project, profits, commissions, allocations, payouts
 
-        # --- profits to disburse ----------------------------------------------------
-        profits = self._get_profits_for_disbursement(project_instance, from_dt, to_dt)
-        if not profits.exists():
-            return Response(
-                {"message": "No profits found for disbursement"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+    def _disburse(self, criteria, issued_by):
+        project, profits, commissions, allocations, payouts = self._prepare_distribution(criteria, lock=True)
+        if not profits:
+            return Response({'message': 'No profits found for disbursement'}, status=status.HTTP_404_NOT_FOUND)
 
-        # --- advisors for this project ---------------------------------------------
-        fin_advisors = FinancialAdvisor.objects.filter(
-            project=project_instance
-        ).values('advisor', 'com_percentage')
+        reinvest_ids = set(criteria['reinvest_recipient_ids'])
+        splits = {split['recipient_id']: split['amount'] for split in criteria['reinvest_splits']}
+        if (reinvest_ids or splits) and not project.project_active_status:
+            raise ValidationError({'reinvest_recipient_ids': 'Reinvestment requires an active project.'})
+        if any(sum(payouts.get(user_id, (0, 0))) <= 0 for user_id in reinvest_ids):
+            raise ValidationError({'reinvest_recipient_ids': 'Select only recipients with a positive payout in this period.'})
+        if any(amount >= sum(payouts.get(user_id, (0, 0))) for user_id, amount in splits.items()):
+            raise ValidationError({'reinvest_splits': 'Each split must reinvest less than the recipient’s total payout.'})
 
-        # --- pre-load required instances to avoid N+1 ------------------------------
-        trade_ids = profits.values_list('trade', flat=True)
-        advisor_ids = [fa['advisor'] for fa in fin_advisors]
+        reinvestments = {}
+        wallet_total = Decimal('0.00')
+        reinvested_total = Decimal('0.00')
+        payout_label = 'Cash dividend' if all(profit.dividend_id for profit in profits) else 'Payout'
+        for user_id, (advisor_amount, investor_amount) in payouts.items():
+            amount = advisor_amount + investor_amount
+            reinvest_amount = amount if user_id in reinvest_ids else splits.get(user_id, Decimal('0.00'))
+            wallet_amount = amount - reinvest_amount
+            if reinvest_amount:
+                reinvestments[user_id] = Investment.objects.create(
+                    project=project, investor_id=user_id, amount=reinvest_amount,
+                    is_reinvestment=True, authorized_by=issued_by,
+                )
+                self._credit_payout(
+                    user_id, amount, f'{payout_label} from project {project.pk}', issued_by,
+                    reinvestment=reinvestments[user_id],
+                )
+            else:
+                for payment, label in ((advisor_amount, 'Commission'), (investor_amount, 'Profit')):
+                    if payment:
+                        self._credit_payout(user_id, payment, f'{label} from project {project.pk}', issued_by)
+            wallet_total += wallet_amount
+            reinvested_total += reinvest_amount
 
-        trades = {t.id: t for t in Trade.objects.filter(id__in=trade_ids)}
-        advisors = self._prepare_advisors_data(advisor_ids)
-        investors = investor_contributions_map(project_instance)
-        investors_profit = {}
+        disbursed_at = timezone.now()
+        for row in commissions:
+            row.disburse_dt = disbursed_at
+            row.reinvestment = reinvestments.get(row.advisor_id)
+        for row in allocations:
+            row.disburse_dt = disbursed_at
+            row.reinvestment = reinvestments.get(row.investor_id)
+        FinAdvisorCommission.objects.bulk_create(commissions)
+        InvestorProfit.objects.bulk_create(allocations)
+        Profit.objects.filter(pk__in=[profit.pk for profit in profits]).update(disburse_st=True, disburse_dt=disbursed_at)
+        return Response({
+            'message': 'Profit disbursement completed successfully',
+            'wallet_total': wallet_total,
+            'reinvested_total': reinvested_total,
+        })
 
-        # --- process commissions and profits ---------------------------------------
-        self._process_commissions_and_profits(
-            profits, fin_advisors, trades, advisors, 
-            investors, investors_profit, total_investment, 
-            project_instance
-        )
-
-        # --- create transactions ---------------------------------------------------
-        self._create_transactions(advisors, investors_profit, project_id)
-
-        # --- update profit records -------------------------------------------------
-        profits.update(disburse_st=1, disburse_dt=timezone.now())
-
-        return Response(
-            {"message": "Profit disbursement completed successfully"},
-            status=status.HTTP_200_OK
-        )
-
-    def _get_profits_for_disbursement(self, project_instance, from_dt, to_dt):
-        """Retrieve profits eligible for disbursement"""
-        filters = Q(
-            project=project_instance,
-            disburse_st=0
-        )
-        return Profit.objects.filter(filters).filter(
-            Q(trade__trade_date__range=(from_dt, to_dt)) |
-            Q(dividend__received_date__range=(from_dt, to_dt))
-        )
-
-    def _prepare_advisors_data(self, advisor_ids):
-        """Prepare advisor data structure"""
-        advisors = {}
-        for user in User.objects.filter(id__in=advisor_ids):
-            advisors[user.id] = {"user": user, "amount": 0}
-        return advisors
-
-    def _process_commissions_and_profits(self, profits, fin_advisors, trades, advisors, 
-                                       investors, investors_profit, total_investment, project_instance):
-        """Process advisor commissions and investor profits"""
-        for profit in profits:
-            total_profit_amount = profit.amount
-            trade_instance = trades.get(profit.trade_id)
-
-            # Process advisor commissions
-            total_profit_amount = self._process_advisor_commissions(
-                fin_advisors, advisors, total_profit_amount, 
-                trade_instance, project_instance, profit.dividend
-            )
-
-            # Process investor profits
-            self._process_investor_profits(
-                investors, investors_profit, total_investment, 
-                total_profit_amount, trade_instance, project_instance, profit.dividend
-            )
-
-    def _process_advisor_commissions(self, fin_advisors, advisors, total_profit_amount, 
-                                   trade_instance, project_instance, dividend=None):
-        """Process financial advisor commissions"""
-        for fa in fin_advisors:
-            profit_amount = total_profit_amount * fa['com_percentage'] / 100
-            user_instance = advisors[fa['advisor']]
-
-            FinAdvisorCommission.objects.create(
-                advisor=user_instance['user'],
-                project=project_instance,
-                com_percent=fa['com_percentage'],
-                com_amount=profit_amount,
-                trade=trade_instance,
-                dividend=dividend,
-                disburse_dt=timezone.now(),
-            )
-            user_instance['amount'] += profit_amount
-            total_profit_amount -= profit_amount  # leftover after each advisor
-            
-        return total_profit_amount
-
-    def _process_investor_profits(self, investors, investors_profit, total_investment, 
-                                total_profit_amount, trade_instance, project_instance, dividend=None):
-        """Process investor profit distribution"""
-        for investor_id, cont_amount in investors.items():
-            percentage = round(cont_amount * 100 / total_investment, 2) if total_investment else 0
-            inv_profit_amt = round((total_profit_amount * percentage) / 100, 2)
-            
-            investors_profit[investor_id] = investors_profit.get(investor_id, 0) + inv_profit_amt
-
-            InvestorProfit.objects.create(
-                investor=User.objects.get(id=investor_id),
-                project=project_instance,
-                trade=trade_instance,
-                dividend=dividend,
-                contribute_amount=cont_amount,
-                percentage=percentage,
-                profit_amount=inv_profit_amt,
-                disburse_dt=timezone.now()
-            )
-
-    def _create_transactions(self, advisors, investors_profit, project_id):
-        """Credit each payout and its ledger entry in the enclosing transaction."""
-        # Create transactions for advisors
-        for advisor in advisors.values():
-            self._credit_payout(
-                user=advisor['user'], amount=advisor['amount'],
-                narration=f'Commission from project {project_id}',
-            )
-        
-        # Create transactions for investors
-        for investor_id, amount in investors_profit.items():
-            investor_user = User.objects.get(id=investor_id)
-            self._credit_payout(
-                user=investor_user, amount=amount,
-                narration=f'Profit from project {project_id}',
-            )
-
-    def _credit_payout(self, user, amount, narration):
-        amount = Decimal(amount).quantize(Decimal('0.01'))
-        account = Account.objects.select_for_update().get(user=user)
+    def _credit_payout(self, user_id, amount, narration, issued_by, *, reinvestment=None):
+        account = Account.objects.select_for_update().get(user_id=user_id)
         Transaction.objects.create(
-            user=user, amount=amount, transaction_type='deposit',
-            narration=narration, status='completed', issued_by=self.request.user,
+            user_id=user_id, amount=amount, transaction_type='deposit',
+            narration=narration, status='completed', issued_by=issued_by,
         )
-        account.deposit(amount)
+        if reinvestment is not None:
+            Transaction.objects.create(
+                user_id=user_id, amount=reinvestment.amount, transaction_type='payment',
+                trans_mode='internal', narration=f'Reinvestment in project {reinvestment.project_id}',
+                status='completed', issued_by=issued_by,
+            )
+            amount -= reinvestment.amount
+        if amount:
+            account.deposit(amount)

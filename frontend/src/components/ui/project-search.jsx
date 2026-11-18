@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from './button';
 import { SurfaceCard } from './surface-card';
 
-export function ProjectPicker({ value, onChange, disabled = false, action, options, required = true, placeholder = 'Search by project ID or name', emptyHint = 'Choose an active project or enter its ID.' }) {
+export function ProjectPicker({ value, onChange, disabled = false, action, options, includeClosed = false, required = true, placeholder = 'Search by project ID or name', emptyHint = 'Choose an active project or enter its ID.' }) {
   const id = useId();
   const rootRef = useRef(null);
   const listRef = useRef(null);
@@ -14,7 +14,7 @@ export function ProjectPicker({ value, onChange, disabled = false, action, optio
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const projectsQuery = useApiQuery('/api/stock/project/list/', { enabled: !options });
-  const availableProjects = options ?? projectsQuery.data.filter((project) => project.project_active_status);
+  const availableProjects = options ?? projectsQuery.data.filter((project) => includeClosed || project.project_active_status);
   const query = value.trim().toLowerCase();
   const projects = availableProjects.filter((project) => (
     !query || String(project.project_id).toLowerCase().includes(query) || String(project.project_title ?? '').toLowerCase().includes(query)
@@ -86,7 +86,7 @@ export function ProjectPicker({ value, onChange, disabled = false, action, optio
             </div>
           </div>
           {open && <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <ul ref={listRef} id={`${id}-projects`} role="listbox" aria-label="Active projects" aria-busy={projectsQuery.loading} className="max-h-64 overflow-y-auto overscroll-contain p-1.5">
+            <ul ref={listRef} id={`${id}-projects`} role="listbox" aria-label={includeClosed ? 'Projects' : 'Active projects'} aria-busy={projectsQuery.loading} className="max-h-64 overflow-y-auto overscroll-contain p-1.5">
               {!projectsQuery.loading && !projectsQuery.error && projects.map((project, index) => (
                 <li key={project.project_id} id={`${id}-option-${project.project_id}`} role="option"
                   aria-selected={project.project_id === value} data-index={index}

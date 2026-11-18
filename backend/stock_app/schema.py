@@ -12,5 +12,10 @@ class StockMessageSerializer(serializers.Serializer):
     message = serializers.CharField()
 
 
+class ProfitDisbursementResultSerializer(StockMessageSerializer):
+    wallet_total = serializers.FloatField()
+    reinvested_total = serializers.FloatField()
+
+
 class ErrorSerializer(serializers.Serializer):
     error = serializers.CharField()

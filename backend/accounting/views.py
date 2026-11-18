@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction as db_transaction
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -49,12 +50,14 @@ class CheckBalanceView(generics.RetrieveAPIView):
 
 
         
-@extend_schema(summary='List your completed transactions', description='Returns only transactions belonging to the current user whose status is completed. Approved payments are not included by this filter.')
+@extend_schema(summary='List your posted wallet transactions', description='Returns completed transactions and approved payments belonging to the current user.')
 class TransactionDetailsView(generics.ListAPIView):
     serializer_class=TransactionDetailsSerializer
     permission_classes=[IsAuthenticated]
     def get_queryset(self):
-        return Transaction.objects.filter(user=self.request.user,status='completed')
+        return Transaction.objects.filter(user=self.request.user).filter(
+            Q(status='completed') | Q(transaction_type='payment', status='approved'),
+        ).order_by('-issued_date', '-pk')
 
 @extend_schema(summary='Create a transaction', description='Creates a transaction for the supplied user ID. External deposits credit the account immediately and become completed. Internal transactions become completed without changing balances here. Other payments remain pending.')
 class TransactionCreateView(generics.CreateAPIView):

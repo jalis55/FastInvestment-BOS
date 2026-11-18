@@ -116,7 +116,7 @@ class InvestmentSerializer(serializers.ModelSerializer):
 
 class InvestmentContributionSerializer(serializers.Serializer):
     investor = UserDetailsSerializer()
-    contribute_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    contribute_amount = serializers.DecimalField(max_digits=100, decimal_places=2)
     contribution_percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
 
 class ClientInvestmentDetailsSerializer(serializers.ModelSerializer):
@@ -291,14 +291,37 @@ class ProjectListSerializer(serializers.ModelSerializer):
 
 
 
+class DisbursementReportFilterSerializer(serializers.Serializer):
+    from_dt = serializers.DateField(required=False)
+    to_dt = serializers.DateField(required=False)
+
+    def validate(self, data):
+        if 'from_dt' in data and 'to_dt' in data and data['from_dt'] > data['to_dt']:
+            raise serializers.ValidationError({'to_dt': 'The end date must be on or after the start date.'})
+        return data
+
+
+class PayoutSplitSerializer(serializers.Serializer):
+    recipient_id = serializers.IntegerField(min_value=1)
+    amount = serializers.DecimalField(max_digits=100, decimal_places=2, min_value=Decimal('0.01'))
+
+
 class ProfitDisburseSerializer(serializers.Serializer):
     from_dt=serializers.DateField(required=True)
     to_dt=serializers.DateField(required=True)
     project_id=serializers.CharField(required=True)
+    reinvest_recipient_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), required=False, default=list,
+    )
+    reinvest_splits = PayoutSplitSerializer(many=True, required=False, default=list)
 
     def validate(self,data):
         if data['from_dt']>data['to_dt']:
             raise serializers.ValidationError('From date can not be after To date')
+
+        split_ids = [split['recipient_id'] for split in data['reinvest_splits']]
+        if len(set(split_ids)) != len(split_ids) or set(split_ids).intersection(data['reinvest_recipient_ids']):
+            raise serializers.ValidationError({'reinvest_splits': 'Choose one payout destination per recipient.'})
         
         return data
     def validate_project_id(self, value):

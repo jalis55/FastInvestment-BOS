@@ -53,6 +53,7 @@ class Investment(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE,related_name='investment_project_details')
     investor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='invesment_investor_details')
     amount = models.DecimalField(max_digits=100, decimal_places=2)
+    is_reinvestment = models.BooleanField(default=False)
     authorized_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='investor_authorizer_details')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -192,6 +193,7 @@ class FinAdvisorCommission(models.Model):
     trade=models.ForeignKey(Trade,on_delete=models.CASCADE,related_name='com_trade_details', null=True, blank=True)
     com_percent=models.DecimalField(max_digits=100,decimal_places=2)
     com_amount=models.DecimalField(max_digits=1000,decimal_places=2)
+    reinvestment = models.ForeignKey(Investment, on_delete=models.SET_NULL, null=True, blank=True, related_name='advisor_payouts')
     disburse_dt = models.DateTimeField(null=True, blank=True)
     authorized_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='commission_authorizer_details')
 
@@ -203,6 +205,7 @@ class InvestorProfit(models.Model):
     contribute_amount=models.DecimalField(max_digits=1000,decimal_places=2)
     percentage=models.DecimalField(max_digits=1000,decimal_places=2)
     profit_amount=models.DecimalField(max_digits=1000,decimal_places=2)
+    reinvestment = models.ForeignKey(Investment, on_delete=models.SET_NULL, null=True, blank=True, related_name='investor_payouts')
     disburse_dt = models.DateTimeField(null=True, blank=True)
     authorized_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='inv_profit_authorizer_details')
 

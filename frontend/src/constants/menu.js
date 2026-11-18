@@ -149,6 +149,24 @@ const menu = [
     icon: FileSpreadsheet,
     children: [
       {
+        menuName: "Project Investment Summary",
+        url: "/project-investment-summary",
+        roles: ["admin", "super_admin"],
+        icon: BriefcaseBusiness,
+      },
+      {
+        menuName: "Allocation Details",
+        url: "/allocation-details",
+        roles: ["user", "admin", "super_admin"],
+        icon: BadgePercent,
+      },
+      {
+        menuName: "Disbursement Details",
+        url: "/disbursement-details",
+        roles: ["admin", "super_admin"],
+        icon: BadgeDollarSign,
+      },
+      {
         menuName: "Account Receivables",
         url: "/acc-rec-details",
         roles: ["admin", "super_admin"],

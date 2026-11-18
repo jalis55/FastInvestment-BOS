@@ -46,6 +46,9 @@ const Transaction = lazy(() => import('./pages/transaction/Transaction'));
 const FundTransfer = lazy(() => import('./pages/transaction/FundTransfer'));
 const PendingPayments = lazy(() => import('./pages/pending payments/PendingPayments'));
 // Reports
+const AllocationDetails = lazy(() => import('./pages/reports/AllocationDetails'));
+const DisbursementDetails = lazy(() => import('./pages/reports/DisbursementDetails'));
+const ProjectInvestmentSummary = lazy(() => import('./pages/reports/ProjectInvestmentSummary'));
 const TradeDetails = lazy(() => import('./pages/reports/TradeDetails'));
 const AccountReceivableDetails = lazy(() => import('./pages/reports/AccountReceivableDetails'));
 const TransactionHistory = lazy(() => import('./pages/reports/TransactionHistory'));
@@ -98,6 +101,9 @@ const router = createBrowserRouter([
 
 
       /* ---- Reports ---- */
+      { path: 'allocation-details', element: <RoleRoute roles={['user', 'admin']}><AllocationDetails /></RoleRoute> },
+      { path: 'disbursement-details', element: <RoleRoute roles={['admin']}><DisbursementDetails /></RoleRoute> },
+      { path: 'project-investment-summary', element: <RoleRoute roles={['admin']}><ProjectInvestmentSummary /></RoleRoute> },
       { path: 'acc-rec-details', element: <RoleRoute roles={['admin']}><AccountReceivableDetails /></RoleRoute> },
       { path: 'trade-details', element: <RoleRoute roles={['admin']}><TradeDetails /></RoleRoute> },
       { path: 'trans-history', element: <RoleRoute roles={['user']}><TransactionHistory/> </RoleRoute> },

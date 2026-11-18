@@ -67,7 +67,7 @@ class TransactionDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model=Transaction
         
-        fields = ['amount', 'transaction_type', 'narration', 'issued_date', 'status']
+        fields = ['id', 'amount', 'transaction_type', 'narration', 'issued_date', 'status']
 class PendingPaymentsSerializer(serializers.ModelSerializer):
     user=ShortUserDetailsSerializer(read_only=True)
     issued_by=ShortUserDetailsSerializer(read_only=True)

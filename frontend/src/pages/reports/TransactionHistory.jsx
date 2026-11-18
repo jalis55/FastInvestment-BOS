@@ -1,368 +1,228 @@
-import Swal from 'sweetalert2';
-import { useApiQuery } from '@/hooks/use-api-query';
-import { QueryState } from '@/components/ui/query-state';
-"use client"
-
-import { useState, useMemo } from "react";
-import { ArrowDownCircle, ArrowUpCircle, Calendar, ChevronDown, Download, Filter } from "lucide-react";
-import { format } from "date-fns";
+import { useMemo, useState } from 'react';
+import { ArrowDownLeft, ArrowUpRight, Download, Wallet } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
-import BannerTitle from "../../components/BannerTitle.jsx";
 
-const TransactionHistory = () => {
-  const [filterType, setFilterType] = useState("all");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [filterDate, setFilterDate] = useState(null);
-  const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const transactionsPerPage = 10;
+import { useAuth } from '@/auth/use-auth';
+import { useApiQuery } from '@/hooks/use-api-query';
+import { Button } from '@/components/ui/button';
+import { PageIntro } from '@/components/ui/page-intro';
+import { QueryState } from '@/components/ui/query-state';
+import { SurfaceCard } from '@/components/ui/surface-card';
 
-  const { data: allTransactions, loading, error, refetch } = useApiQuery('/api/acc/user/transaction-details/');
+const PAGE_SIZE = 15;
+const currency = new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', currencyDisplay: 'code' });
+const formatAmount = (cents) => currency.format(cents / 100).replace('\u00a0', ' ');
+const toCents = (amount) => Math.round(Number(amount) * 100);
 
-  // Calculate available months from transactions
-  const availableMonths = useMemo(() => {
-    const months = new Set();
-    allTransactions.forEach(t => {
-      if (t?.issued_date) {
-        const date = new Date(t.issued_date);
-        months.add(format(date, 'yyyy-MM-01'));
-      }
-    });
-    return Array.from(months)
-      .map(date => new Date(date))
-      .sort((a, b) => b - a);
-  }, [allTransactions]);
+function buildLedger(transactions) {
+  let creditTotal = 0;
+  let debitTotal = 0;
+  const months = new Set();
 
-  // Calculate statistics
-  const { totalDeposits, totalPayments, balance, openingBalance } = useMemo(() => {
-    let deposits = 0;
-    let payments = 0;
-    let firstDeposit = 0;
+  // The API sends newest first. Calculate balances across the full ledger
+  // before applying filters or pagination.
+  const rows = [...transactions].reverse().map((transaction) => {
+    const amount = toCents(transaction.amount);
+    const credit = transaction.transaction_type === 'deposit';
+    if (credit) creditTotal += amount;
+    else debitTotal += amount;
 
-    const depositTransactions = allTransactions
-      .filter(t => t?.transaction_type === "deposit")
-      .sort((a, b) => new Date(a?.issued_date) - new Date(b?.issued_date));
-
-    if (depositTransactions.length > 0) {
-      firstDeposit = parseFloat(depositTransactions[0]?.amount || 0);
-    }
-
-    allTransactions.forEach(t => {
-      const amount = parseFloat(t?.amount || 0);
-      if (t?.transaction_type === "deposit") deposits += amount;
-      if (t?.transaction_type === "payment") payments += amount;
-    });
-
+    const postedAt = parseISO(transaction.issued_date);
+    const month = format(postedAt, 'yyyy-MM');
+    months.add(month);
     return {
-      totalDeposits: deposits,
-      totalPayments: payments,
-      balance: deposits - payments,
-      openingBalance: firstDeposit
+      ...transaction,
+      postedAt,
+      month,
+      credit: credit ? amount : null,
+      debit: credit ? null : amount,
+      ledgerBalance: creditTotal - debitTotal,
     };
-  }, [allTransactions]);
+  }).reverse();
 
-  // Filter and paginate transactions
-  const displayedTransactions = useMemo(() => {
-    let filtered = [...allTransactions];
+  return { rows, months: [...months].sort().reverse(), creditTotal, debitTotal };
+}
 
-    // Apply type filter
-    if (filterType !== "all") {
-      filtered = filtered.filter(t => t?.transaction_type === filterType);
-    }
+function exportLedger(rows, showLedgerBalance) {
+  const decimal = (amount) => amount === null ? '' : (amount / 100).toFixed(2);
+  const csv = Papa.unparse(rows.map((row) => ({
+    Reference: row.id,
+    'Posted at': row.issued_date,
+    Description: row.narration || (row.credit === null ? 'Wallet debit' : 'Wallet credit'),
+    Status: row.status,
+    'Debit (BDT)': decimal(row.debit),
+    'Credit (BDT)': decimal(row.credit),
+    ...(showLedgerBalance ? { 'Ledger balance (BDT)': decimal(row.ledgerBalance) } : {}),
+  })), { escapeFormulae: true });
+  saveAs(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), 'wallet-ledger.csv');
+}
 
-    // Apply date filter
-    if (filterDate) {
-      const monthStart = format(filterDate, 'yyyy-MM-01');
-      const monthEnd = format(filterDate, 'yyyy-MM-31');
-      filtered = filtered.filter(t => {
-        const date = t?.issued_date;
-        return date >= monthStart && date <= monthEnd;
-      });
-    }
-
-    // Sort by date (newest first)
-    filtered.sort((a, b) => new Date(b?.issued_date) - new Date(a?.issued_date));
-
-    // Paginate
-    const startIndex = (page - 1) * transactionsPerPage;
-    return filtered.slice(0, startIndex + transactionsPerPage);
-  }, [allTransactions, filterType, filterDate, page]);
-
-  // Check if there are more items to load
-  const hasMore = useMemo(() => {
-    let filtered = [...allTransactions];
-
-    if (filterType !== "all") {
-      filtered = filtered.filter(t => t?.transaction_type === filterType);
-    }
-
-    if (filterDate) {
-      const monthStart = format(filterDate, 'yyyy-MM-01');
-      const monthEnd = format(filterDate, 'yyyy-MM-31');
-      filtered = filtered.filter(t => {
-        const date = t?.issued_date;
-        return date >= monthStart && date <= monthEnd;
-      });
-    }
-
-    return filtered.length > displayedTransactions.length;
-  }, [allTransactions, filterType, filterDate, displayedTransactions.length]);
-
-  const handleFilterChange = (type) => {
-    setFilterType(type);
-    setIsDropdownOpen(false);
-    setPage(1);
-  };
-
-  const handleMonthSelect = (date) => {
-    setFilterDate(date);
-    setIsDateDropdownOpen(false);
-    setPage(1);
-  };
-
-  const handleLoadMore = () => {
-    setPage(prev => prev + 1);
-  };
-
-  const clearDateFilter = () => {
-    setFilterDate(null);
-    setPage(1);
-  };
-
-  const downloadCSV = () => {
-    if (allTransactions.length === 0) {
-      Swal.fire("No Data", "No data available to download", "warning");
-      return;
-    }
-
-    const csvData = allTransactions.map(item => ({
-      "Narration": item.narration,
-      "Transaction type": item.transaction_type === 'payment' ? 'withdraw' : 'deposit',
-      "Amount": item.amount,
-      "Date": item.issued_date
-    }));
-
-    const csv = Papa.unparse(csvData);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "Transaction history.csv");
-  };
-
-  if (loading || error || !allTransactions.length) return <><BannerTitle title='Transaction History' /><QueryState loading={loading} error={error} onRetry={refetch} empty={!allTransactions.length} /></>;
+function BalanceSummary({ balanceQuery, creditTotal, debitTotal }) {
+  const balance = balanceQuery.data.balance;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-     <BannerTitle title="Transaction History" />
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg border shadow-sm p-4">
-          <div className="pb-2">
-            <h3 className="text-sm font-medium text-gray-500">Opening Balance</h3>
-          </div>
-          <div className="pt-2">
-            <div className="text-2xl font-bold text-blue-600">${openingBalance.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border shadow-sm p-4">
-          <div className="pb-2">
-            <h3 className="text-sm font-medium text-gray-500">Total Deposits</h3>
-          </div>
-          <div className="pt-2">
-            <div className="text-2xl font-bold text-emerald-600">${totalDeposits.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border shadow-sm p-4">
-          <div className="pb-2">
-            <h3 className="text-sm font-medium text-gray-500">Total Withdraw</h3>
-          </div>
-          <div className="pt-2">
-            <div className="text-2xl font-bold text-rose-600">${totalPayments.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border shadow-sm p-4">
-          <div className="pb-2">
-            <h3 className="text-sm font-medium text-gray-500">Current Balance</h3>
-          </div>
-          <div className="pt-2">
-            <div className="text-2xl font-bold">${balance.toFixed(2)}</div>
-          </div>
-        </div>
+    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="col-span-2 rounded-2xl bg-slate-900 p-4 text-white sm:col-span-1 sm:p-5">
+        <dt className="flex items-center gap-2 text-sm font-medium text-slate-300">
+          <Wallet className="size-4" aria-hidden="true" /> Wallet balance
+        </dt>
+        <dd className="mt-2 break-words text-2xl font-semibold tracking-tight tabular-nums" aria-live="polite">
+          {balanceQuery.error ? (
+            <Button variant="link" type="button" className="h-auto p-0 text-cyan-200" onClick={balanceQuery.refetch}>
+              Balance unavailable. Retry
+            </Button>
+          ) : balance == null ? '—' : formatAmount(toCents(balance))}
+        </dd>
       </div>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+        <dt className="flex items-center gap-2 text-sm font-medium text-slate-600">
+          <ArrowDownLeft className="size-4 text-emerald-700" aria-hidden="true" /> Total credits
+        </dt>
+        <dd className="mt-2 text-base font-semibold tracking-tight tabular-nums text-slate-900 sm:text-2xl">{formatAmount(creditTotal)}</dd>
+      </div>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+        <dt className="flex items-center gap-2 text-sm font-medium text-slate-600">
+          <ArrowUpRight className="size-4 text-slate-500" aria-hidden="true" /> Total debits
+        </dt>
+        <dd className="mt-2 text-base font-semibold tracking-tight tabular-nums text-slate-900 sm:text-2xl">{formatAmount(debitTotal)}</dd>
+      </div>
+    </dl>
+  );
+}
 
-      {/* Filters and Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 relative">
-            <Filter className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium">Filter:</span>
-
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-between w-[180px] px-3 py-2 text-sm bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {filterType === "all" ? "All Transactions" : filterType === "deposit" ? "Deposits Only" : "Withdrawals Only"}
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </button>
-
-              {isDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg">
-                  <ul className="py-1">
-                    <li
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 ${filterType === "all" ? "bg-gray-100" : ""}`}
-                      onClick={() => handleFilterChange("all")}
-                    >
-                      All Transactions
-                    </li>
-                    <li
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 ${filterType === "deposit" ? "bg-gray-100" : ""}`}
-                      onClick={() => handleFilterChange("deposit")}
-                    >
-                      Deposits Only
-                    </li>
-                    <li
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 ${filterType === "payment" ? "bg-gray-100" : ""}`}
-                      onClick={() => handleFilterChange("payment")}
-                    >
-                      Withdrawals Only
-                    </li>
-                  </ul>
-                </div>
+function LedgerTable({ rows, showLedgerBalance }) {
+  return (
+    <div className="overflow-x-auto">
+      <table role="table" className="block w-full text-left text-sm md:table md:min-w-[40rem]">
+        <caption className="sr-only">Posted wallet transactions, newest first</caption>
+        <thead role="rowgroup" className="sr-only border-y border-slate-200 bg-slate-50 text-xs font-medium text-slate-600 md:not-sr-only md:table-header-group">
+          <tr role="row">
+            <th role="columnheader" scope="col" className="whitespace-nowrap px-4 py-3 md:pl-6">Posted</th>
+            <th role="columnheader" scope="col" className="px-4 py-3">Description</th>
+            <th role="columnheader" scope="col" className="px-4 py-3 text-right">Debit</th>
+            <th role="columnheader" scope="col" className="px-4 py-3 text-right">Credit</th>
+            {showLedgerBalance && <th role="columnheader" scope="col" className="whitespace-nowrap py-3 pr-6 pl-4 text-right">Ledger balance</th>}
+          </tr>
+        </thead>
+        <tbody role="rowgroup" className="block divide-y divide-slate-100 border-t border-slate-200 md:table-row-group md:border-t-0">
+          {rows.map((row) => (
+            <tr role="row" key={row.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 px-4 py-3 align-top hover:bg-slate-50/70 md:table-row">
+              <td role="cell" className="col-start-1 row-start-2 text-xs text-slate-500 md:p-3 md:pl-6 md:text-sm md:whitespace-nowrap">
+                <time dateTime={row.issued_date}>
+                  <span className="md:block md:font-medium md:text-slate-800">{format(row.postedAt, 'dd MMM yyyy')}</span>
+                  <span className="ml-1 text-xs whitespace-nowrap md:mt-0.5 md:ml-0 md:block">{format(row.postedAt, 'h:mm a')}</span>
+                </time>
+              </td>
+              <th role="rowheader" scope="row" className="col-start-1 row-start-1 min-w-0 text-left font-medium text-slate-900 md:min-w-56 md:px-4 md:py-3">
+                <span className="break-words">{row.narration || (row.credit === null ? 'Wallet debit' : 'Wallet credit')}</span>
+                <span className="mt-0.5 block text-xs font-normal text-slate-500">
+                  <span className="font-mono">#{row.id}</span> · <span className="capitalize">{row.status}</span>
+                </span>
+              </th>
+              <td role="cell" className={`col-start-2 row-start-1 whitespace-nowrap text-right tabular-nums text-slate-800 md:table-cell md:px-4 md:py-3 ${row.debit === null ? 'hidden' : ''}`}>
+                <span className="block text-xs text-slate-500 md:hidden">Debit</span>
+                {row.debit === null ? '—' : formatAmount(row.debit)}
+              </td>
+              <td role="cell" className={`col-start-2 row-start-1 whitespace-nowrap text-right tabular-nums text-emerald-800 md:table-cell md:px-4 md:py-3 ${row.credit === null ? 'hidden' : ''}`}>
+                <span className="block text-xs text-slate-500 md:hidden">Credit</span>
+                {row.credit === null ? '—' : formatAmount(row.credit)}
+              </td>
+              {showLedgerBalance && (
+                <td role="cell" className="col-start-2 row-start-2 whitespace-nowrap text-right text-xs font-semibold tabular-nums text-slate-900 md:py-3 md:pr-6 md:pl-4 md:text-sm">
+                  <span className="mr-1 font-normal text-slate-500 md:hidden">Balance</span>
+                  {formatAmount(row.ledgerBalance)}
+                </td>
               )}
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full">
-  <Calendar className="h-5 w-5 text-gray-500 flex-shrink-0" />
-  
-  <div className="relative w-full sm:w-auto">
-    <button
-      onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
-      className="flex items-center justify-between w-full min-w-[180px] px-3 py-2 text-sm bg-white border rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-    >
-      <span className="truncate">
-        {filterDate ? format(filterDate, 'MMM yyyy') : 'All Months'}
-      </span>
-      <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${isDateDropdownOpen ? 'transform rotate-180' : ''}`} />
-    </button>
-
-    {isDateDropdownOpen && (
-      <div className="absolute z-10 left-0 right-0 sm:right-auto w-full sm:w-[180px] mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
-        <ul className="py-1">
-          <li
-            className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 ${!filterDate ? "bg-gray-100 font-medium" : ""}`}
-            onClick={() => {
-              clearDateFilter();
-              setIsDateDropdownOpen(false);
-            }}
-          >
-            All Months
-          </li>
-          {availableMonths.map((month, index) => (
-            <li
-              key={index}
-              className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 ${
-                filterDate && format(filterDate, 'yyyy-MM') === format(month, 'yyyy-MM') 
-                  ? "bg-gray-100 font-medium" 
-                  : ""
-              }`}
-              onClick={() => {
-                handleMonthSelect(month);
-                setIsDateDropdownOpen(false);
-              }}
-            >
-              {format(month, 'MMM yyyy')}
-            </li>
+            </tr>
           ))}
-        </ul>
-      </div>
-    )}
-  </div>
-</div>
-
-
-
-        </div>
-
-        <button
-          onClick={downloadCSV}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">
-          <Download className="h-4 w-4" />
-          Export CSV
-        </button>
-      </div>
-
-      {/* Transactions List */}
-      <div className="space-y-4">
-        {displayedTransactions.length > 0 ? (
-          displayedTransactions.map((transaction, index) => (
-            <div key={index} className="bg-white rounded-lg border shadow-sm overflow-hidden">
-              <div className="flex flex-col md:flex-row md:items-center">
-                <div className="p-4 md:p-6 flex items-center gap-4 flex-1">
-                  <div
-                    className={`rounded-full p-2 ${transaction?.transaction_type === "deposit"
-                      ? "bg-emerald-100 text-emerald-600"
-                      : "bg-rose-100 text-rose-600"
-                      }`}
-                  >
-                    {transaction?.transaction_type === "deposit" ? (
-                      <ArrowDownCircle className="h-6 w-6" />
-                    ) : (
-                      <ArrowUpCircle className="h-6 w-6" />
-                    )}
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="font-medium">{transaction?.narration}</div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                      <Calendar className="h-3 w-3" />
-                      {format(new Date(transaction?.issued_date), "MMM d, yyyy • h:mm a")}
-                      <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full border capitalize">
-                        {transaction?.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={`p-4 md:p-6 md:border-l text-right ${transaction?.transaction_type === "deposit" ? "text-emerald-600" : "text-rose-600"
-                    }`}
-                >
-                  <div className="text-lg font-bold">
-                    {transaction?.transaction_type === "deposit" ? "+" : "-"}${transaction?.amount}
-                  </div>
-                  <div className="text-xs text-gray-500 uppercase mt-1">
-                    {transaction?.transaction_type === 'payment' ? 'withdraw' : 'deposit'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="bg-white rounded-lg border shadow-sm p-8 text-center">
-            <p className="text-gray-500">No transactions found</p>
-          </div>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {hasMore && displayedTransactions.length > 0 && (
-        <div className="mt-8 flex justify-center">
-          <button
-            onClick={handleLoadMore}
-            disabled={loading}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {loading ? 'Loading...' : 'Load More'} <ChevronDown className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+        </tbody>
+      </table>
     </div>
   );
-};
+}
 
-export default TransactionHistory;
+export default function TransactionHistory() {
+  const { user } = useAuth();
+  const [type, setType] = useState('all');
+  const [month, setMonth] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { data: transactions, loading, error, refetch } = useApiQuery('/api/acc/user/transaction-details/');
+  const balanceQuery = useApiQuery(user?.id ? `/api/acc/user/${user.id}/balance/` : null);
+
+  const { rows, months, creditTotal, debitTotal } = useMemo(() => buildLedger(transactions), [transactions]);
+  const walletBalance = balanceQuery.data.balance;
+  const balanceAvailable = !balanceQuery.loading && !balanceQuery.error && walletBalance != null;
+  const showLedgerBalance = balanceAvailable && toCents(walletBalance) === creditTotal - debitTotal;
+  const filteredRows = rows.filter((row) =>
+    (type === 'all' || row.transaction_type === type) && (!month || row.month === month));
+  const visibleRows = filteredRows.slice(0, visibleCount);
+
+  return (
+    <div className="mx-auto w-full max-w-6xl">
+      <PageIntro as="h1" title="Transaction History" description="View the posted credits and debits in your wallet." />
+      <QueryState loading={loading} error={error} onRetry={refetch} loadingLabel="Loading wallet ledger…">
+        <div className="space-y-5">
+          <BalanceSummary balanceQuery={balanceQuery} creditTotal={creditTotal} debitTotal={debitTotal} />
+          <SurfaceCard className="overflow-hidden !p-0">
+            <div className="grid grid-cols-2 items-end gap-3 px-4 py-4 sm:flex sm:flex-wrap sm:px-6">
+              <div className="min-w-0 sm:min-w-32">
+                <label htmlFor="ledger-type" className="field-label">Entry type</label>
+                <select id="ledger-type" className="field-select py-2" value={type} onChange={(event) => {
+                  setType(event.target.value);
+                  setVisibleCount(PAGE_SIZE);
+                }}>
+                  <option value="all">All entries</option>
+                  <option value="deposit">Credits</option>
+                  <option value="payment">Debits</option>
+                </select>
+              </div>
+              <div className="min-w-0 sm:min-w-32">
+                <label htmlFor="ledger-month" className="field-label">Month</label>
+                <select id="ledger-month" className="field-select py-2" value={month} onChange={(event) => {
+                  setMonth(event.target.value);
+                  setVisibleCount(PAGE_SIZE);
+                }}>
+                  <option value="">All months</option>
+                  {months.map((value) => <option key={value} value={value}>{format(parseISO(`${value}-01`), 'MMM yyyy')}</option>)}
+                </select>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="col-span-2 justify-self-start sm:ml-auto"
+                onClick={() => exportLedger(filteredRows, showLedgerBalance)}
+                disabled={!filteredRows.length}
+              >
+                <Download aria-hidden="true" /> Export CSV
+              </Button>
+            </div>
+
+            {visibleRows.length ? (
+              <LedgerTable rows={visibleRows} showLedgerBalance={showLedgerBalance} />
+            ) : (
+              <p className="border-t border-slate-100 px-6 py-12 text-center text-sm text-slate-600">
+                {rows.length ? 'No entries match these filters.' : 'No wallet transactions have been posted yet.'}
+              </p>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 sm:px-6">
+              <p role="status" className="text-xs text-slate-600">Showing {visibleRows.length} of {filteredRows.length} entries</p>
+              {visibleRows.length < filteredRows.length && (
+                <Button type="button" size="sm" variant="outline" onClick={() => setVisibleCount((previous) => previous + PAGE_SIZE)}>
+                  Load more
+                </Button>
+              )}
+            </div>
+            {balanceAvailable && !showLedgerBalance && rows.length > 0 && (
+              <p className="border-t border-slate-100 px-4 py-3 text-xs text-slate-600 sm:px-6">
+                Running balances are unavailable because the posted entries differ from the recorded wallet balance.
+              </p>
+            )}
+          </SurfaceCard>
+        </div>
+      </QueryState>
+    </div>
+  );
+}

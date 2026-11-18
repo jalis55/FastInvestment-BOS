@@ -78,6 +78,26 @@ class DividendTests(TestCase):
         self.assertEqual(Transaction.objects.count(), 2)
         self.assertEqual(self.client.get('/api/stock/project/total/profit/', params).data, [])
 
+    def test_cash_dividend_can_be_reinvested_directly(self):
+        dividend = self.record('cash').data
+        response = self.client.post('/api/stock/profit/disburse/', {
+            'project_id': self.project.pk,
+            'from_dt': self.today,
+            'to_dt': self.today,
+            'reinvest_recipient_ids': [self.investor.pk],
+        }, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data['reinvested_total'], Decimal('1000.00'))
+        self.assertEqual(response.data['wallet_total'], Decimal('0.00'))
+        payout = InvestorProfit.objects.get(dividend_id=dividend['id'])
+        self.assertTrue(payout.reinvestment.is_reinvestment)
+        self.assertEqual(payout.reinvestment.amount, Decimal('1000.00'))
+        self.assertEqual(Account.objects.get(user=self.investor).balance, Decimal('0.00'))
+        self.assertEqual(
+            list(Transaction.objects.filter(user=self.investor).order_by('pk').values_list('transaction_type', 'amount')),
+            [('deposit', Decimal('1000.00')), ('payment', Decimal('1000.00'))],
+        )
+
     def test_invalid_inputs_and_closed_project(self):
         for values in [dict(qty=0), dict(qty=-1), dict(qty=1.5), dict(amount='5'), dict(received_date='2099-01-01')]:
             self.assertEqual(self.record(**values).status_code, 400, values)

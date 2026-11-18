@@ -1,11 +1,12 @@
 from django.urls import path
+from .allocation_report import AllocationReportView
 from .dividends import DividendListCreateView
 from .profit_report import ProfitReportView
 
 from .views import (AccountReceivableCreateApiView,
                     AccountRecivableDetailsListApiView,
                     AddFinancialAdvisorListCreateView,
-                    ClientInvestmentDetailsListView, FinancialAdvisorListView,
+                    ClientInvestmentDetailsListView, DisbursementDetailsView, FinancialAdvisorListView,
                     InstrumentListView, InvestmentCreateAPIView,InstrumentClosePriceView,
                     InvestorContributionRetrieveAPI, InvestorProfitDetailsView,
                     ProfitCreateView, ProfitDisburse,
@@ -16,6 +17,7 @@ from .views import (AccountReceivableCreateApiView,
 
 urlpatterns = [
     path('profit/report/', ProfitReportView.as_view(), name='profit-report'),
+    path('profit/allocation-report/', AllocationReportView.as_view(), name='allocation-report'),
     path('dividends/', DividendListCreateView.as_view(), name='dividends'),
 
 
@@ -50,6 +52,7 @@ urlpatterns = [
     path('acc/recvable/details/',AccountRecivableDetailsListApiView.as_view(),name='acc_rcvable-details'),
 
     path('profit/disburse/',ProfitDisburse.as_view(),name='disburse_profit'),
+    path('profit/disbursement-details/<str:project_id>/', DisbursementDetailsView.as_view(), name='disbursement-details'),
 
     
 
