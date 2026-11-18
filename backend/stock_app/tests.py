@@ -12,6 +12,62 @@ from stock_app.models import (
 )
 
 
+class TradeCommissionTests(TestCase):
+    def setUp(self):
+        self.staff = get_user_model().objects.create_user('trader@example.test', is_staff=True)
+        self.project = Project.objects.create(project_title='Default rate', created_by=self.staff)
+        self.instrument = Instrument.objects.create(name='Commission test')
+        self.client = APIClient()
+        self.client.force_authenticate(self.staff)
+
+    def trade(self, project_id, trade_type='buy', **data):
+        return self.client.post('/api/stock/create/trade/', {
+            'project': project_id,
+            'instrument': self.instrument.pk,
+            'qty': 100,
+            'unit_price': '100.00',
+            'trns_type': trade_type,
+            **data,
+        }, format='json')
+
+    def test_project_rates_apply_to_buys_and_sells_with_a_minimum(self):
+        project = self.client.post('/api/stock/create/project/', {
+            'project_title': 'Custom rate',
+            'project_description': 'Commission test',
+            'project_responsible_mail': self.staff.email,
+            'trade_commission_rate': '0.3',
+        }, format='json')
+        self.assertEqual(project.status_code, 201, project.data)
+        custom = Project.objects.get(project_title='Custom rate')
+        self.assertEqual(self.trade(self.project.pk).data['total_commission'], '40.00')
+        self.assertEqual(self.trade(custom.pk).data['total_commission'], '30.00')
+        self.assertEqual(self.trade(custom.pk, 'sell').data['total_commission'], '30.00')
+        self.assertEqual(self.trade(custom.pk, qty=2000, unit_price='1.00').data['total_commission'], '10.00')
+        balances = self.client.get(f'/api/stock/project/balance/details/{custom.pk}/')
+        self.assertEqual(balances.data['total_buy_amount'], '12040.00')
+        self.assertEqual(balances.data['total_sell_amount'], '9970.00')
+
+    def test_rate_update_preserves_existing_trades_and_rejects_stale_quotes(self):
+        recorded = self.trade(self.project.pk)
+        self.assertEqual(recorded.status_code, 201, recorded.data)
+        endpoint = f'/api/stock/project/commission/{self.project.pk}/'
+        self.assertEqual(self.client.patch(endpoint, {'trade_commission_rate': '-0.1'}, format='json').status_code, 400)
+        response = self.client.patch(endpoint, {'trade_commission_rate': '0.3'}, format='json')
+        self.assertEqual(response.data['trade_commission_rate'], '0.3000')
+        stale = self.trade(self.project.pk, expected_commission_rate='0.4')
+        self.assertEqual(stale.status_code, 400)
+        self.assertEqual(Trade.objects.count(), 1)
+        original = Trade.objects.get(pk=recorded.data['id'])
+        original.save()
+        original.refresh_from_db()
+        self.assertEqual(original.total_commission, Decimal('40.00'))
+        self.assertEqual(original.commission_rate, Decimal('0.4'))
+        self.assertEqual(self.trade(self.project.pk, expected_commission_rate='0.3').data['total_commission'], '30.00')
+
+        self.client.force_authenticate(get_user_model().objects.create_user('customer@example.test'))
+        self.assertEqual(self.client.patch(endpoint, {'trade_commission_rate': '0.5'}, format='json').status_code, 403)
+
+
 class ProfitDisbursementTests(TestCase):
     def setUp(self):
         # Account creation is real; only the unrelated Redis cache invalidation

@@ -16,7 +16,7 @@ def project_holdings(project):
             row['available_quantity'] += event.qty
         elif event.trns_type == Trade.BUY:
             row['available_quantity'] += event.qty
-            row['total_cost'] += event.qty * (event.actual_unit_price or event.unit_price)
+            row['total_cost'] += event.total_trade_value
         else:
             if qty > 0:
                 row['total_cost'] *= Decimal(max(qty - event.qty, 0)) / qty

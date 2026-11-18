@@ -14,6 +14,7 @@ const CreateProjects = () => {
         projectTitle: "",
         projectDescription: "",
         responsibleMail: "",
+        tradeCommissionRate: "0.4",
     });
 
     const [loading, setLoading] = useState(false);
@@ -65,7 +66,8 @@ const CreateProjects = () => {
             const response = await API.post("/api/stock/create/project/", {
                 project_title: formData.projectTitle,
                 project_description: formData.projectDescription,
-                project_responsible_mail:formData.responsibleMail
+                project_responsible_mail: formData.responsibleMail,
+                trade_commission_rate: formData.tradeCommissionRate,
             });
 
             if (response.status === 201) {
@@ -89,6 +91,7 @@ const CreateProjects = () => {
                     projectTitle: "",
                     projectDescription: "",
                     responsibleMail: "",
+                    tradeCommissionRate: "0.4",
                 });
             } else {
                 throw new Error("Something went wrong!");
@@ -146,6 +149,22 @@ const CreateProjects = () => {
                         className={`field-input ${errors.responsibleMail ? "border-red-500" : ""}`}
                     />
                 </Field>
+
+                <Field htmlFor="tradeCommissionRate" label="Trade commission (%)">
+                    <input
+                        type="number"
+                        id="tradeCommissionRate"
+                        value={formData.tradeCommissionRate}
+                        onChange={handleInputChange}
+                        className="field-input"
+                        min="0"
+                        max="100"
+                        step="0.0001"
+                        required
+                        aria-describedby="project-commission-help"
+                    />
+                </Field>
+                <p id="project-commission-help" className="text-sm text-slate-600">Enter 0.4 for 0.4%. The minimum commission is 10.00 BDT per trade.</p>
 
                 {/* Submit Button */}
                 <div className="flex justify-center">

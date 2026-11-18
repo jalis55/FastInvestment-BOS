@@ -1,10 +1,14 @@
 import random
 import uuid
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
+
+DEFAULT_TRADE_COMMISSION_RATE = Decimal('0.4000')
+MINIMUM_TRADE_COMMISSION = Decimal('10.00')
 
 # Create your models here.
 
@@ -20,6 +24,11 @@ class Project(models.Model):
     project_id = models.CharField(max_length=8, primary_key=True, default=generate_unique_id, unique=True)
     project_title = models.CharField(max_length=255)
     project_description = models.TextField()
+    trade_commission_rate = models.DecimalField(
+        max_digits=7, decimal_places=4, default=DEFAULT_TRADE_COMMISSION_RATE,
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
+        help_text='Percentage of trade value, such as 0.4 for 0.4%.',
+    )
     total_investment = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
     total_buy = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
     total_sell = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
@@ -88,38 +97,62 @@ class Trade(models.Model):
     actual_unit_price = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
     trade_date = models.DateField(auto_now_add=True)
     total_commission = models.DecimalField(max_digits=100, decimal_places=2, blank=True, null=True)
+    commission_rate = models.DecimalField(max_digits=7, decimal_places=4, null=True, editable=False)
     authorized_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='trade_authorizer_details')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def calculate_total_commission(self):
-        commission_rate = 0.004  # 0.4%
-        self.total_commission = round(float(self.unit_price) * self.qty * commission_rate, 2)
-        return self.total_commission if self.total_commission>10 else 10.00
+    def calculate_total_commission(self, qty, unit_price):
+        commission = unit_price * qty * self.commission_rate / 100
+        self.total_commission = max(
+            MINIMUM_TRADE_COMMISSION,
+            commission.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+        )
+        return self.total_commission
 
-    def calculate_actual_unit_price(self):
+    def calculate_actual_unit_price(self, qty, unit_price, trade_type):
         """Calculates and sets the actual unit price."""
-        if self.qty == 0:
-            return None  # Avoid division by zero
-
-        qty_decimal = Decimal(self.qty)
-        unit_price_decimal = Decimal(self.unit_price)
-        total_commission_decimal = Decimal(self.total_commission)
-
-        if self.trns_type == self.BUY:
-            price = ((qty_decimal * unit_price_decimal) + total_commission_decimal) / qty_decimal
-        elif self.trns_type == self.SELL:
-            price = ((qty_decimal * unit_price_decimal) - total_commission_decimal) / qty_decimal
-        else:
-            return None
-
+        if not qty or trade_type not in (self.BUY, self.SELL):
+            self.actual_unit_price = None
+            return
+        fee_per_unit = self.total_commission / qty
+        price = unit_price + fee_per_unit if trade_type == self.BUY else unit_price - fee_per_unit
         self.actual_unit_price = round(price, 2)
-        return self.actual_unit_price
+
+    def _calculate_prices(self, qty, unit_price, trade_type):
+        self.calculate_total_commission(qty, unit_price)
+        self.calculate_actual_unit_price(qty, unit_price, trade_type)
+
+    @property
+    def total_trade_value(self):
+        if self.commission_rate is None:
+            return self.qty * (self.actual_unit_price if self.actual_unit_price is not None else self.unit_price)
+        commission = self.total_commission if self.trns_type == self.BUY else -self.total_commission
+        return self.qty * self.unit_price + commission
 
     def save(self, *args, **kwargs):
-        """Override save() to compute total_commission and actual_unit_price before saving."""
-        self.calculate_total_commission()
-        self.calculate_actual_unit_price()
+        # Lock in the project rate when a trade is recorded. Legacy trades retain
+        # their stored charges unless their pricing inputs are explicitly edited.
+        current = (self.qty, Decimal(self.unit_price), self.trns_type)
+        if self._state.adding:
+            self.commission_rate = Project.objects.values_list('trade_commission_rate', flat=True).get(pk=self.project_id)
+            self._calculate_prices(*current)
+        else:
+            pricing_fields = ('qty', 'unit_price', 'trns_type')
+            update_fields = kwargs.get('update_fields')
+            if update_fields is None or set(pricing_fields).intersection(update_fields):
+                previous = Trade.objects.values_list(*pricing_fields).get(pk=self.pk)
+                prices = tuple(
+                    after if update_fields is None or field in update_fields else before
+                    for field, before, after in zip(pricing_fields, previous, current)
+                )
+                if prices != previous:
+                    self.commission_rate = (
+                        self.commission_rate if self.commission_rate is not None else DEFAULT_TRADE_COMMISSION_RATE
+                    )
+                    self._calculate_prices(*prices)
+                    if update_fields is not None:
+                        kwargs['update_fields'] = {*update_fields, 'commission_rate', 'total_commission', 'actual_unit_price'}
         super().save(*args, **kwargs)
 
     def __str__(self):

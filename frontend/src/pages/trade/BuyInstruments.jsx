@@ -7,14 +7,13 @@ import BannerTitle from "@/components/BannerTitle.jsx";
 import ButtonSpinner from "@/components/ButtonSpinner.jsx";
 import API from "@/api/axios";
 import Swal from "sweetalert2";
-import { checkProjectStatus } from "../../utils/checkProjectStatus.js";
-
-const COMMISSION_RATE = 0.004;
-const MINIMUM_COMMISSION = 10;
+import { getActiveProject } from '@/utils/checkProjectStatus';
+import { calculateTradeCommission, describeTradeCommission } from '@/utils/tradeCommission';
 
 const BuyInstruments = () => {
     const [searchId, setSearchId] = useState('');
     const [projectId, setProjectId] = useState('');
+    const [commissionRate, setCommissionRate] = useState(null);
     const [availableBalance, setAvailableBalance] = useState(0);
     const instrumentsQuery = useApiQuery('/api/stock/instruments/', { enabled: !!projectId && availableBalance > 0, staleTime: 300000 });
     const instruments = instrumentsQuery.data;
@@ -42,10 +41,11 @@ const BuyInstruments = () => {
         setUnitPrice('');
         setAvailableBalance(0);
         try {
-            const isActive = await checkProjectStatus(searchId);
-            if (!isActive) return;
+            const project = await getActiveProject(searchId);
+            if (!project) return;
 
             const response = await API.get(`/api/stock/project/balance/details/${searchId}/`);
+            setCommissionRate(project.trade_commission_rate);
             setProjectId(response.data.project_id);
             const availableBal = parseFloat(response.data.available_balance);
             setAvailableBalance(availableBal);
@@ -65,8 +65,7 @@ const BuyInstruments = () => {
     const parsedQty = Number.parseInt(qty, 10) || 0;
     const parsedUnitPrice = Number.parseFloat(unitPrice) || 0;
     const subtotal = parsedQty * parsedUnitPrice;
-    const calculatedCommission = subtotal * COMMISSION_RATE;
-    const totalCommission = subtotal > 0 ? Math.max(calculatedCommission, MINIMUM_COMMISSION) : 0;
+    const totalCommission = calculateTradeCommission(subtotal, commissionRate);
     const totalCost = subtotal + totalCommission;
 
     // Validate inputs
@@ -112,13 +111,14 @@ const BuyInstruments = () => {
             qty: parseInt(qty),
             unit_price: parseFloat(unitPrice),
             trns_type: 'buy',
+            expected_commission_rate: commissionRate,
 
         };
 
         try {
-            await API.post('/api/stock/create/trade/', tradeData);
+            const { data: trade } = await API.post('/api/stock/create/trade/', tradeData);
 
-            setAvailableBalance((prevBalance) => prevBalance - totalCost);
+            setAvailableBalance((prevBalance) => prevBalance - (trade.qty * Number(trade.unit_price) + Number(trade.total_commission)));
        
             Swal.fire({ icon: 'success', title: 'Success', text: 'Instrument purchase successful!' });
 
@@ -216,7 +216,7 @@ const BuyInstruments = () => {
                                 readOnly={true}
                             />
                             <p id="commission-helper" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Commission is 0.4% of trade value with a minimum of 10.00 BDT.
+                                {describeTradeCommission(commissionRate)}
                             </p>
                         </div>
 

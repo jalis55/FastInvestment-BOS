@@ -2,7 +2,7 @@
 import API from "@/api/axios"; 
 import Swal from 'sweetalert2';
 
-export const checkProjectStatus = async (projectId) => {
+export const getActiveProject = async (projectId) => {
   try {
     const response = await API.get(`/api/stock/project/status/${projectId}/`);
     
@@ -13,9 +13,9 @@ export const checkProjectStatus = async (projectId) => {
         text: 'The project is already closed',
         confirmButtonText: 'OK'
       });
-      return false;
+      return null;
     }
-    return true;
+    return response.data;
   } catch (error) {
     console.error('Error checking project status:', error);
     await Swal.fire({
@@ -24,6 +24,8 @@ export const checkProjectStatus = async (projectId) => {
       text: error.response?.data?.message || 'Failed to check project status',
       confirmButtonText: 'OK'
     });
-    return false;
+    return null;
   }
 };
+
+export const checkProjectStatus = async (projectId) => Boolean(await getActiveProject(projectId));

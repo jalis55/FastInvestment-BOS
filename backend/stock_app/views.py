@@ -34,7 +34,7 @@ from .serializers import (AccountReceivableDetailsSerializer,
                           InvestmentSerializer, InvestorProfitSerializer,
                           ProfitDisburseSerializer, ProfitSerializer,
                           ProjectBalanceDetailsSerializer,
-                          ProjectCloseSerializer, ProjectCreateSerializer,
+                          ProjectCloseSerializer, ProjectCommissionSerializer, ProjectCreateSerializer,
                           ProjectStatusSerializer,ProjectListSerializer,
                           SellableInstrumentSerializer, TradeDetailsSerializer,
                           TradeSerializer)
@@ -58,11 +58,19 @@ class ProjectListView(generics.ListAPIView):
     permission_classes=[AllowAny]
     
 
-@extend_schema(summary='Get project status', description='Returns the project ID and active status.')
+@extend_schema(summary='Get project status', description='Returns the project ID, active status, and trade commission percentage.')
 class ProjectStatusRetriveView(generics.RetrieveAPIView):
     queryset=Project.objects.all()
     serializer_class=ProjectStatusSerializer
     permission_classes=[IsAdminUser]
+
+
+@extend_schema(summary='Set a project trade commission rate')
+class ProjectCommissionView(generics.UpdateAPIView):
+    queryset = Project.objects.all()
+    serializer_class = ProjectCommissionSerializer
+    permission_classes = [IsAdminUser]
+    http_method_names = ['patch', 'options']
 
 
 @extend_schema(summary='Get project balances', description='Aggregates investments, buy/sell amounts, and accrued profit. Available balance is clamped to zero.')
@@ -76,11 +84,18 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
 
         total_investment=project.investment_project_details.aggregate(t=Sum('amount'))['t'] or 0
 
-        total_buy=project.trade_project_details.filter(trns_type='buy').aggregate(t=Sum(F('qty')
-            *F('actual_unit_price')))['t'] or 0
-
-        total_sell=project.trade_project_details.filter(trns_type='sell').aggregate(t=Sum(F('qty')
-            *F('actual_unit_price')))['t'] or 0
+        gross = F('qty') * F('unit_price')
+        trade_totals = project.trade_project_details.values('trns_type').annotate(
+            total=Sum(Case(
+                When(commission_rate__isnull=True, then=F('qty') * F('actual_unit_price')),
+                When(trns_type=Trade.BUY, then=gross + F('total_commission')),
+                default=gross - F('total_commission'),
+                output_field=DecimalField(max_digits=100, decimal_places=2),
+            )),
+        )
+        totals = {row['trns_type']: row['total'] for row in trade_totals}
+        total_buy = totals.get(Trade.BUY) or Decimal('0.00')
+        total_sell = totals.get(Trade.SELL) or Decimal('0.00')
 
         total_profit=project.profit_project_details.aggregate(t=Sum('amount'))['t'] or 0
 

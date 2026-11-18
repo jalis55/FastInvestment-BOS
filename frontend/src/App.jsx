@@ -30,6 +30,7 @@ const SellInstruments = lazy(() => import('./pages/trade/SellInstruments'));
 // PROJECT
 const CreateProject = lazy(() => import('./pages/projects/CreateProject'));
 const CloseProject = lazy(() => import('./pages/projects/CloseProject'));
+const ProjectList = lazy(() => import('./pages/projects/ProjectList'));
 // INVESTMENTS
 const AddInvestments = lazy(() => import('./pages/investments/AddInvestments'));
 // Financial Advisor
@@ -51,7 +52,6 @@ const TransactionHistory = lazy(() => import('./pages/reports/TransactionHistory
 const InvestmentHistory = lazy(() => import('./pages/reports/InvestmentHistory'));
 const ProfitDetails = lazy(() => import('./pages/reports/ProfitDetails'));
 const ProjectDetails = lazy(() => import('./pages/reports/ProjectDetails'));
-const ProjectList = lazy(() => import('./pages/reports/ProjectList'));
 
 
 
@@ -82,6 +82,7 @@ const router = createBrowserRouter([
       { path: 'buy-instruments', element: <RoleRoute roles={['admin']}><BuyInstruments /></RoleRoute> },
       { path: 'sell-instruments', element: <RoleRoute roles={['admin']}><SellInstruments /></RoleRoute> },
       /* ---- Project ---- */
+      { path: 'project-list', element: <RoleRoute roles={['admin']}><ProjectList/></RoleRoute> },
       { path: 'create-project', element: <RoleRoute roles={['admin']}><CreateProject /></RoleRoute> },
       { path: 'add-advisor', element: <RoleRoute roles={['admin']}><FinancialAdvisor /></RoleRoute> },
       { path: 'add-investments', element: <RoleRoute roles={['admin']}><AddInvestments /></RoleRoute> },
@@ -103,7 +104,6 @@ const router = createBrowserRouter([
       { path: 'investment-history', element: <RoleRoute roles={['user']}><InvestmentHistory/></RoleRoute> },
       { path: 'profit-details', element: <RoleRoute roles={['user', 'admin']}><ProfitDetails/></RoleRoute> },
       { path: 'project-details', element: <RoleRoute roles={['admin']}><ProjectDetails/></RoleRoute> },
-      { path: 'project-list', element: <RoleRoute roles={['admin']}><ProjectList/></RoleRoute> },
       
     ],
   },

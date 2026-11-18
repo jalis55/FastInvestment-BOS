@@ -80,18 +80,14 @@ export default function TradeDetailsPage() {
     }).format(value)
   }
 
-  const calculateTotalValue = (qty, price) => {
-    return formatCurrency(qty * Number.parseFloat(price))
-  }
-
   const getTotalsByType = () => {
     const buyTotal = filteredTrades
       .filter((trade) => trade.trns_type === "buy")
-      .reduce((sum, trade) => sum + trade.qty * Number.parseFloat(trade.actual_unit_price), 0)
+      .reduce((sum, trade) => sum + Number(trade.total_trade_value), 0)
 
     const sellTotal = filteredTrades
       .filter((trade) => trade.trns_type === "sell")
-      .reduce((sum, trade) => sum + trade.qty * Number.parseFloat(trade.actual_unit_price), 0)
+      .reduce((sum, trade) => sum + Number(trade.total_trade_value), 0)
 
     return {
       buy: formatCurrency(buyTotal),
@@ -296,7 +292,7 @@ export default function TradeDetailsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <span className={trade.trns_type === "buy" ? "text-teal-600" : "text-rose-600"}>
-                        {calculateTotalValue(trade.qty, trade.actual_unit_price)}
+                        {formatCurrency(trade.total_trade_value)}
                       </span>
                     </td>
                   </tr>

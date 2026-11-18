@@ -27,7 +27,7 @@ class DividendTests(TestCase):
     def buy(self, qty, price):
         trade = Trade.objects.create(project=self.project, instrument=self.instrument, trns_type='buy', qty=qty, unit_price=price, authorized_by=self.admin)
         # Isolate the user's exact cost example from the normal buy commission.
-        Trade.objects.filter(pk=trade.pk).update(actual_unit_price=price)
+        Trade.objects.filter(pk=trade.pk).update(actual_unit_price=price, total_commission=0)
 
     def record(self, kind='share', **extra):
         payload = dict(project=self.project.pk, instrument=self.instrument.pk, dividend_type=kind,

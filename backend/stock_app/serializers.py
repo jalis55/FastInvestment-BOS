@@ -132,19 +132,34 @@ class InstrumentSerializer(serializers.ModelSerializer):
 
 
 class TradeSerializer(serializers.ModelSerializer):
+    expected_commission_rate = serializers.DecimalField(
+        max_digits=7, decimal_places=4, required=False, write_only=True,
+    )
+
     class Meta:
         model = Trade
-        fields = ['id','project', 'instrument', 'qty', 'unit_price', 'trns_type']
+        fields = ['id', 'project', 'instrument', 'qty', 'unit_price', 'trns_type', 'total_commission', 'expected_commission_rate']
+        read_only_fields = ['total_commission']
 
+    @transaction.atomic
+    def create(self, validated_data):
+        expected_rate = validated_data.pop('expected_commission_rate', None)
+        trade = super().create(validated_data)
+        if expected_rate is not None and trade.commission_rate != expected_rate:
+            raise serializers.ValidationError({
+                'expected_commission_rate': 'The commission rate changed. Search for the project again before submitting.',
+            })
+        return trade
 
 
 
 class TradeDetailsSerializer(serializers.ModelSerializer):
 
     instrument=InstrumentSerializer(read_only=True)
+    total_trade_value = serializers.DecimalField(max_digits=100, decimal_places=2, read_only=True)
     class Meta:
         model = Trade
-        fields = ['project','id','trade_date' ,'instrument', 'qty', 'unit_price', 'trns_type', 'total_commission','actual_unit_price']
+        fields = ['project','id','trade_date' ,'instrument', 'qty', 'unit_price', 'trns_type', 'total_commission','actual_unit_price', 'total_trade_value']
 
 
 class SimplifiedTradeDetailsSerializer(serializers.ModelSerializer):
@@ -209,6 +224,7 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
             'project_title',
             'project_description',
             'project_responsible_mail',
+            'trade_commission_rate',
         )
         read_only_fields = ['created_by']
 
@@ -216,7 +232,19 @@ class ProjectCreateSerializer(serializers.ModelSerializer):
 class ProjectStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model=Project
-        fields=('project_id','project_active_status')
+        fields=('project_id', 'project_active_status', 'trade_commission_rate')
+
+
+class ProjectCommissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = ('trade_commission_rate',)
+
+    def update(self, instance, validated_data):
+        if 'trade_commission_rate' in validated_data:
+            instance.trade_commission_rate = validated_data['trade_commission_rate']
+            instance.save(update_fields=['trade_commission_rate', 'updated_at'])
+        return instance
 
 class ProjectBalanceDetailsSerializer(serializers.Serializer):
     cash_dividends = serializers.DecimalField(max_digits=100, decimal_places=2)
@@ -253,6 +281,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
             'project_title',
             'project_responsible_mail',
             'project_active_status',
+            'trade_commission_rate',
             'project_opening_dt',
             'created_by',
             'project_closing_dt',

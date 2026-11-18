@@ -1,3 +1,6 @@
+import Swal from 'sweetalert2';
+import API from '@/api/axios';
+import { getApiError } from '@/api/errors';
 import { useApiQuery } from '@/hooks/use-api-query';
 import { QueryState } from '@/components/ui/query-state';
 
@@ -25,6 +28,35 @@ const ProjectList = () => {
 
   const { data: projectList, loading, error, refetch } = useApiQuery('/api/stock/project/list/');
 
+    async function editCommission(project) {
+        const result = await Swal.fire({
+            title: 'Edit trade commission',
+            text: `${project.project_title} · Minimum 10.00 BDT per trade`,
+            input: 'number',
+            inputLabel: 'Commission rate (%)',
+            inputValue: Number(project.trade_commission_rate),
+            inputAttributes: { min: '0', max: '100', step: '0.0001' },
+            inputValidator: (value) => {
+                if (!/^\d+(\.\d{1,4})?$/.test(value) || Number(value) > 100) {
+                    return 'Enter a percentage from 0 to 100 with up to four decimal places.';
+                }
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Save rate',
+        });
+        if (!result.isConfirmed) return;
+
+        try {
+            await API.patch(`/api/stock/project/commission/${encodeURIComponent(project.project_id)}/`, {
+                trade_commission_rate: result.value,
+            });
+            await refetch();
+            Swal.fire({ icon: 'success', title: 'Commission updated', text: 'The new rate applies to future trades.' });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Could not update commission', text: getApiError(error) });
+        }
+    }
+
     if (loading || error || !projectList.length) return <><BannerTitle title='Project List' /><QueryState loading={loading} error={error} onRetry={refetch} empty={!projectList.length} /></>;
 
   return (
@@ -38,6 +70,7 @@ const ProjectList = () => {
                             <th className="px-6 py-3">Project Id</th>
                             <th className="px-6 py-3">Project Title</th>
                             <th className="px-6 py-3">Project Status</th>
+                            <th className="px-6 py-3">Trade commission</th>
                             <th className="px-6 py-3">Details</th>
 
                         </tr>
@@ -57,6 +90,17 @@ const ProjectList = () => {
                                             }`}>
                                             {project.project_active_status ? 'Active' : 'Closed'}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className="font-medium text-slate-900">{Number(project.trade_commission_rate)}%</span>
+                                        <button
+                                            type="button"
+                                            className="ml-3 text-sm font-medium text-blue-700 hover:underline"
+                                            aria-label={`Edit trade commission for ${project.project_title}`}
+                                            onClick={() => editCommission(project)}
+                                        >
+                                            Edit
+                                        </button>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="space-y-1">
@@ -81,7 +125,7 @@ const ProjectList = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={4} className="px-6 py-8">
+                                <td colSpan={5} className="px-6 py-8">
                                     <EmptyState
                                         title="No projects found"
                                         description="Projects will appear here once they have been created."

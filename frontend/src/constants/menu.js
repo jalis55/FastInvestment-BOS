@@ -79,6 +79,12 @@ const menu = [
     icon: AppWindow,
     children: [
       {
+        menuName: "Project List",
+        url: "/project-list",
+        roles: ["admin", "super_admin"],
+        icon: BadgeInfoIcon,
+      },
+      {
         menuName: "Create Project",
         url: "/create-project",
         roles: ["admin", "super_admin"],
@@ -178,12 +184,6 @@ const menu = [
         roles:["admin"],
         icon:BadgeInfoIcon
       },
-            {
-        menuName:"Project List",
-        url:"/project-list",
-        roles:["admin"],
-        icon:BadgeInfoIcon
-      }
     ],
   },
 ];

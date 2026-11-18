@@ -6,15 +6,14 @@ import ButtonSpinner from "@/components/ButtonSpinner.jsx";
 import API from "@/api/axios";
 import Swal from "sweetalert2";
 
-import { checkProjectStatus } from '@/utils/checkProjectStatus';
-
-const COMMISSION_RATE = 0.004;
-const MINIMUM_COMMISSION = 10;
+import { getActiveProject } from '@/utils/checkProjectStatus';
+import { calculateTradeCommission, describeTradeCommission } from '@/utils/tradeCommission';
 
 const SellInstruments = () => {
   const [searchId, setSearchId] = useState('');
   const [instruments, setInstruments] = useState([]);
   const [projectId, setProjectId] = useState('');
+  const [commissionRate, setCommissionRate] = useState(null);
   const [selectedInstrument, setSelectedInstrument] = useState(null);
   const [qty, setQty] = useState('');
   const [unitPrice, setUnitPrice] = useState('');
@@ -36,8 +35,8 @@ const SellInstruments = () => {
     setUnitPrice('');
     setInstruments([]);
     try {
-      const isActive = await checkProjectStatus(searchId);
-      if (!isActive) return;
+      const project = await getActiveProject(searchId);
+      if (!project) return;
       const response = await API.get(`/api/stock/sellable/instruments/${searchId}/`);
 
       if (response.data.length === 0) {
@@ -45,6 +44,7 @@ const SellInstruments = () => {
         return;
       }
       setInstruments(response.data);
+      setCommissionRate(project.trade_commission_rate);
       setProjectId(searchId);
       setSelectedInstrument(null);
     } catch (error) {
@@ -62,8 +62,7 @@ const SellInstruments = () => {
   const parsedQty = Number.parseInt(qty, 10) || 0;
   const parsedUnitPrice = Number.parseFloat(unitPrice) || 0;
   const grossAmount = parsedQty * parsedUnitPrice;
-  const calculatedCommission = grossAmount * COMMISSION_RATE;
-  const totalCommission = grossAmount > 0 ? Math.max(calculatedCommission, MINIMUM_COMMISSION) : 0;
+  const totalCommission = calculateTradeCommission(grossAmount, commissionRate);
   const netReceivable = grossAmount - totalCommission;
 
   // Handle instrument selection
@@ -101,7 +100,7 @@ const SellInstruments = () => {
   const prepareAccountReceivableData = async (data) => {
     try {
       const { id: trdId, project: proId, qty, unit_price, instrument: instrumentId } = data;
-      const sellAmt = qty * unit_price - totalCommission;
+      const sellAmt = qty * unit_price - Number(data.total_commission);
       const instrument = instruments.find(inst => inst.instrument.id === instrumentId);
 
       if (!instrument) {
@@ -140,7 +139,8 @@ const SellInstruments = () => {
       instrument: selectedInstrument.instrument.id,
       qty: parseInt(qty, 10),
       unit_price: parseFloat(unitPrice),
-      trns_type: 'sell'
+      trns_type: 'sell',
+      expected_commission_rate: commissionRate,
     };
 
     let tradeId = null;
@@ -288,6 +288,9 @@ const SellInstruments = () => {
                   placeholder="Enter Commission Amount"
                   readOnly={true}
                 />
+                <p id="commission-helper" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {describeTradeCommission(commissionRate)}
+                </p>
               </div>
 
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">

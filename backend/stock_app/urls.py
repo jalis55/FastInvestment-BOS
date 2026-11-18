@@ -9,7 +9,7 @@ from .views import (AccountReceivableCreateApiView,
                     InstrumentListView, InvestmentCreateAPIView,InstrumentClosePriceView,
                     InvestorContributionRetrieveAPI, InvestorProfitDetailsView,
                     ProfitCreateView, ProfitDisburse,
-                    ProjectBalanceDetailsView, ProjectCloseView,
+                    ProjectBalanceDetailsView, ProjectCloseView, ProjectCommissionView,
                     ProjectCreateView, ProjectProfitTotalListApiView,ProjectListView,
                     ProjectStatusRetriveView, SellableInstrumentView,
                     TradeCreateView, TradeDeleteView, TradeDetailsListView)
@@ -29,6 +29,7 @@ urlpatterns = [
 
     path('create/project/',ProjectCreateView.as_view(),name='create-project'),
     path('project/status/<str:pk>/',ProjectStatusRetriveView.as_view(),name='project-status'),
+    path('project/commission/<str:pk>/', ProjectCommissionView.as_view(), name='project-commission'),
     path('project/balance/details/<str:pk>/', ProjectBalanceDetailsView.as_view(), name='project-balance'),
     path('project/list/',ProjectListView.as_view(),name='project-list'),
     path('close/project/<str:pk>/',ProjectCloseView.as_view(),name='close-project'),
