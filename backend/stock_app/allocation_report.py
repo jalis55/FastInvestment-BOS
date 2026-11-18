@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 from .distribution import allocation_row, calculate_distribution, recorded_allocation_rows
 from .models import FinAdvisorCommission, FinancialAdvisor, Investment, InvestorProfit, Profit, Project
 from .serializers import DisbursementReportFilterSerializer
+from .utils import projects_visible_to
 
 
 class AllocationReportFilters(DisbursementReportFilterSerializer):
@@ -42,7 +43,8 @@ class AllocationReportView(APIView):
         status = criteria['status']
         scope = 'project' if staff else 'personal'
         if criteria['projects_only']:
-            return Response({'scope': scope, 'projects': self._project_options(user)})
+            projects = projects_visible_to(request.user).order_by('-project_active_status', 'project_title', 'project_id')
+            return Response({'scope': scope, 'projects': list(projects.values('project_id', 'project_title'))})
         if status == 'all':
             return Response({
                 'status': status,
@@ -54,17 +56,6 @@ class AllocationReportView(APIView):
             criteria, user.pk if user is not None else None,
         )
         return Response({'status': status, 'scope': scope, 'projects': projects})
-
-    def _project_options(self, user):
-        projects = Project.objects.all()
-        if user is not None:
-            projects = projects.filter(
-                Q(pk__in=Investment.objects.filter(investor=user).values('project_id'))
-                | Q(pk__in=FinancialAdvisor.objects.filter(advisor=user).values('project_id'))
-                | Q(pk__in=InvestorProfit.objects.filter(investor=user, disburse_dt__isnull=False).values('project_id'))
-                | Q(pk__in=FinAdvisorCommission.objects.filter(advisor=user, disburse_dt__isnull=False).values('project_id')),
-            )
-        return list(projects.order_by('-project_active_status', 'project_title', 'project_id').values('project_id', 'project_title'))
 
     def _pending(self, criteria, user):
         profits = Profit.objects.filter(disburse_st=False).filter(

@@ -127,7 +127,7 @@ const AccountReceivableDetails = () => {
   return (
     <>
     <BannerTitle title="Account Receivable Details"/>
-      <SurfaceCard className="relative z-20 mx-auto max-w-4xl">
+      <SurfaceCard className="relative z-20 max-w-4xl">
       <form onSubmit={searchProject} aria-label="Find account receivables" aria-busy={searching}>
         <div className="space-y-6">
           <ProjectPicker value={searchId} onChange={(e) => { setSearchId(e.target.value); setRecvableData([]); }} disabled={searching} />

@@ -166,7 +166,7 @@ export default function UserDetails() {
     }
 
     return (
-        <SurfaceCard className="mx-auto w-full max-w-4xl !p-4 sm:!p-6">
+        <>
             <PageIntro
                 as="h1"
                 title="My profile"
@@ -184,48 +184,50 @@ export default function UserDetails() {
                 )}
             />
 
-            <QueryState loading={loading} error={error} onRetry={refetch} loadingLabel="Loading profile…">
-                {user.id && (
-                    <>
-                        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                            <ProfilePhotoPicker
-                                key={photoVersion}
-                                src={user.profile_image}
-                                disabled={saving}
-                                form={profileFormId}
-                                onSelect={() => setEditing(true)}
-                            />
-                            <div className="min-w-0">
-                                <p className="break-words font-semibold text-slate-900">{user.name}</p>
-                                <p className="break-words text-sm text-slate-600">{user.email}</p>
-                            </div>
-                        </div>
-                        {editing ? (
-                            <ProfileEditor key={user.id} user={user} onSave={applyProfile} onCancel={closeEditor} saving={saving} setSaving={setSaving} />
-                        ) : (
-                            <dl className="grid gap-3 sm:grid-cols-2">
-                                {[
-                                    ['Phone number', user.phone],
-                                    ['Date of birth', user.dob ? format(parseISO(user.dob), 'PPP') : null],
-                                    ['Sex', sexLabels[user.sex]],
-                                    ['NID number', user.nid],
-                                ].map(([label, value]) => (
-                                    <div key={label} className="min-w-0 rounded-2xl border border-slate-200 px-4 py-3">
-                                        <dt className="text-sm text-slate-600">{label}</dt>
-                                        <dd className="mt-1 break-words text-sm font-medium text-slate-900">{value || 'Not provided'}</dd>
-                                    </div>
-                                ))}
-                                <div className="min-w-0 rounded-2xl border border-slate-200 px-4 py-3">
-                                    <dt className="text-sm text-slate-600">NID scan copy</dt>
-                                    <dd className="break-words text-sm font-medium text-slate-900">
-                                        {user.has_nid_scan ? <DownloadNidScan endpoint={profileEndpoint} /> : <span className="mt-1 block">Not provided</span>}
-                                    </dd>
+            <SurfaceCard className="max-w-4xl !p-4 sm:!p-6">
+                <QueryState loading={loading} error={error} onRetry={refetch} loadingLabel="Loading profile…">
+                    {user.id && (
+                        <>
+                            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <ProfilePhotoPicker
+                                    key={photoVersion}
+                                    src={user.profile_image}
+                                    disabled={saving}
+                                    form={profileFormId}
+                                    onSelect={() => setEditing(true)}
+                                />
+                                <div className="min-w-0">
+                                    <p className="break-words font-semibold text-slate-900">{user.name}</p>
+                                    <p className="break-words text-sm text-slate-600">{user.email}</p>
                                 </div>
-                            </dl>
-                        )}
-                    </>
-                )}
-            </QueryState>
-        </SurfaceCard>
+                            </div>
+                            {editing ? (
+                                <ProfileEditor key={user.id} user={user} onSave={applyProfile} onCancel={closeEditor} saving={saving} setSaving={setSaving} />
+                            ) : (
+                                <dl className="grid gap-3 sm:grid-cols-2">
+                                    {[
+                                        ['Phone number', user.phone],
+                                        ['Date of birth', user.dob ? format(parseISO(user.dob), 'PPP') : null],
+                                        ['Sex', sexLabels[user.sex]],
+                                        ['NID number', user.nid],
+                                    ].map(([label, value]) => (
+                                        <div key={label} className="min-w-0 rounded-2xl border border-slate-200 px-4 py-3">
+                                            <dt className="text-sm text-slate-600">{label}</dt>
+                                            <dd className="mt-1 break-words text-sm font-medium text-slate-900">{value || 'Not provided'}</dd>
+                                        </div>
+                                    ))}
+                                    <div className="min-w-0 rounded-2xl border border-slate-200 px-4 py-3">
+                                        <dt className="text-sm text-slate-600">NID scan copy</dt>
+                                        <dd className="break-words text-sm font-medium text-slate-900">
+                                            {user.has_nid_scan ? <DownloadNidScan endpoint={profileEndpoint} /> : <span className="mt-1 block">Not provided</span>}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            )}
+                        </>
+                    )}
+                </QueryState>
+            </SurfaceCard>
+        </>
     );
 }

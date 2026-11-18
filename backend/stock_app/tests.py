@@ -407,6 +407,36 @@ class ProfitDisbursementTests(TestCase):
 
 
 class InvestmentCycleTests(TestCase):
+    def test_investment_history_scopes_staff_to_the_project_and_users_to_themselves(self):
+        User = get_user_model()
+        staff = User.objects.create_user('history-staff@example.test', is_staff=True)
+        owner = User.objects.create_user('history-owner@example.test')
+        other = User.objects.create_user('history-other@example.test')
+        project = Project.objects.create(project_title='Project history', created_by=staff, project_active_status=False)
+        another = Project.objects.create(project_title='Another project', created_by=staff)
+        contribution = Investment.objects.create(project=project, investor=owner, amount='5000.00', authorized_by=staff)
+        reinvestment = Investment.objects.create(
+            project=project, investor=other, amount='50.00', authorized_by=staff, is_reinvestment=True,
+        )
+        unrelated = Investment.objects.create(project=another, investor=owner, amount='100.00', authorized_by=staff)
+
+        client = APIClient()
+        endpoint = f'/api/stock/project/investment-history/{project.pk}/'
+        client.force_authenticate(staff)
+        response = client.get(endpoint)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([row['id'] for row in response.data], [reinvestment.pk, contribution.pk])
+        self.assertEqual(response.data[0]['investor']['id'], other.pk)
+        self.assertEqual(response.data[0]['project_title'], project.project_title)
+        self.assertTrue(response.data[0]['is_reinvestment'])
+
+        client.force_authenticate(owner)
+        self.assertEqual(client.get(endpoint).status_code, 403)
+        own_history = client.get('/api/stock/investor/investment-details/')
+        self.assertEqual(own_history.status_code, 200)
+        self.assertEqual([row['id'] for row in own_history.data], [unrelated.pk, contribution.pk])
+        self.assertFalse(own_history.data[1]['is_reinvestment'])
+
     def test_funding_trades_split_dividend_and_close_reconcile_the_wallet(self):
         User = get_user_model()
         staff = User.objects.create_user('cycle-staff@example.test', is_staff=True)

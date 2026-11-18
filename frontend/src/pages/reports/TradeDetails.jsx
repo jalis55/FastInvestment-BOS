@@ -120,7 +120,7 @@ export default function TradeDetailsPage() {
       <BannerTitle title="Trade Details" description="Search a project to review its trades, values, and instruments." />
       <ProjectSearch value={projectId} onChange={changeProject} onSubmit={searchProject} loading={loading} />
 
-      {!searchedProject && <SurfaceCard className="mx-auto max-w-3xl py-14 text-center">
+      {!searchedProject && <SurfaceCard className="max-w-3xl py-14 text-center">
         <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><Search size={22} aria-hidden="true" /></span>
         <h2 className="mt-4 text-lg font-semibold text-slate-900">Find a project to view its trades</h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Enter a project ID or choose one from the list, then select Search.</p>

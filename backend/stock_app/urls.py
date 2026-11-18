@@ -11,7 +11,7 @@ from .views import (AccountReceivableCreateApiView,
                     InvestorContributionRetrieveAPI, InvestorProfitDetailsView,
                     ProfitCreateView, ProfitDisburse,
                     ProjectBalanceDetailsView, ProjectCloseView, ProjectCommissionView,
-                    ProjectCreateView, ProjectProfitTotalListApiView,ProjectListView,
+                    ProjectCreateView, ProjectInvestmentHistoryView, ProjectProfitTotalListApiView,ProjectListView,
                     ProjectStatusRetriveView, SellableInstrumentView,
                     TradeCreateView, TradeDeleteView, TradeDetailsListView)
 
@@ -40,6 +40,7 @@ urlpatterns = [
     path('add/investment/',InvestmentCreateAPIView.as_view(),name='add-investment'),
     path('investor/contrib/percent/<str:project_id>/',InvestorContributionRetrieveAPI.as_view(),name='inv-cont-percent'),
     path('investor/investment-details/',ClientInvestmentDetailsListView.as_view(),name='client-investment-details'),
+    path('project/investment-history/<str:project_id>/', ProjectInvestmentHistoryView.as_view(), name='project-investment-history'),
     
     path('add/financial/advisor/',AddFinancialAdvisorListCreateView.as_view(),name='add-fin-advisor'),
     path('fin/advisor/commission/<str:project_id>/',FinancialAdvisorListView.as_view(),name='fin-advisor-commission'),

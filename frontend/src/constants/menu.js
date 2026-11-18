@@ -187,7 +187,7 @@ const menu = [
       {
         menuName: "Investment History",
         url: "/investment-history",
-        roles: ["user"],
+        roles: ["user", "admin", "super_admin"],
         icon: BookUp2,
       },
       {
@@ -199,7 +199,7 @@ const menu = [
       {
         menuName:"Project Details",
         url:"/project-details",
-        roles:["admin"],
+        roles:["user", "admin", "super_admin"],
         icon:BadgeInfoIcon
       },
     ],

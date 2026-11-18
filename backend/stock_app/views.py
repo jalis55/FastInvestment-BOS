@@ -14,13 +14,13 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounting.models import Account, Transaction
-from stock_app.utils import investor_contributions_map, update_customer_balance
+from stock_app.utils import investor_contributions_map, projects_visible_to, update_customer_balance
 from stock_app.market_prices import MarketPriceError, get_daily_prices
 from user_app.permissions import IsSuperUser
 
@@ -39,6 +39,7 @@ from .serializers import (AccountReceivableDetailsSerializer,
                           ProfitDisburseSerializer, ProfitSerializer,
                           ProjectBalanceDetailsSerializer,
                           ProjectCloseSerializer, ProjectCommissionSerializer, ProjectCreateSerializer,
+                          ProjectInvestmentHistorySerializer,
                           ProjectStatusSerializer,ProjectListSerializer,
                           SellableInstrumentSerializer, TradeDetailsSerializer,
                           TradeSerializer, UserDetailsSerializer)
@@ -78,14 +79,14 @@ class ProjectCommissionView(generics.UpdateAPIView):
     http_method_names = ['patch', 'options']
 
 
-@extend_schema(summary='Get project balances', description='Aggregates investments, buy/sell amounts, and accrued profit. Available balance is clamped to zero.')
+@extend_schema(summary='Get project balances', description='Aggregates balances for projects visible to the signed-in user. Available balance is clamped to zero.')
 class ProjectBalanceDetailsView(generics.RetrieveAPIView):
     serializer_class = ProjectBalanceDetailsSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         project_id = self.kwargs['pk']
-        project = get_object_or_404(Project, pk=project_id)
+        project = get_object_or_404(projects_visible_to(self.request.user), pk=project_id)
 
         total_investment=project.investment_project_details.aggregate(t=Sum('amount'))['t'] or 0
 
@@ -109,6 +110,7 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
 
         return {
             "project_id": project_id,
+            "project_title": project.project_title,
             "total_investment": total_investment,
             "total_buy_amount": total_buy,
             "total_sell_amount": total_sell,
@@ -242,18 +244,12 @@ class InstrumentClosePriceView(APIView):
 @extend_schema(summary='List sellable holdings', description='Returns instruments with positive remaining quantity for the project. Moving average cost includes bonus shares at zero added cost and removes sold quantities at their average cost.')
 @extend_schema(responses=SellableInstrumentSerializer(many=True))
 class SellableInstrumentView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     serializer_class = SellableInstrumentSerializer
-
-    def get_project(self, project_id):
-        try:
-            return Project.objects.get(pk=project_id)
-        except Project.DoesNotExist:
-            raise NotFound("Project not found.")
 
     def get(self, request, project_id, *args, **kwargs):
         from .holdings import project_holdings
-        project = self.get_project(project_id)
+        project = get_object_or_404(projects_visible_to(request.user), pk=project_id)
         rows = [row for row in project_holdings(project).values() if row['available_quantity'] > 0]
         return Response(self.serializer_class(rows, many=True).data)
 
@@ -323,9 +319,19 @@ class InvestmentCreateAPIView(generics.CreateAPIView):
 class ClientInvestmentDetailsListView(generics.ListAPIView):
     serializer_class = ClientInvestmentDetailsSerializer
     permission_classes = [IsAuthenticated]
+
     def get_queryset(self):
-        queryset=Investment.objects.filter(investor=self.request.user)
-        return queryset
+        return Investment.objects.filter(investor=self.request.user).select_related('project').order_by('-created_at', '-pk')
+
+
+@extend_schema(summary='List investment history for a project')
+class ProjectInvestmentHistoryView(generics.ListAPIView):
+    serializer_class = ProjectInvestmentHistorySerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        project = get_object_or_404(Project, pk=self.kwargs['project_id'])
+        return project.investment_project_details.select_related('project', 'investor').order_by('-created_at', '-pk')
     
 @extend_schema(summary='Get investor contributions', description='Returns nested investor details, contribution amounts, and percentages for a project.')
 @extend_schema(responses=InvestmentContributionSerializer(many=True))

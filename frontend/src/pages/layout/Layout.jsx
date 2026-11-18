@@ -45,9 +45,11 @@ const Layout = () => {
                     setCollapsed={setCollapsed}
                 />
                 <div className="h-[calc(100vh-72px)] overflow-y-auto overflow-x-hidden p-6 md:p-8">
-                    <ErrorBoundary key={location.pathname}>
-                      <Suspense fallback={<Spinner />}><Outlet /></Suspense>
-                    </ErrorBoundary>
+                    <main className="mx-auto w-full min-w-0 max-w-7xl">
+                        <ErrorBoundary key={location.pathname}>
+                            <Suspense fallback={<Spinner />}><Outlet /></Suspense>
+                        </ErrorBoundary>
+                    </main>
                 </div>
             </div>
         </div>

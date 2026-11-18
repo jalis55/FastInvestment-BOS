@@ -107,10 +107,10 @@ export function ProjectPicker({ value, onChange, disabled = false, action, optio
   );
 }
 
-export function ProjectSearch({ value, onChange, onSubmit, loading = false }) {
-  return <SurfaceCard className="relative z-20 mx-auto mb-8 max-w-3xl">
+export function ProjectSearch({ value, onChange, onSubmit, loading = false, options, includeClosed, emptyHint }) {
+  return <SurfaceCard className="relative z-20 mb-6 max-w-3xl">
     <form onSubmit={onSubmit} aria-label="Find a project" aria-busy={loading}>
-      <ProjectPicker value={value} onChange={onChange} disabled={loading} action={
+      <ProjectPicker value={value} onChange={onChange} disabled={loading} options={options} includeClosed={includeClosed} emptyHint={emptyHint} action={
         <Button type="submit" size="sm" disabled={loading || !value.trim()}>
           {loading && <LoaderCircle size={14} className="motion-safe:animate-spin" aria-hidden="true" />}
           {loading ? 'Searching…' : 'Search'}

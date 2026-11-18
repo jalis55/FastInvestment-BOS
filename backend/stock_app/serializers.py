@@ -120,9 +120,18 @@ class InvestmentContributionSerializer(serializers.Serializer):
     contribution_percentage = serializers.DecimalField(max_digits=5, decimal_places=2)
 
 class ClientInvestmentDetailsSerializer(serializers.ModelSerializer):
+    project_title = serializers.CharField(source='project.project_title', read_only=True)
+
     class Meta:
-        model=Investment
-        fields = ['project','amount','created_at']
+        model = Investment
+        fields = ['id', 'project', 'project_title', 'amount', 'is_reinvestment', 'created_at']
+
+
+class ProjectInvestmentHistorySerializer(ClientInvestmentDetailsSerializer):
+    investor = UserDetailsSerializer(read_only=True)
+
+    class Meta(ClientInvestmentDetailsSerializer.Meta):
+        fields = [*ClientInvestmentDetailsSerializer.Meta.fields, 'investor']
 
 # Add the InstrumentSerializer
 class InstrumentSerializer(serializers.ModelSerializer):
@@ -249,6 +258,7 @@ class ProjectCommissionSerializer(serializers.ModelSerializer):
 class ProjectBalanceDetailsSerializer(serializers.Serializer):
     cash_dividends = serializers.DecimalField(max_digits=100, decimal_places=2)
     project_id = serializers.CharField()
+    project_title = serializers.CharField()
     total_investment=serializers.DecimalField(max_digits=10,decimal_places=2)
     total_buy_amount=serializers.DecimalField(max_digits=10,decimal_places=2)
     available_balance = serializers.DecimalField(max_digits=10, decimal_places=2)

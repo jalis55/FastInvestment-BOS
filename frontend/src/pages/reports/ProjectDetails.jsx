@@ -2,10 +2,10 @@ import { LoadingState } from '@/components/ui/loading-state';
 import React, { useState, useCallback, useMemo } from 'react';
 import BannerTitle from '@/components/BannerTitle';
 import API from '@/api/axios';
+import { useApiQuery } from '@/hooks/use-api-query';
 import Swal from 'sweetalert2';
 import { ProjectSearch } from '@/components/ui/project-search';
 import { SurfaceCard } from '@/components/ui/surface-card';
-import { Search } from 'lucide-react';
 
 const currency = new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' });
 const money = (value) => currency.format(Number(value) || 0);
@@ -15,6 +15,7 @@ const ProjectDetails = () => {
      * State
      * ------------------------------------------------- */
     const [searchId, setSearchId] = useState('');
+    const projectQuery = useApiQuery('/api/stock/profit/allocation-report/?projects_only=true');
     const [projectBalance, setProjectBalance] = useState(null);
     const [instruments, setInstruments] = useState([]);
     const [loadingProject, setLoadingProject] = useState(false);
@@ -123,21 +124,22 @@ const ProjectDetails = () => {
      * ------------------------------------------------- */
     return (
         <div>
-            <BannerTitle title="Project Details" description="Review project balances and the market value of its current holdings." />
+            <BannerTitle title="Project Details" />
             <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)}
-                onSubmit={searchProject} loading={loadingProject || loadingInstruments} />
+                onSubmit={searchProject} loading={loadingProject || loadingInstruments}
+                options={projectQuery.data.projects ?? []} includeClosed emptyHint="Choose a project or enter its ID." />
+            {projectQuery.error && (
+                <p role="alert" className="mb-4 text-sm text-slate-600">
+                    Project list unavailable. <button type="button" onClick={projectQuery.refetch} className="font-medium text-blue-700 underline">Retry</button>
+                </p>
+            )}
             {loadingProject && <LoadingState label="Loading project…" description="Preparing balances and investment totals." />}
-            {!projectBalance && !loadingProject && <SurfaceCard className="mx-auto max-w-3xl py-14 text-center">
-                <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><Search size={22} aria-hidden="true" /></span>
-                <h2 className="mt-4 text-lg font-semibold text-slate-900">Find a project to view its details</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Enter a project ID or choose one from the list, then select Search.</p>
-            </SurfaceCard>}
 
             { /* Balance Card - show as soon as project is found */}
             {projectBalance && (
                 <SurfaceCard className="mb-8">
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
-                        <div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Project report</p><h2 className="mt-1 text-xl font-semibold text-slate-900">Project {projectBalance.project_id}</h2></div>
+                        <h2 className="text-xl font-semibold text-slate-900">{projectBalance.project_title || `Project ${projectBalance.project_id}`}</h2>
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <Metric label="Project ID" value={projectBalance.project_id || 'N/A'} color="text-blue-600" />

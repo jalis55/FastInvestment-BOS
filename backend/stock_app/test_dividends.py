@@ -135,6 +135,28 @@ class DividendTests(TestCase):
         self.assertEqual(Decimal(row['average_buy_unit_price']), Decimal('10'))
         self.assertEqual(Decimal(row['total_cost']), Decimal('1000'))
 
+    def test_project_details_are_visible_to_participants_and_staff(self):
+        advisor = get_user_model().objects.create_user('project-advisor@example.test')
+        outsider = get_user_model().objects.create_user('other-investor@example.test')
+        FinancialAdvisor.objects.create(project=self.project, advisor=advisor, com_percentage=10)
+        self.project.project_active_status = False
+        self.project.save(update_fields=['project_active_status'])
+        endpoints = (
+            f'/api/stock/project/balance/details/{self.project.pk}/',
+            f'/api/stock/sellable/instruments/{self.project.pk}/',
+        )
+        for user in (self.investor, advisor, self.admin):
+            self.client.force_authenticate(user)
+            for endpoint in endpoints:
+                with self.subTest(user=user, endpoint=endpoint):
+                    self.assertEqual(self.client.get(endpoint).status_code, 200)
+        self.client.force_authenticate(outsider)
+        for endpoint in endpoints:
+            self.assertEqual(self.client.get(endpoint).status_code, 404)
+        self.client.force_authenticate(None)
+        for endpoint in endpoints:
+            self.assertEqual(self.client.get(endpoint).status_code, 401)
+
     def test_staff_profit_report_combines_cash_trade_and_bonus_by_project(self):
         self.record('cash')
         self.record('share')

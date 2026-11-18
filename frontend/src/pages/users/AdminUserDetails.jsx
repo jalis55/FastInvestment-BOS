@@ -101,15 +101,20 @@ export default function AdminUserDetails() {
     const { data: user, loading, error, refetch } = useApiQuery(endpoint);
 
     return (
-        <SurfaceCard className="mx-auto w-full max-w-4xl !p-4 sm:!p-6">
-            <Link to="/users" className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-blue-700 hover:underline">
-                <ArrowLeft aria-hidden="true" className="size-4" />
-                Back to users
-            </Link>
-            <PageIntro as="h1" title="User details" />
+        <>
+            <PageIntro as="h1" title="User details" actions={(
+                <Link to="/users" className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 hover:underline">
+                    <ArrowLeft aria-hidden="true" className="size-4" />
+                    Back to users
+                </Link>
+            )} />
             <QueryState loading={loading} error={error} onRetry={refetch} loadingLabel="Loading user…">
-                {user.id && <EditUserForm key={user.id} user={user} endpoint={endpoint} refetch={refetch} />}
+                {user.id && (
+                    <SurfaceCard className="max-w-4xl !p-4 sm:!p-6">
+                        <EditUserForm key={user.id} user={user} endpoint={endpoint} refetch={refetch} />
+                    </SurfaceCard>
+                )}
             </QueryState>
-        </SurfaceCard>
+        </>
     );
 }

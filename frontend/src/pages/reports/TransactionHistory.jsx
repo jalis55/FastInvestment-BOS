@@ -160,7 +160,7 @@ export default function TransactionHistory() {
   const visibleRows = filteredRows.slice(0, visibleCount);
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div>
       <PageIntro as="h1" title="Transaction History" description="View the posted credits and debits in your wallet." />
       <QueryState loading={loading} error={error} onRetry={refetch} loadingLabel="Loading wallet ledger…">
         <div className="space-y-5">

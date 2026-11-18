@@ -90,7 +90,7 @@ export default function AllocationDetails() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <div className="space-y-6">
       <PageIntro
         as="h1"
         title="Allocation Details"

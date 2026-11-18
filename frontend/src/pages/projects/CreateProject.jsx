@@ -5,7 +5,6 @@ import Swal from "sweetalert2";
 import BannerTitle from "../../components/BannerTitle.jsx";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
 import { Field } from "@/components/ui/field";
-import { PageIntro } from "@/components/ui/page-intro";
 import { SurfaceCard } from "@/components/ui/surface-card";
 
 const CreateProjects = () => {
@@ -110,12 +109,7 @@ const CreateProjects = () => {
     return (
         <>
             <BannerTitle title="Create Project" />
-            <SurfaceCard className="mx-auto max-w-2xl">
-                <PageIntro
-                    eyebrow="Projects"
-                    title="New Project"
-                    description="Create a project with a clear title, description, and responsible contact."
-                />
+            <SurfaceCard className="max-w-2xl">
             <form className="space-y-6" onSubmit={handleSubmit}>
                 {/* Project Title Field */}
                 <Field htmlFor="projectTitle" label="Project Title" error={errors.projectTitle}>

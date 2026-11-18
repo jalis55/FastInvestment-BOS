@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { IdCard, KeyRound, UserPlus, UserRound } from "lucide-react";
+import { IdCard, KeyRound, UserRound } from "lucide-react";
 import Swal from "sweetalert2";
 import API from "@/api/axios";
 import { getApiError } from "@/api/errors";
+import { PageIntro } from "@/components/ui/page-intro";
 
 function RegistrationSection({ icon, title, children }) {
     return (
@@ -130,18 +131,9 @@ export default function UserRegistration() {
     }
 
     return (
-        <section className="mx-auto w-full max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
+        <section className="max-w-5xl">
+            <PageIntro as="h1" title="Register a user" description="Fields marked with * are required." />
             <div className="page-card !p-4 sm:!p-7">
-                <header className="mb-5 flex items-center gap-3">
-                    <div className="rounded-2xl bg-blue-50 p-3 text-blue-700">
-                        <UserPlus aria-hidden="true" className="size-6" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Register a user</h1>
-                        <p className="section-copy">Fields marked with * are required.</p>
-                    </div>
-                </header>
-
                 <form noValidate onSubmit={handleSubmit} onReset={clearFormFeedback}>
                     <fieldset disabled={loading} className="min-w-0 space-y-5">
                         <RegistrationSection icon={<KeyRound aria-hidden="true" className="size-4 text-blue-600" />} title="Account details">

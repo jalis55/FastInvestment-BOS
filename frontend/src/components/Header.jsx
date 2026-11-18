@@ -2,12 +2,13 @@ import { getApiError } from '@/api/errors';
 import { useMemo, useState } from "react";
 import { Bell, ChevronsLeft, Sparkles, UserRound } from "lucide-react";
 import PropTypes from "prop-types";
-import { useNavigate, Link } from "react-router-dom";
+import { useMatches, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/auth/use-auth";
 
 const Header = ({ collapsed, setCollapsed }) => {
     const { userData, logout } = useAuth();
     const navigate = useNavigate();
+    const pageTitle = useMatches().at(-1)?.handle?.pageTitle;
     const displayName = useMemo(() => {
         if (!userData?.name) {
             return "My Profile";
@@ -40,10 +41,10 @@ const Header = ({ collapsed, setCollapsed }) => {
     };
 
     return (
-        <header className="relative z-10 flex h-[72px] items-center justify-between border-b border-white/50 bg-white/65 px-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl">
-            <div className="flex items-center gap-x-4">
+        <header className="relative z-10 flex h-[72px] items-center justify-between gap-x-2 border-b border-white/50 bg-white/65 px-3 shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl sm:px-5">
+            <div className="flex min-w-0 flex-1 items-center gap-x-2 sm:gap-x-4">
                 <button
-                    className="flex size-11 items-center justify-center rounded-2xl border border-white/60 bg-white/80 text-slate-600 transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-900"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-white/60 bg-white/80 text-slate-600 transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-900"
                     onClick={() => setCollapsed(!collapsed)}
                     aria-label="Toggle sidebar"
                     aria-expanded={!collapsed}
@@ -51,18 +52,16 @@ const Header = ({ collapsed, setCollapsed }) => {
                 >
                     <ChevronsLeft className={collapsed && "rotate-180"} />
                 </button>
-                <div className="hidden md:block">
-                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                <div className="min-w-0">
+                    <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs sm:tracking-[0.28em]">
                         Operations Center
                     </p>
-                    <p className="text-sm text-slate-700">
-                        Monitor projects, trades, and reporting activity.
-                    </p>
+                    {pageTitle && <h1 className="truncate text-sm font-semibold text-slate-900 sm:text-base" title={pageTitle}>{pageTitle}</h1>}
                 </div>
             </div>
 
             {logoutError && <p role="alert" className="max-w-xs text-sm text-red-700">{logoutError}</p>}
-            <div className="flex items-center gap-x-3">
+            <div className="flex shrink-0 items-center gap-x-2 sm:gap-x-3">
                 <button
                     type="button"
                     className="hidden items-center gap-2 rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white md:inline-flex"

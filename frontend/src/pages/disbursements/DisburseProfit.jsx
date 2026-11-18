@@ -273,7 +273,7 @@ export default function DisburseProfit() {
     } finally { setSubmitting(false); submitLock.current = false; }
   };
 
-  return <div className="mx-auto max-w-7xl space-y-6">
+  return <div className="space-y-6">
     <BannerTitle title="Disbursement" description="Review project earnings, advisor commissions, and investor allocations before disbursing." />
     <ol aria-label="Disbursement progress" className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium">
       {['Select period', 'Review allocation', 'Disburse profits'].map((label, index) => {

@@ -32,7 +32,7 @@ export default function ProfitDetails() {
   return <div>
     <BannerTitle title="Profit Details" description={personal ? 'Your cash profit payouts and bonus shares received by projects you invest in.' : 'Review trade profits, cash dividends, and bonus shares together by project.'} />
     <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)} onSubmit={search} loading={loading} />
-    {!searchedId && <SurfaceCard className="mx-auto max-w-3xl py-12 text-center"><h2 className="text-lg font-semibold text-slate-900">Find a project to view its profit details</h2><p className="mt-2 text-sm text-slate-500">Search by project ID to see its cash profits, dividends, and bonus shares.</p></SurfaceCard>}
+    {!searchedId && <SurfaceCard className="max-w-3xl py-12 text-center"><h2 className="text-lg font-semibold text-slate-900">Find a project to view its profit details</h2><p className="mt-2 text-sm text-slate-500">Search by project ID to see its cash profits, dividends, and bonus shares.</p></SurfaceCard>}
     {searchedId && <QueryState loadingLabel={`Loading project ${searchedId}…`} loadingDescription="Preparing cash profits, dividends, and bonus shares." loading={loading} error={error} onRetry={() => load(searchedId)} empty={!visible.length} emptyTitle={`No profit or bonus shares found for project ${searchedId}`} emptyDescription="Check the project ID. Records appear here when profits or dividends are recorded for a project you can access.">
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <Metric label={personal ? 'Your cash profit paid' : 'Cash profit earned'} value={money(visible.reduce((sum, p) => sum + Number(p.cash_profit), 0))} />

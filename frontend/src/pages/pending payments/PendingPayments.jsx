@@ -49,7 +49,7 @@ const PendingPayments = () => {
             <QueryState loading={loading} error={error} onRetry={refetch} empty={!pendingPaymentList.length} emptyTitle="No pending payments">
             <div className="table-shell overflow-x-auto">
                 {pendingPaymentList.length === 0 ? (
-                    <h1 className="text-center text-gray-600 p-5">No Pending Payments</h1>
+                    <p className="text-center text-gray-600 p-5">No Pending Payments</p>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full border-collapse bg-white text-left text-sm text-gray-500">

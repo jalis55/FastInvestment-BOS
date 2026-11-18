@@ -7,24 +7,12 @@ import { ProjectPicker } from '@/components/ui/project-search';
 import { QueryState } from '@/components/ui/query-state';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { useApiQuery } from '@/hooks/use-api-query';
-
-const currency = new Intl.NumberFormat('en-BD', {
-  style: 'currency', currency: 'BDT', currencyDisplay: 'code',
-});
-
-function money(cents) {
-  // Format the whole amount as BigInt so large projects retain exact cents.
-  const absolute = cents < 0n ? -cents : cents;
-  const fraction = (absolute % 100n).toString().padStart(2, '0');
-  return (cents < 0n ? '−' : '') + currency.formatToParts(absolute / 100n)
-    .map((part) => part.type === 'fraction' ? fraction : part.value)
-    .join('');
-}
+import { bdtCents, formatBdtCents } from '@/utils/format-bdt';
 
 function InvestmentBreakdown({ projectId, contributions }) {
   const rows = contributions.map((row) => ({
     ...row,
-    amountCents: BigInt(row.contribute_amount.replace('.', '')),
+    amountCents: bdtCents(row.contribute_amount),
   })).sort((left, right) => {
     if (left.amountCents === right.amountCents) return left.investor.name.localeCompare(right.investor.name);
     return left.amountCents > right.amountCents ? -1 : 1;
@@ -39,7 +27,7 @@ function InvestmentBreakdown({ projectId, contributions }) {
       <dl className="grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="rounded-2xl bg-slate-900 p-5 text-white">
           <dt className="text-sm font-medium text-slate-300">Total project investment</dt>
-          <dd className="mt-2 break-words text-2xl font-semibold tracking-tight tabular-nums">{money(investmentTotal)}</dd>
+          <dd className="mt-2 break-words text-2xl font-semibold tracking-tight tabular-nums">{formatBdtCents(investmentTotal)}</dd>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <dt className="text-sm font-medium text-slate-600">Investors</dt>
@@ -65,7 +53,7 @@ function InvestmentBreakdown({ projectId, contributions }) {
                       <span className="block break-words">{investor.name || investor.email}</span>
                       {investor.name && <span className="block break-all text-xs font-normal text-slate-500">{investor.email}</span>}
                     </th>
-                    <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums text-slate-900">{money(amountCents)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums text-slate-900">{formatBdtCents(amountCents)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-700 sm:px-6">{contribution_percentage}%</td>
                   </tr>
                 ))}
@@ -95,7 +83,7 @@ export default function ProjectInvestmentSummary() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="space-y-6">
       <PageIntro as="h1" title="Project Investment Summary" description="Review total capital and each investor’s share of a project." />
       <SurfaceCard className="relative z-20">
         <form className="grid max-w-xl gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start" onSubmit={loadSummary} aria-label="Choose a project for the investment summary">

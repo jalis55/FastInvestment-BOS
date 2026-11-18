@@ -128,7 +128,7 @@ export default function DisbursementDetails() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="space-y-6">
       <PageIntro as="h1" title="Disbursement Details" description="Review recorded investor profits and advisor commissions by project." />
       <SurfaceCard className="relative z-20">
         <form onSubmit={loadReport} className="space-y-4" aria-label="Filter disbursement details">

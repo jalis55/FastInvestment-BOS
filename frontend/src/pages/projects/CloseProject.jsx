@@ -102,7 +102,7 @@ export default function CloseProject() {
   const ready = review?.active && !review.holdings.length && !review.unpaidCount && review.investors.length > 0;
   const beforeProfit = balance ? Number(balance.total_investment) - Number(balance.total_buy_amount) + Number(balance.total_sell_amount) + Number(balance.cash_dividends || 0) : 0;
 
-  return <div className="mx-auto max-w-7xl space-y-6 pb-8">
+  return <div className="space-y-6 pb-8">
     <BannerTitle title="Close a project" description="Review the money, check that profit payouts are complete, then return the remaining capital to investors." />
     <ol aria-label="Project closure progress" className="flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium text-slate-500">
       {['Choose project', 'Review & reconcile', 'Return capital & close'].map((label, index) => <li key={label} aria-current={index === (completed ? 2 : review ? 1 : 0) ? 'step' : undefined} className="flex items-center gap-2"><span className={`flex size-6 items-center justify-center rounded-full ${index <= (completed ? 2 : review ? 1 : 0) ? 'bg-slate-900 text-white' : 'bg-slate-100'}`}>{index + 1}</span>{label}</li>)}
