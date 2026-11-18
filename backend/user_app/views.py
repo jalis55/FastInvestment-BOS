@@ -4,8 +4,11 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.core.cache import cache
 from django.conf import settings
+from django.db import transaction
+from django.http import HttpResponse
+from django.views.decorators.cache import never_cache
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import (CreateAPIView, ListAPIView,
                                      RetrieveAPIView, RetrieveUpdateAPIView,
                                      RetrieveUpdateDestroyAPIView)
@@ -16,18 +19,19 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from user_app.models import CustomUser
+from user_app.models import CustomUser, UserIdentityDocument
 from user_app.authentication import CookieJWTAuthentication
 from user_app.permissions import IsSuperUser
-from user_app.serializers import (CustomTokenObtainPairSerializer,
-                                  UserListSerializer, UserSerializer,
+from user_app.serializers import (AdminUserDetailsSerializer, ChangePasswordSerializer,
+                                  CustomTokenObtainPairSerializer, SelfUserProfileSerializer,
+                                  UserListSerializer, UserRegistrationSerializer, UserSerializer,
                                   UserStatusSerializer)
 
 # Create your views here.
 
-@extend_schema(summary='Register a user', description='Create a user with email and name. Password is optional in the current serializer; when supplied it must contain at least eight characters. Use multipart/form-data for profile_image.')
+@extend_schema(summary='Register a user', description='Create a user with email and name. An optional password must contain at least eight characters. Use multipart/form-data for profile_image or nid_scan_copy.')
 class UserRegistrationView(CreateAPIView):
-    serializer_class=UserSerializer
+    serializer_class=UserRegistrationSerializer
     permission_classes=[IsAdminUser]
 
 
@@ -179,14 +183,29 @@ class CurrentSessionView(APIView):
         user, _ = auth_result
         return Response(_session_payload(user), status=status.HTTP_200_OK)
 
-@extend_schema(summary='Read or update your profile', description='Acts on the current user. PATCH updates selected fields; PUT uses full serializer validation. Password is write-only. Use multipart/form-data for profile_image.')
+@method_decorator(never_cache, name='dispatch')
+@extend_schema(summary='Read or update your profile', description='Acts on the current user. Use multipart/form-data for profile_image or nid_scan_copy. Change your password through the dedicated password endpoint.')
 class UserDetailsView(RetrieveUpdateAPIView):
-    serializer_class=UserSerializer
+    serializer_class=SelfUserProfileSerializer
     permission_classes=[IsAuthenticated]
     
     #currently logged in user
     def get_object(self):
         return self.request.user
+
+
+@method_decorator(never_cache, name='dispatch')
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=ChangePasswordSerializer, responses={204: None})
+    @transaction.atomic
+    def post(self, request):
+        user = CustomUser.objects.select_for_update().get(pk=request.user.pk)
+        serializer = ChangePasswordSerializer(user, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 
@@ -226,8 +245,45 @@ class CustomerListView(ListAPIView):
             cache.set(cache_key, queryset, timeout=60*15)
         
         return queryset
-@extend_schema(summary='Manage a non-superuser', description='Retrieve, update, or delete a non-superuser by user ID. Email is read-only. Staff and active flags are writable.')
+@method_decorator(never_cache, name='dispatch')
+@extend_schema(summary='Manage a non-superuser', description='Retrieve, update, or delete a non-superuser by user ID. Use multipart/form-data to replace the profile image or NID scan. Password and scan bytes are write-only.')
 class UpdateUserStatusView(RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.filter(is_superuser=False)
-    serializer_class=UserListSerializer
+    serializer_class=AdminUserDetailsSerializer
     permission_classes=[IsSuperUser]
+
+
+def nid_scan_download(documents):
+    scan = documents.values_list('nid_scan_copy', flat=True).first()
+    if scan is None:
+        raise NotFound('No NID scan is available for this user.')
+
+    scan = bytes(scan)
+    if scan.startswith(b'%PDF-'):
+        content_type, extension = 'application/pdf', 'pdf'
+    elif scan.startswith(b'\x89PNG\r\n\x1a\n'):
+        content_type, extension = 'image/png', 'png'
+    else:
+        content_type, extension = 'image/jpeg', 'jpg'
+    return HttpResponse(scan, content_type=content_type, headers={
+        'Content-Disposition': f'attachment; filename="nid-scan.{extension}"',
+        'X-Content-Type-Options': 'nosniff',
+    })
+
+
+@method_decorator(never_cache, name='dispatch')
+class UserNidScanView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return nid_scan_download(UserIdentityDocument.objects.filter(user=request.user))
+
+
+@method_decorator(never_cache, name='dispatch')
+class AdminUserNidScanView(APIView):
+    permission_classes = [IsSuperUser]
+
+    def get(self, request, pk):
+        return nid_scan_download(UserIdentityDocument.objects.filter(
+            user_id=pk, user__is_superuser=False,
+        ))

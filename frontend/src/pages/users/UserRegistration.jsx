@@ -1,463 +1,198 @@
 import { useState } from "react";
-import { CalendarIcon, UserIcon, SaveIcon } from "lucide-react";
-import { format } from "date-fns";
+import { IdCard, KeyRound, UserPlus, UserRound } from "lucide-react";
+import Swal from "sweetalert2";
 import API from "@/api/axios";
+import { getApiError } from "@/api/errors";
 
-const UserRegistration = () => {
-    const [showCalendar, setShowCalendar] = useState(false)
-    const [loading, setLoading] = useState(false)
-    const [success, setSuccess] = useState(false)
-    const [formData, setFormData] = useState({
-        email: "",
-        name: "",
-        phone: "",
-        profile_image: null,
-        profile_image_preview: null,
-        sex: "M",
-        bio: "",
-        dob: null,
-        password: "",
-    })
-    const [errors, setErrors] = useState({})
+function RegistrationSection({ icon, title, children }) {
+    return (
+        <fieldset className="min-w-0 rounded-2xl border border-slate-200 px-4 pb-5 sm:px-6">
+            <legend className="px-2 text-sm font-semibold text-slate-800">
+                <span className="inline-flex items-center gap-2">
+                    {icon}
+                    {title}
+                </span>
+            </legend>
+            <div className="mt-2 grid gap-4 sm:grid-cols-2">{children}</div>
+        </fieldset>
+    );
+}
 
-    const handleChange = (field, value) => {
-        setFormData({ ...formData, [field]: value })
-        // Clear error when field is edited
-        if (errors[field]) {
-            setErrors({ ...errors, [field]: null })
-        }
-    }
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0]
-        if (file) {
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                setFormData({
-                    ...formData,
-                    profile_image: file,
-                    profile_image_preview: reader.result,
-                })
-            }
-            reader.readAsDataURL(file)
-        }
-    }
-
-    const validateForm = () => {
-        const newErrors = {}
-
-        if (!formData.email) newErrors.email = "Email is required"
-        else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid"
-
-        if (!formData.name) newErrors.name = "Name is required"
-
-        if (!formData.password) newErrors.password = "Password is required"
-        else if (formData.password.length < 8) newErrors.password = "Password must be at least 8 characters"
-
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
-    const resetForm = () => {
-        setFormData({
-            email: "",
-            name: "",
-            phone: "",
-            profile_image: null,
-            profile_image_preview: null,
-            sex: "M",
-            bio: "",
-            dob: null,
-            password: "",
-        });
-        setErrors({});
-        setShowCalendar(false);
-    }
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (validateForm()) {
-            setLoading(true);
-            setSuccess(false);
-            setErrors({});
-
-            try {
-                // Prepare form data (including file upload)
-                const formDataToSend = new FormData();
-                formDataToSend.append("email", formData.email);
-                formDataToSend.append("name", formData.name);
-                formDataToSend.append("password", formData.password);
-                formDataToSend.append("phone", formData.phone || "");
-                formDataToSend.append("sex", formData.sex);
-                formDataToSend.append("bio", formData.bio || "");
-
-                if (formData.dob) {
-                    formDataToSend.append("dob", format(formData.dob, "yyyy-MM-dd"));
-                }
-
-                if (formData.profile_image) {
-                    formDataToSend.append("profile_image", formData.profile_image);
-                }
-
-                await API.post('/api/user-register/', formDataToSend, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-
-                // If we get here, the request was successful
-                setSuccess(true);
-
-                // Reset form after successful submission
-                resetForm();
-                
-
-            } catch (error) {
-                console.error("Error creating user:", error);
-
-                if (error.response) {
-                    // The request was made and the server responded with a status code
-                    console.error("Response data:", error.response.data);
-                    console.error("Response status:", error.response.status);
-
-                    if (error.response.data) {
-                        const apiErrors = {};
-                        // Handle different error response formats
-                        if (typeof error.response.data === 'object') {
-                            Object.keys(error.response.data).forEach((key) => {
-                                apiErrors[key] = Array.isArray(error.response.data[key])
-                                    ? error.response.data[key].join(" ")
-                                    : error.response.data[key];
-                            });
-                        } else if (typeof error.response.data === 'string') {
-                            apiErrors.general = error.response.data;
-                        }
-                        setErrors(apiErrors);
-                    }
-                } else if (error.request) {
-                    // The request was made but no response was received
-                    setErrors({ general: "No response from server. Please try again." });
-                } else {
-                    // Something happened in setting up the request
-                    setErrors({ general: error.message || "Registration failed. Please try again." });
-                }
-            } finally {
-                setLoading(false);
-            }
-        }
+function RegistrationField({ name, label, error, hint, children, required, ...inputProps }) {
+    const attributes = {
+        id: name,
+        name,
+        required,
+        "aria-invalid": error ? true : undefined,
+        "aria-describedby": [hint && `${name}-hint`, error && `${name}-error`].filter(Boolean).join(" ") || undefined,
     };
 
-    const generateRandomPassword = () => {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
-        let password = ""
-        for (let i = 0; i < 12; i++) {
-            password += chars.charAt(Math.floor(Math.random() * chars.length))
+    return (
+        <div className="min-w-0">
+            <label className="field-label" htmlFor={name}>
+                {label}{required && <span className="text-red-600"> *</span>}
+            </label>
+            {children ? children(attributes) : <input className="field-input" {...inputProps} {...attributes} />}
+            {hint && <p id={`${name}-hint`} className="mt-1 text-xs text-slate-500">{hint}</p>}
+            {error && <p id={`${name}-error`} className="field-error">{error}</p>}
+        </div>
+    );
+}
+
+const fieldNames = ["email", "password", "name", "phone", "sex", "dob", "profile_image", "nid", "nid_scan_copy"];
+const secondaryButton = "rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50";
+
+export default function UserRegistration() {
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [password, setPassword] = useState("");
+    const [profilePreview, setProfilePreview] = useState("");
+
+    function clearFormFeedback() {
+        setPassword("");
+        setProfilePreview("");
+        setErrors({});
+    }
+
+    function generatePassword() {
+        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        const values = crypto.getRandomValues(new Uint32Array(16));
+        setPassword(Array.from(values, (value) => characters[value % characters.length]).join(""));
+    }
+
+    function previewProfilePhoto(event) {
+        const file = event.target.files[0];
+        setProfilePreview("");
+        if (!file) return;
+
+        const input = event.target;
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (input.files[0] === file) setProfilePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function handleSubmit(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const data = new FormData(form);
+
+        const validationErrors = {};
+        for (const name of fieldNames) {
+            const input = form.elements.namedItem(name);
+            if (!input.validity.valid) validationErrors[name] = input.validationMessage;
         }
-        handleChange("password", password)
+        if (data.get("nid_scan_copy").size > 2 * 1024 * 1024) {
+            validationErrors.nid_scan_copy = "The scan must be 2 MB or smaller.";
+        }
+        const [firstInvalidField] = Object.keys(validationErrors);
+        if (firstInvalidField) {
+            setErrors(validationErrors);
+            await Swal.fire({
+                icon: "error",
+                title: "Check registration details",
+                text: validationErrors[firstInvalidField],
+                returnFocus: false,
+            });
+            form.elements.namedItem(firstInvalidField).focus();
+            return;
+        }
+
+        for (const field of ["dob", "profile_image", "nid_scan_copy"]) {
+            const value = data.get(field);
+            if (!value || (value instanceof File && !value.name)) data.delete(field);
+        }
+
+        setLoading(true);
+        setErrors({});
+        try {
+            await API.post("/api/user-register/", data);
+            form.reset();
+            Swal.fire({ icon: "success", title: "User created", text: "The user account was created successfully." });
+        } catch (error) {
+            const response = error.response?.status === 400 ? error.response.data : null;
+            const fieldErrors = {};
+            for (const name of fieldNames) {
+                const message = response?.[name];
+                if (Array.isArray(message)) fieldErrors[name] = message.join(" ");
+                else if (typeof message === "string") fieldErrors[name] = message;
+            }
+            setErrors(fieldErrors);
+            Swal.fire({
+                icon: "error",
+                title: "Registration failed",
+                text: getApiError(error, "Could not create the user. Please try again."),
+            });
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
-        <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
-            <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                    {/* Header */}
-                    <div className="px-4 py-2 border-b border-gray-200 sm:px-6">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <h3 className="text-lg leading-6 font-medium text-gray-900">Add New User</h3>
-                                <p className="mt-1 max-w-2xl text-sm text-gray-500">Create a new user account in the system</p>
-                            </div>
-                            {success && (
-                                <div className="bg-green-50 text-green-800 px-4 py-2 rounded-md text-sm flex items-center">
-                                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                    User created successfully
-                                </div>
-                            )}
-                        </div>
+        <section className="mx-auto w-full max-w-5xl px-3 py-5 sm:px-6 sm:py-8">
+            <div className="page-card !p-4 sm:!p-7">
+                <header className="mb-5 flex items-center gap-3">
+                    <div className="rounded-2xl bg-blue-50 p-3 text-blue-700">
+                        <UserPlus aria-hidden="true" className="size-6" />
                     </div>
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Register a user</h1>
+                        <p className="section-copy">Fields marked with * are required.</p>
+                    </div>
+                </header>
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="px-4 py-2 sm:p-6">
-                        <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                            {/* Account Information Section */}
-                            <div className="sm:col-span-6">
-                                <h4 className="text-md font-medium text-gray-900 mb-3 pb-2 border-b border-gray-200">
-                                    Account Information
-                                </h4>
-                            </div>
-
-                            {/* Email */}
-                            <div className="sm:col-span-4">
-                                <label htmlFor="email" className="field-label">
-                                    Email Address <span className="text-red-500">*</span>
-                                </label>
-                                <div className="mt-1">
-                                    <input
-                                        id="email"
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => handleChange("email", e.target.value)}
-                                        className={`shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border ${errors.email ? "border-red-500" : "border-gray-300"
-                                            } rounded-md p-2`}
-                                        placeholder="user@example.com"
-                                    />
-                                    {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                                </div>
-                            </div>
-
-                            {/* Password */}
-                            <div className="sm:col-span-4">
-                                <label htmlFor="password" className="field-label">
-                                    Password <span className="text-red-500">*</span>
-                                </label>
-                                <div className="mt-1 flex rounded-md shadow-sm">
-                                    <input
-                                        id="password"
-                                        type="text" // Text type to show the password for admin
-                                        value={formData.password}
-                                        onChange={(e) => handleChange("password", e.target.value)}
-                                        className={`flex-1 focus:ring-blue-500 focus:border-blue-500 block w-full min-w-0 sm:text-sm border ${errors.password ? "border-red-500" : "border-gray-300"
-                                            } rounded-l-md p-2`}
-                                        placeholder="Minimum 8 characters"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={generateRandomPassword}
-                                        className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 bg-gray-50 text-gray-700 sm:text-sm font-medium rounded-r-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                    >
-                                        Generate
-                                    </button>
-                                </div>
-                                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
-                                <p className="mt-1 text-xs text-gray-500">Password is visible to admin for setup purposes</p>
-                            </div>
-
-                            {/* Personal Information Section */}
-                            <div className="sm:col-span-6">
-                                <h4 className="text-md font-medium text-gray-900 mb-3 pb-2 border-b border-gray-200">
-                                    Personal Information
-                                </h4>
-                            </div>
-
-                            {/* Name */}
-                            <div className="sm:col-span-3">
-                                <label htmlFor="name" className="field-label">
-                                    Full Name <span className="text-red-500">*</span>
-                                </label>
-                                <div className="mt-1">
-                                    <input
-                                        id="name"
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={(e) => handleChange("name", e.target.value)}
-                                        className={`shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border ${errors.name ? "border-red-500" : "border-gray-300"
-                                            } rounded-md p-2`}
-                                        placeholder="John Doe"
-                                    />
-                                    {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
-                                </div>
-                            </div>
-
-                            {/* Phone */}
-                            <div className="sm:col-span-3">
-                                <label htmlFor="phone" className="field-label">
-                                    Phone Number
-                                </label>
-                                <div className="mt-1">
-                                    <input
-                                        id="phone"
-                                        type="tel"
-                                        value={formData.phone}
-                                        onChange={(e) => handleChange("phone", e.target.value)}
-                                        className="field-input"
-                                        placeholder="+1 (555) 123-4567"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Sex */}
-                            <div className="sm:col-span-2">
-                                <label htmlFor="sex" className="field-label">
-                                    Sex
-                                </label>
-                                <div className="mt-1">
-                                    <div className="relative">
-                                        <select
-                                            id="sex"
-                                            value={formData.sex}
-                                            onChange={(e) => handleChange("sex", e.target.value)}
-                                            className="field-select"
-                                        >
-                                            <option value="M">Male</option>
-                                            <option value="F">Female</option>
-                                            <option value="O">Other</option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                            <svg
-                                                className="h-5 w-5 text-gray-400"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 20 20"
-                                                fill="currentColor"
-                                                aria-hidden="true"
-                                            >
-                                                <path
-                                                    fillRule="evenodd"
-                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                    clipRule="evenodd"
-                                                />
-                                            </svg>
-                                        </div>
+                <form noValidate onSubmit={handleSubmit} onReset={clearFormFeedback}>
+                    <fieldset disabled={loading} className="min-w-0 space-y-5">
+                        <RegistrationSection icon={<KeyRound aria-hidden="true" className="size-4 text-blue-600" />} title="Account details">
+                            <RegistrationField name="email" label="Email address" type="email" autoComplete="off" required error={errors.email} />
+                            <RegistrationField name="password" label="Initial password" required error={errors.password}>
+                                {(attributes) => (
+                                    <div className="flex gap-2">
+                                        <input className="field-input min-w-0" {...attributes} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={8} placeholder="At least 8 characters" />
+                                        <button className={secondaryButton} type="button" onClick={generatePassword}>Generate</button>
                                     </div>
-                                </div>
-                            </div>
+                                )}
+                            </RegistrationField>
+                        </RegistrationSection>
 
-                            {/* Date of Birth */}
-                            <div className="sm:col-span-2">
-                                <label htmlFor="userregistration-field-1" className="field-label">
-                                    Date of Birth
-                                </label>
-                                <div className="mt-1 relative">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCalendar(!showCalendar)}
-                                        className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2 bg-white text-left"
-                                    >
-                                        <div className="flex items-center">
-                                            <CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
-                                            {formData.dob ? format(formData.dob, "PPP") : <span className="text-gray-500">Select date</span>}
-                                        </div>
-                                    </button>
-
-                                    {showCalendar && (
-                                        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 p-2">
-                                            <input id="userregistration-field-1"
-                                                type="date"
-                                                value={formData.dob ? format(formData.dob, "yyyy-MM-dd") : ""}
-                                                onChange={(e) => {
-                                                    handleChange("dob", new Date(e.target.value))
-                                                    setShowCalendar(false)
-                                                }}
-                                                className="field-input"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Profile Image */}
-                            <div className="sm:col-span-6">
-                                <label htmlFor="profile_image" className="field-label">Profile Picture</label>
-                                <div className="mt-1 flex items-center space-x-5">
-                                    <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-300">
-                                        {formData.profile_image_preview ? (
-                                            <img
-                                                src={formData.profile_image_preview || "/placeholder.svg"}
-                                                alt="Profile preview"
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <UserIcon className="h-8 w-8 text-gray-400" />
-                                        )}
+                        <RegistrationSection icon={<UserRound aria-hidden="true" className="size-4 text-blue-600" />} title="Personal details">
+                            <RegistrationField name="name" label="Full name" required maxLength={255} error={errors.name} />
+                            <RegistrationField name="phone" label="Phone number" type="tel" maxLength={20} error={errors.phone} />
+                            <RegistrationField name="dob" label="Date of birth" type="date" error={errors.dob} />
+                            <RegistrationField name="sex" label="Sex" error={errors.sex}>
+                                {(attributes) => (
+                                    <select className="field-select" {...attributes} defaultValue="M">
+                                        <option value="M">Male</option>
+                                        <option value="F">Female</option>
+                                        <option value="O">Other</option>
+                                    </select>
+                                )}
+                            </RegistrationField>
+                            <RegistrationField name="profile_image" label="Profile photo" error={errors.profile_image}>
+                                {(attributes) => (
+                                    <div className="flex items-center gap-3">
+                                        {profilePreview && <img src={profilePreview} alt="Profile preview" className="size-10 rounded-full object-cover" />}
+                                        <input className="field-input min-w-0" type="file" accept="image/*" onChange={previewProfilePhoto} {...attributes} />
                                     </div>
-                                    <div>
-                                        <label
-                                            htmlFor="profile_image"
-                                            className="cursor-pointer px-3 py-1 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                        >
-                                            Upload Photo
-                                            <input
-                                                id="profile_image"
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleImageChange}
-                                                className="sr-only"
-                                            />
-                                        </label>
-                                        <p className="mt-1 text-xs text-gray-500">JPG, PNG, or GIF up to 10MB</p>
-                                    </div>
-                                </div>
-                            </div>
+                                )}
+                            </RegistrationField>
+                        </RegistrationSection>
 
-                            {/* Bio */}
-                            <div className="sm:col-span-6">
-                                <label htmlFor="bio" className="field-label">
-                                    Bio
-                                </label>
-                                <div className="mt-1">
-                                    <textarea
-                                        id="bio"
-                                        value={formData.bio}
-                                        onChange={(e) => handleChange("bio", e.target.value)}
-                                        rows={3}
-                                        className="field-input"
-                                        placeholder="Brief description about the user"
-                                    />
-                                </div>
-                                <p className="mt-1 text-xs text-gray-500">Brief description for the user's profile.</p>
-                            </div>
+                        <RegistrationSection icon={<IdCard aria-hidden="true" className="size-4 text-blue-600" />} title="National ID">
+                            <RegistrationField name="nid" label="NID number" inputMode="numeric" pattern="[0-9]{1,17}" maxLength={17} hint="Up to 17 digits." error={errors.nid} />
+                            <RegistrationField name="nid_scan_copy" label="NID scan copy" type="file" accept=".pdf,.jpg,.jpeg,.png" hint="PDF, JPG, or PNG up to 2 MB." error={errors.nid_scan_copy} />
+                        </RegistrationSection>
+
+                        <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
+                            <button className={secondaryButton} type="reset">Reset form</button>
+                            <button className="primary-button !w-auto" type="submit">
+                                {loading ? "Creating user…" : "Create user"}
+                            </button>
                         </div>
-
-                        {/* Form Actions */}
-                        <div className="mt-8 border-t border-gray-200 pt-5">
-                            <div className="flex justify-end">
-                                <button
-                                    type="button"
-                                    onClick={resetForm}
-                                    className="bg-white py-1 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                >
-                                    Reset Form
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className={`ml-3 inline-flex justify-center py-1 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loading ? "opacity-70 cursor-not-allowed" : ""
-                                        }`}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <svg
-                                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <circle
-                                                    className="opacity-25"
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="10"
-                                                    stroke="currentColor"
-                                                    strokeWidth="4"
-                                                ></circle>
-                                                <path
-                                                    className="opacity-75"
-                                                    fill="currentColor"
-                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                ></path>
-                                            </svg>
-                                            Creating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <SaveIcon className="mr-2 -ml-1 h-4 w-4" />
-                                            Create User
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+                    </fieldset>
+                </form>
             </div>
-        </div>
-    )
+        </section>
+    );
 }
-
-export default UserRegistration;

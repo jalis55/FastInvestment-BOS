@@ -1,18 +1,24 @@
-const UserImage = ({ image_url, name, sex }) => {
-  // Determine the default image based on the 'sex' prop
-  const defaultImage =
-    sex === 'M'
-      ? 'https://cdn-icons-png.flaticon.com/512/0/93.png'
-      : 'https://e7.pngegg.com/pngimages/439/19/png-clipart-avatar-user-profile-icon-women-wear-frock-face-holidays.png';
+import { useState } from 'react';
+import { UserRound } from 'lucide-react';
 
-  return (
+export default function UserImage({ src, loading }) {
+    const [failedUrl, setFailedUrl] = useState(null);
 
-    <img className="w-24 h-24 mb-3 rounded-full shadow-lg"
-      src={image_url || defaultImage}
-      alt={`${name}'s avatar`}
-    />
+    if (src && src !== failedUrl) {
+        return (
+            <img
+                src={src}
+                alt=""
+                loading={loading}
+                className="size-14 shrink-0 rounded-full object-cover ring-1 ring-slate-200 sm:size-16"
+                onError={() => setFailedUrl(src)}
+            />
+        );
+    }
 
-  );
-};
-
-export default UserImage;
+    return (
+        <span aria-hidden="true" className="grid size-14 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-100 sm:size-16">
+            <UserRound className="size-7" />
+        </span>
+    );
+}

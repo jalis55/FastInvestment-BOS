@@ -1,67 +1,131 @@
+import { useState } from 'react';
+import { UserPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import API from '@/api/axios';
+import { getApiError } from '@/api/errors';
 import { useApiQuery } from '@/hooks/use-api-query';
-import { QueryState } from '@/components/ui/query-state';
-import React, { useState } from 'react';
-import UserCard from './UserCard';
-import BannerTitle from '../../components/BannerTitle';
-import { EmptyState } from '@/components/ui/empty-state';
 import { PageIntro } from '@/components/ui/page-intro';
+import { QueryState } from '@/components/ui/query-state';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SurfaceCard } from '@/components/ui/surface-card';
+import UserRow from './UserRow';
 
-const Users = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const { data: userList, loading, error, refetch } = useApiQuery('/api/admin/users/');
+const columns = ['User', 'Phone', 'Role', 'Status', 'Actions'];
+const filterClass = 'field-select min-h-[52px] sm:w-40';
 
-  // Filter users based on search query (name or email)
-  const filteredUsers = userList.filter(
-    (user) => {
-      const name = (user?.name || '').toLowerCase();
-      const email = (user?.email || '').toLowerCase();
-      const query = searchQuery.toLowerCase();
+export default function Users() {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [role, setRole] = useState('');
+    const [status, setStatus] = useState('');
+    const [saving, setSaving] = useState(false);
+    const { data: users, loading, error, refetch, refreshing } = useApiQuery('/api/admin/users/');
+    const query = searchQuery.trim().toLowerCase();
 
-      return name.includes(query) || email.includes(query);
+    const filteredUsers = users.filter((user) =>
+        [user.name, user.email, user.phone].some((value) => (value ?? '').toLowerCase().includes(query))
+        && (!role || user.is_staff === (role === 'admin'))
+        && (!status || user.is_active === (status === 'active'))
+    );
+
+    async function changeAccess(user, field) {
+        const nextValue = !user[field];
+        const name = user.name || user.email;
+        const action = field === 'is_staff'
+            ? (nextValue ? 'Make admin' : 'Remove admin')
+            : (nextValue ? 'Activate' : 'Deactivate');
+
+        const result = await Swal.fire({
+            title: `${action}?`,
+            text: field === 'is_staff'
+                ? `This will ${nextValue ? 'grant' : 'remove'} admin access for ${name}.`
+                : `This will ${nextValue ? 'restore' : 'disable'} account access for ${name}.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: action,
+            focusCancel: true,
+        });
+        if (!result.isConfirmed) return;
+
+        setSaving(true);
+        try {
+            await API.patch(`/api/admin/users/${user.id}/`, { [field]: nextValue });
+            await refetch();
+            Swal.fire({ icon: 'success', title: 'User updated', text: `Access for ${name} was updated.` });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Could not update user', text: getApiError(error) });
+        } finally {
+            setSaving(false);
+        }
     }
-  );
 
+    return (
+        <SurfaceCard className="mx-auto w-full max-w-6xl !p-4 sm:!p-6">
+            <PageIntro
+                as="h1"
+                title="Users"
+                actions={(
+                    <Link to="/user-registration" className="primary-button gap-2 md:!w-auto">
+                        <UserPlus aria-hidden="true" className="size-4" />
+                        Register user
+                    </Link>
+                )}
+            />
 
-  return (
-    <>
-    <BannerTitle title="Users" />
-    <SurfaceCard>
-      <PageIntro
-        eyebrow="Directory"
-        title="Team Directory"
-        description="Search and review registered users."
-      />
-      <div className="max-w-7xl mx-auto">
-        <SearchBar
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name or email"
-            className="mb-6 md:w-80"
-            aria-label="Search users"
-          />
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <SearchBar
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search by name, email, or phone"
+                    aria-label="Search by name, email, or phone"
+                    className="min-w-0 flex-1"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                    <select className={filterClass} aria-label="Filter by role" value={role} onChange={(event) => setRole(event.target.value)}>
+                        <option value="">All roles</option>
+                        <option value="admin">Admin</option>
+                        <option value="user">User</option>
+                    </select>
+                    <select className={filterClass} aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}>
+                        <option value="">All statuses</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
 
-        <QueryState loading={loading} error={error} onRetry={refetch}><span /></QueryState>
+            {!loading && !error && (
+                <p role="status" className="mb-3 text-sm text-slate-600">
+                    Showing {filteredUsers.length} of {users.length} {users.length === 1 ? 'user' : 'users'}
+                </p>
+            )}
 
-        {!loading && !error && filteredUsers.length === 0 && (
-          <EmptyState
-            title="No users matched your search"
-            description="Try a different name or email to find the user you are looking for."
-          />
-        )}
-
-        {!loading && !error && filteredUsers.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.map((user) => (
-            <UserCard key={user.id} user={user} />
-          ))}
-        </div>
-        )}
-      </div>
-    </SurfaceCard>
-    </>
-  );
-};
-
-export default Users;
+            <QueryState
+                loading={loading}
+                error={error}
+                onRetry={refetch}
+                loadingLabel="Loading users…"
+                empty={filteredUsers.length === 0}
+                emptyTitle={users.length ? 'No matching users' : 'No registered users'}
+                emptyDescription={users.length ? 'Try a different search or clear a filter.' : 'Use Register user to create an account.'}
+            >
+                <div className="rounded-2xl border border-slate-200 bg-white">
+                    <table role="table" aria-label="Registered users" className="block w-full text-left lg:table">
+                        <thead role="rowgroup" className="sr-only lg:not-sr-only lg:table-header-group">
+                            <tr role="row" className="bg-slate-50 text-xs font-semibold text-slate-600">
+                                {columns.map((column) => (
+                                    <th role="columnheader" scope="col" key={column} className={`px-5 py-3 first:rounded-tl-2xl last:rounded-tr-2xl ${column === 'Actions' ? 'text-right' : ''}`}>
+                                        {column}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody role="rowgroup" className="block divide-y divide-slate-100 lg:table-row-group">
+                            {filteredUsers.map((user) => <UserRow key={user.id} user={user} busy={saving || refreshing} onChangeAccess={changeAccess} />)}
+                        </tbody>
+                    </table>
+                </div>
+            </QueryState>
+        </SurfaceCard>
+    );
+}

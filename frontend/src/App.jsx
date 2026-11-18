@@ -19,6 +19,7 @@ const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 
 // USER MANAGEMENT
 const Users = lazy(() => import('./pages/users/Users'));
+const AdminUserDetails = lazy(() => import('./pages/users/AdminUserDetails'));
 const UserDetails = lazy(() => import('./pages/users/UserDetails'));
 const UserRegistration = lazy(() => import('./pages/users/UserRegistration'));
 
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
 
           /* ---- User Management ---- */
     { path: 'users', element: <RoleRoute roles={['super_admin']}><Users /></RoleRoute> },
+    { path: 'users/:userId', element: <RoleRoute roles={['super_admin']}><AdminUserDetails /></RoleRoute> },
     { path: 'user-details',element: <RoleRoute roles={['user', 'admin', 'super_admin']}><UserDetails /></RoleRoute> },
     { path: 'user-registration',element: <RoleRoute roles={['super_admin']}><UserRegistration /></RoleRoute> },
 

@@ -1,497 +1,231 @@
-import { useState, useEffect } from "react";
-import { CalendarIcon, UserIcon, SaveIcon, EditIcon } from "lucide-react";
-import { format } from "date-fns";
-import API from "@/api/axios";
-import { useAuth } from "@/auth/use-auth";
+import { useState } from 'react';
+import { format, parseISO } from 'date-fns';
+import { KeyRound, Pencil, Save } from 'lucide-react';
+import Swal from 'sweetalert2';
+import API from '@/api/axios';
+import { getApiError } from '@/api/errors';
+import { useAuth } from '@/auth/use-auth';
+import { useApiQuery } from '@/hooks/use-api-query';
+import { PageIntro } from '@/components/ui/page-intro';
+import { QueryState } from '@/components/ui/query-state';
+import { SurfaceCard } from '@/components/ui/surface-card';
+import DownloadNidScan from './DownloadNidScan';
+import ProfileField from './ProfileField';
+import ProfilePhotoPicker from './ProfilePhotoPicker';
 
-const UserDetails = () => {
-  // Retrieve the base URL from environment variables
-  const { userData, setUserData } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    name: "",
-    phone: "",
-    profile_image: null,
-    profile_image_preview: null,
-    sex: "M",
-    bio: "",
-    dob: null,
-  });
-  const [errors, setErrors] = useState({});
+const sexLabels = { M: 'Male', F: 'Female', O: 'Other' };
+const profileEndpoint = '/api/user-profile/';
+const profileFormId = 'edit-my-profile';
+const editableFields = ['name', 'email', 'phone', 'sex', 'dob'];
+const secondaryButton = 'inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50';
 
-  useEffect(() => {
-    if (!userData) return;
-      setFormData({
-        email: userData.email,
-        name: userData.name,
-        phone: userData.phone || "",
-        profile_image: null,
-        profile_image_preview: userData.profile_image || null,
-        sex: userData.sex || "M",
-        bio: userData.bio || "",
-        dob: userData.dob ? new Date(userData.dob) : null,
-      });
-    setLoading(false);
-  }, [userData]);
-
-  const handleChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
-    // Clear error when field is edited
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: null });
-    }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({
-          ...formData,
-          profile_image: file,
-          profile_image_preview: reader.result,
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.email) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid";
-
-    if (!formData.name) newErrors.name = "Name is required";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (validateForm()) {
-      setLoading(true);
-      setSuccess(false);
-      setErrors({});
-
-      try {
-        // Prepare form data (including file upload)
-        const formDataToSend = new FormData();
-        formDataToSend.append("email", formData.email);
-        formDataToSend.append("name", formData.name);
-        formDataToSend.append("phone", formData.phone || "");
-        formDataToSend.append("sex", formData.sex);
-        formDataToSend.append("bio", formData.bio || "");
-
-        if (formData.dob) {
-          formDataToSend.append("dob", format(formData.dob, "yyyy-MM-dd"));
-        }
-
-        if (formData.profile_image) {
-          formDataToSend.append("profile_image", formData.profile_image);
-        }
-
-        const response = await API.patch('/api/user-profile/', formDataToSend, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-
-
-        setUserData(response.data);
-        setSuccess(true);
-        setEditing(false);
-
-        // Update the profile image preview if it was changed
-        if (formData.profile_image) {
-          setFormData(prev => ({
-            ...prev,
-            profile_image: null, // reset the file object
-            profile_image_preview: response.data.profile_image || prev.profile_image_preview
-          }));
-        }
-
-      } catch (error) {
-        console.error("Error updating user:", error);
-
-        if (error.response) {
-          // The request was made and the server responded with a status code
-          console.error("Response data:", error.response.data);
-          console.error("Response status:", error.response.status);
-
-          if (error.response.data) {
-            const apiErrors = {};
-            // Handle different error response formats
-            if (typeof error.response.data === 'object') {
-              Object.keys(error.response.data).forEach((key) => {
-                apiErrors[key] = Array.isArray(error.response.data[key])
-                  ? error.response.data[key].join(" ")
-                  : error.response.data[key];
-              });
-            } else if (typeof error.response.data === 'string') {
-              apiErrors.general = error.response.data;
+async function changePassword() {
+    const result = await Swal.fire({
+        title: 'Change password',
+        html: `
+            <div class="grid gap-4 text-left">
+                <div>
+                    <label class="field-label" for="current-password">Current password</label>
+                    <input class="field-input" id="current-password" type="password" autocomplete="current-password">
+                </div>
+                <div>
+                    <label class="field-label" for="new-password">New password</label>
+                    <input class="field-input" id="new-password" type="password" autocomplete="new-password">
+                </div>
+                <div>
+                    <label class="field-label" for="confirm-password">Confirm new password</label>
+                    <input class="field-input" id="confirm-password" type="password" autocomplete="new-password">
+                </div>
+            </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'Change password',
+        focusConfirm: false,
+        showLoaderOnConfirm: true,
+        allowOutsideClick: () => !Swal.isLoading(),
+        allowEscapeKey: () => !Swal.isLoading(),
+        didOpen: (popup) => popup.querySelector('#current-password').focus(),
+        preConfirm: async () => {
+            const popup = Swal.getPopup();
+            const currentPassword = popup.querySelector('#current-password').value;
+            const newPassword = popup.querySelector('#new-password').value;
+            const confirmation = popup.querySelector('#confirm-password').value;
+            if (!currentPassword || !newPassword || !confirmation) {
+                Swal.showValidationMessage('Fill in all three password fields.');
+                return false;
             }
-            setErrors(apiErrors);
-          }
-        } else if (error.request) {
-          // The request was made but no response was received
-          setErrors({ general: "No response from server. Please try again." });
-        } else {
-          // Something happened in setting up the request
-          setErrors({ general: error.message || "Update failed. Please try again." });
+            if (newPassword !== confirmation) {
+                Swal.showValidationMessage('The new passwords do not match.');
+                return false;
+            }
+
+            try {
+                await API.post(`${profileEndpoint}password/`, {
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                });
+                return true;
+            } catch (error) {
+                Swal.showValidationMessage('Could not change your password.');
+                Swal.getValidationMessage().textContent = getApiError(error, 'Could not change your password.');
+                return false;
+            }
+        },
+    });
+    if (result.isConfirmed) {
+        Swal.fire({ icon: 'success', title: 'Password changed', text: 'Use your new password the next time you sign in.' });
+    }
+}
+
+function ProfileEditor({ user, onSave, onCancel, saving, setSaving }) {
+    async function saveProfile(event) {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        for (const name of editableFields) {
+            if (data.get(name) === (user[name] ?? '')) data.delete(name);
         }
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+        if (data.get('nid') === user.nid) data.delete('nid');
+        if (data.get('nid_scan_copy').size > 2 * 1024 * 1024) {
+            Swal.fire({ icon: 'error', title: 'NID scan is too large', text: 'Choose a file up to 2 MB.' });
+            return;
+        }
+        for (const name of ['profile_image', 'nid_scan_copy']) {
+            if (!data.get(name).name) data.delete(name);
+        }
+        if (data.keys().next().done) {
+            onCancel();
+            return;
+        }
 
-  const toggleEditing = () => {
-    setEditing(!editing);
-    if (!editing) {
-      setSuccess(false);
-      setErrors({});
+        setSaving(true);
+        try {
+            const { data: profile } = await API.patch(profileEndpoint, data);
+            onSave(profile);
+            Swal.fire({ icon: 'success', title: 'Profile updated', text: 'Your changes were saved.' });
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Could not update profile', text: getApiError(error) });
+        } finally {
+            setSaving(false);
+        }
     }
-  };
 
-  if (loading && !editing) {
     return (
-      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen p-8 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
+        <form id={profileFormId} onSubmit={saveProfile}>
+            <fieldset disabled={saving} className="min-w-0">
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <ProfileField name="name" label="Full name" defaultValue={user.name} maxLength={255} required />
+                    <ProfileField name="email" label="Email address" type="email" defaultValue={user.email} maxLength={254} required />
+                    <ProfileField name="phone" label="Phone number" type="tel" defaultValue={user.phone ?? ''} maxLength={20} />
+                    <ProfileField name="dob" label="Date of birth" type="date" defaultValue={user.dob ?? ''} />
+                    <ProfileField name="sex" label="Sex">
+                        <select id="sex" name="sex" className="field-select" defaultValue={user.sex ?? ''}>
+                            <option value="">Unspecified</option>
+                            {Object.entries(sexLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                        </select>
+                    </ProfileField>
+                </div>
+
+                <fieldset className="mt-6 min-w-0 border-t border-slate-200 pt-4">
+                    <legend className="pr-3 text-sm font-semibold text-slate-900">National ID</legend>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <ProfileField name="nid" label="NID number" defaultValue={user.nid} inputMode="numeric" pattern="[0-9]{1,17}" maxLength={17} />
+                        <div className="min-w-0">
+                            <ProfileField name="nid_scan_copy" label={user.has_nid_scan ? 'Replace NID scan copy' : 'NID scan copy'} type="file" accept=".pdf,.jpg,.jpeg,.png" hint="PDF, JPG, or PNG up to 2 MB." />
+                            {user.has_nid_scan && <DownloadNidScan endpoint={profileEndpoint} />}
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
+                    <button type="button" className={secondaryButton} onClick={onCancel}>Cancel</button>
+                    <button type="submit" className="primary-button !w-auto gap-2">
+                        <Save aria-hidden="true" className="size-4" />
+                        {saving ? 'Saving…' : 'Save changes'}
+                    </button>
+                </div>
+            </fieldset>
+        </form>
     );
-  }
+}
 
-  return (
-    <div className="bg-gray-100 dark:bg-gray-900 min-h-screen p-8">
-      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          {/* Header */}
-          <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg leading-6 font-medium text-gray-900">User Profile</h3>
-                <p className="mt-1 max-w-2xl text-sm text-gray-500">View and manage your profile information</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                {success && (
-                  <div className="bg-green-50 text-green-800 px-4 py-2 rounded-md text-sm flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    Profile updated successfully
-                  </div>
+export default function UserDetails() {
+    const { userData, setUserData } = useAuth();
+    const { data: user, loading, error, refetch } = useApiQuery(profileEndpoint, { enabled: Boolean(userData) });
+    const [editing, setEditing] = useState(false);
+    const [photoVersion, setPhotoVersion] = useState(0);
+    const [saving, setSaving] = useState(false);
+
+    function closeEditor() {
+        setPhotoVersion((version) => version + 1);
+        setEditing(false);
+    }
+
+    function applyProfile(profile) {
+        const updates = Object.fromEntries([...editableFields, 'profile_image'].map((field) => [field, profile[field]]));
+        setUserData((current) => current?.id === profile.id ? { ...current, ...updates } : current);
+        closeEditor();
+    }
+
+    return (
+        <SurfaceCard className="mx-auto w-full max-w-4xl !p-4 sm:!p-6">
+            <PageIntro
+                as="h1"
+                title="My profile"
+                actions={!loading && !error && !editing && (
+                    <div className="flex flex-wrap gap-2">
+                        <button type="button" className={secondaryButton} onClick={() => setEditing(true)}>
+                            <Pencil aria-hidden="true" className="size-4" />
+                            Edit profile
+                        </button>
+                        <button type="button" className={secondaryButton} onClick={changePassword}>
+                            <KeyRound aria-hidden="true" className="size-4" />
+                            Change password
+                        </button>
+                    </div>
                 )}
-                <button
-                  type="button"
-                  onClick={toggleEditing}
-                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${editing ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                >
-                  {editing ? 'Cancel' : (
+            />
+
+            <QueryState loading={loading} error={error} onRetry={refetch} loadingLabel="Loading profile…">
+                {user.id && (
                     <>
-                      <EditIcon className="mr-2 h-4 w-4" />
-                      Edit Profile
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              {/* Profile Image */}
-              <div className="sm:col-span-6">
-                <label htmlFor="profile_image" className="field-label">Profile Picture</label>
-                <div className="mt-1 flex items-center space-x-5">
-                  <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-300">
-                    {formData.profile_image_preview ? (
-                      <img
-                        src={formData.profile_image_preview}
-                        alt="Profile preview"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <UserIcon className="h-12 w-12 text-gray-400" />
-                    )}
-                  </div>
-                  {editing && (
-                    <div>
-                      <label
-                        htmlFor="profile_image"
-                        className="cursor-pointer px-3 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        Change Photo
-                        <input
-                          id="profile_image"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="sr-only"
-                        />
-                      </label>
-                      <p className="mt-1 text-xs text-gray-500">JPG, PNG, or GIF up to 10MB</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Account Information Section */}
-              <div className="sm:col-span-6">
-                <h4 className="text-md font-medium text-gray-900 mb-3 pb-2 border-b border-gray-200">
-                  Account Information
-                </h4>
-              </div>
-
-              {/* Email */}
-              <div className="sm:col-span-4">
-                <label htmlFor="email" className="field-label">
-                  Email Address <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-1">
-                  {editing ? (
-                    <input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleChange("email", e.target.value)}
-                      className={`shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border ${errors.email ? "border-red-500" : "border-gray-300"
-                        } rounded-md p-2`}
-                      placeholder="user@example.com"
-                    />
-                  ) : (
-                    <div className="p-2 text-gray-900">{formData.email}</div>
-                  )}
-                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                </div>
-              </div>
-
-              {/* Personal Information Section */}
-              <div className="sm:col-span-6">
-                <h4 className="text-md font-medium text-gray-900 mb-3 pb-2 border-b border-gray-200">
-                  Personal Information
-                </h4>
-              </div>
-
-              {/* Name */}
-              <div className="sm:col-span-3">
-                <label htmlFor="name" className="field-label">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-1">
-                  {editing ? (
-                    <input
-                      id="name"
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleChange("name", e.target.value)}
-                      className={`shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border ${errors.name ? "border-red-500" : "border-gray-300"
-                        } rounded-md p-2`}
-                      placeholder="John Doe"
-                    />
-                  ) : (
-                    <div className="p-2 text-gray-900">{formData.name}</div>
-                  )}
-                  {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
-                </div>
-              </div>
-
-              {/* Phone */}
-              <div className="sm:col-span-3">
-                <label htmlFor="phone" className="field-label">
-                  Phone Number
-                </label>
-                <div className="mt-1">
-                  {editing ? (
-                    <input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleChange("phone", e.target.value)}
-                      className="field-input"
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  ) : (
-                    <div className="p-2 text-gray-900">{formData.phone || "Not provided"}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Sex */}
-              <div className="sm:col-span-2">
-                <label htmlFor="sex" className="field-label">
-                  Sex
-                </label>
-                <div className="mt-1">
-                  {editing ? (
-                    <div className="relative">
-                      <select
-                        id="sex"
-                        value={formData.sex}
-                        onChange={(e) => handleChange("sex", e.target.value)}
-                        className="field-select"
-                      >
-                        <option value="M">Male</option>
-                        <option value="F">Female</option>
-                        <option value="O">Other</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                        <svg
-                          className="h-5 w-5 text-gray-400"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          aria-hidden="true"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-2 text-gray-900">
-                      {formData.sex === 'M' ? 'Male' : formData.sex === 'F' ? 'Female' : 'Other'}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Date of Birth */}
-              <div className="sm:col-span-2">
-                <label htmlFor="userdetails-field-1" className="field-label">
-                  Date of Birth
-                </label>
-                <div className="mt-1 relative">
-                  {editing ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setShowCalendar(!showCalendar)}
-                        className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2 bg-white text-left"
-                      >
-                        <div className="flex items-center">
-                          <CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
-                          {formData.dob ? format(formData.dob, "PPP") : <span className="text-gray-500">Select date</span>}
+                        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <ProfilePhotoPicker
+                                key={photoVersion}
+                                src={user.profile_image}
+                                disabled={saving}
+                                form={profileFormId}
+                                onSelect={() => setEditing(true)}
+                            />
+                            <div className="min-w-0">
+                                <p className="break-words font-semibold text-slate-900">{user.name}</p>
+                                <p className="break-words text-sm text-slate-600">{user.email}</p>
+                            </div>
                         </div>
-                      </button>
-
-                      {showCalendar && (
-                        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-200 p-2">
-                          <input id="userdetails-field-1"
-                            type="date"
-                            value={formData.dob ? format(formData.dob, "yyyy-MM-dd") : ""}
-                            onChange={(e) => {
-                              handleChange("dob", new Date(e.target.value))
-                              setShowCalendar(false)
-                            }}
-                            className="field-input"
-                          />
-                        </div>
-                      )}
+                        {editing ? (
+                            <ProfileEditor key={user.id} user={user} onSave={applyProfile} onCancel={closeEditor} saving={saving} setSaving={setSaving} />
+                        ) : (
+                            <dl className="grid gap-3 sm:grid-cols-2">
+                                {[
+                                    ['Phone number', user.phone],
+                                    ['Date of birth', user.dob ? format(parseISO(user.dob), 'PPP') : null],
+                                    ['Sex', sexLabels[user.sex]],
+                                    ['NID number', user.nid],
+                                ].map(([label, value]) => (
+                                    <div key={label} className="min-w-0 rounded-2xl border border-slate-200 px-4 py-3">
+                                        <dt className="text-sm text-slate-600">{label}</dt>
+                                        <dd className="mt-1 break-words text-sm font-medium text-slate-900">{value || 'Not provided'}</dd>
+                                    </div>
+                                ))}
+                                <div className="min-w-0 rounded-2xl border border-slate-200 px-4 py-3">
+                                    <dt className="text-sm text-slate-600">NID scan copy</dt>
+                                    <dd className="break-words text-sm font-medium text-slate-900">
+                                        {user.has_nid_scan ? <DownloadNidScan endpoint={profileEndpoint} /> : <span className="mt-1 block">Not provided</span>}
+                                    </dd>
+                                </div>
+                            </dl>
+                        )}
                     </>
-                  ) : (
-                    <div className="p-2 text-gray-900">
-                      {formData.dob ? format(formData.dob, "PPP") : "Not provided"}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Bio */}
-              <div className="sm:col-span-6">
-                <label htmlFor="bio" className="field-label">
-                  Bio
-                </label>
-                <div className="mt-1">
-                  {editing ? (
-                    <textarea
-                      id="bio"
-                      value={formData.bio}
-                      onChange={(e) => handleChange("bio", e.target.value)}
-                      rows={3}
-                      className="field-input"
-                      placeholder="Brief description about yourself"
-                    />
-                  ) : (
-                    <div className="p-2 text-gray-900 whitespace-pre-line">
-                      {formData.bio || "Not provided"}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Form Actions - Only show when editing */}
-            {editing && (
-              <div className="mt-8 border-t border-gray-200 pt-5">
-                <div className="flex justify-end">
-                  {/* <button
-                    type="button"
-                    onClick={toggleEditing}
-                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Cancel
-                  </button> */}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={`ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loading ? "opacity-70 cursor-not-allowed" : ""
-                      }`}
-                  >
-                    {loading ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <SaveIcon className="mr-2 -ml-1 h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default UserDetails;
+                )}
+            </QueryState>
+        </SurfaceCard>
+    );
+}

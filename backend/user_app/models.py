@@ -36,7 +36,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=20, blank=True, null=True)
     profile_image = models.ImageField(upload_to='media/profile_images/', blank=True, null=True)
     sex = models.CharField(max_length=1, choices=SEX_CHOICES, blank=True, null=True)
-    #nid,address
     
     bio = models.TextField(blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
@@ -51,3 +50,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+
+class UserIdentityDocument(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    nid = models.CharField(max_length=17, blank=True)
+    nid_scan_copy = models.BinaryField(null=True)
