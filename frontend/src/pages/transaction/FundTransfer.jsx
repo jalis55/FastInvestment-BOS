@@ -1,5 +1,5 @@
 import { useApiQuery } from '@/hooks/use-api-query';
-import { QueryState } from '@/components/ui/query-state';
+import { QueryFieldLabel } from '@/components/ui/query-field-label';
 import { getApiError } from '@/api/errors';
 import { useState } from "react";
 import BannerTitle from "../../components/BannerTitle";
@@ -14,7 +14,10 @@ const FundTransfer = () => {
     const { data: users, loading: usersLoading, error: usersError, refetch: retryUsers } = useApiQuery('/api/admin/customers/');
     const [fromUser, setFromUser] = useState("");
     const balanceQuery = useApiQuery(fromUser ? `/api/acc/user/${fromUser}/balance/` : null, { staleTime: 0 });
-    const fromUserBal = balanceQuery.error || balanceQuery.loading || balanceQuery.refreshing ? 0 : Number(balanceQuery.data.balance || 0);
+    const balancePending = balanceQuery.loading || balanceQuery.refreshing;
+    const balanceUnavailable = balancePending || !!balanceQuery.error;
+    const fromUserBal = balanceUnavailable ? null : Number(balanceQuery.data.balance || 0);
+    const transferUnavailable = usersLoading || !!usersError || balanceUnavailable || fromUserBal <= 0;
     const [toUser, setToUser] = useState("");
     const [amount, setAmount] = useState('');
     const [statusMessage, setStatusMessage] = useState('');
@@ -29,7 +32,7 @@ const FundTransfer = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (loading) return;
+        if (loading || transferUnavailable) return;
         setStatusMessage('');
         if (!Number.isFinite(Number(amount)) || Number(amount) <= 0 || fromUser === toUser) {
             setStatusMessage('Select two different users and enter a valid positive amount.');
@@ -115,15 +118,15 @@ const FundTransfer = () => {
     return (
         <div>
             <BannerTitle title={"Fund Transfer"} />
-            <QueryState loading={usersLoading} error={usersError} onRetry={retryUsers}><span /></QueryState>
-            {fromUser && <QueryState loading={balanceQuery.loading} error={balanceQuery.error} onRetry={balanceQuery.refetch}><span /></QueryState>}
             {statusMessage && <p role="status" className="mb-4 text-sm text-slate-700">{statusMessage}</p>}
             <form className="page-card max-w-2xl mx-auto space-y-6" onSubmit={handleSubmit}>
 
                 <div className="mb-2">
-                    <label htmlFor="from-user" className="field-label">From</label>
+                    <QueryFieldLabel htmlFor="from-user" loading={usersLoading} error={usersError} onRetry={retryUsers}
+                        loadingLabel="Loading customers…" errorLabel="Customers unavailable.">From</QueryFieldLabel>
                     <select
                         id="from-user"
+                        disabled={usersLoading || !!usersError}
                         value={fromUser}
                         onChange={(e) => handleFromUser(e.target.value)}
                         className="field-select">
@@ -138,9 +141,10 @@ const FundTransfer = () => {
                             ))}
                     </select>
                 </div>
-                {fromUser && fromUserBal>0 ? (
+                {fromUser ? (
                     <div className="mb-2">
-                        <label htmlFor="amountInput" className="field-label">Balance</label>
+                        <QueryFieldLabel htmlFor="amountInput" loading={balancePending} error={balanceQuery.error} onRetry={balanceQuery.refetch}
+                            loadingLabel="Loading balance…" errorLabel="Balance unavailable.">Balance</QueryFieldLabel>
                         <div className="flex">
                             <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-e-0 border-gray-300 rounded-s-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600">
                                 {/* Money Icon */}
@@ -150,21 +154,20 @@ const FundTransfer = () => {
                             </span>
                             <input type="text"
                                 id='amountInput'
-                                value={fromUserBal}
+                                value={fromUserBal ?? ''}
                                 className="field-input"
                                 disabled />
                         </div>
                     </div>
-                ): 
-                <p className="text-sm text-slate-500">{fromUser ? "No available balance." : "Select a source account to view its balance."}</p>
-                }
-                {fromUser && fromUserBal>0 && (
+                ) : <p className="text-sm text-slate-500">Select a source account to view its balance.</p>}
+                {fromUser && (
 
                     <>
                         <div className="mb-2">
                             <label htmlFor="to-user" className="field-label">Select Customer</label>
                             <select
                                 id="to-user"
+                                disabled={transferUnavailable}
                                 value={toUser}
                                 onChange={(e) => setToUser(e.target.value)}
                                 className="field-select">
@@ -190,6 +193,7 @@ const FundTransfer = () => {
                                 </span>
                                 <input type="text"
                                     id="amountInput-1"
+                                    disabled={transferUnavailable}
                                     value={amount}
                                     onChange={(e) => setAmount(Number(e.target.value))}
                                     className="field-input" placeholder="amount" />
@@ -199,7 +203,7 @@ const FundTransfer = () => {
                             <button
                                 type="submit"
                                 className="primary-button"
-                                disabled={loading || usersLoading || !!usersError || balanceQuery.loading || balanceQuery.refreshing || !!balanceQuery.error}
+                                disabled={loading || transferUnavailable}
                             >
                                 {loading ? <ButtonSpinner /> : 'Transfer'}
                             </button>
@@ -207,6 +211,9 @@ const FundTransfer = () => {
                     </>
                 )}
 
+                {fromUser && !balanceUnavailable && fromUserBal <= 0 && (
+                    <p className="text-sm text-slate-500">No available balance.</p>
+                )}
             </form>
         </div>
     )

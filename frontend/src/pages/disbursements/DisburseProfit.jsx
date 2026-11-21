@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Field } from '@/components/ui/field';
 import { ProjectPicker } from '@/components/ui/project-search';
-import { QueryState } from '@/components/ui/query-state';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { cn } from '@/lib/utils';
 
@@ -296,7 +295,6 @@ export default function DisburseProfit() {
     </SurfaceCard>
 
     {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"><p>{getApiError(error)}</p><p className="mt-2 text-xs">If you attempted a disbursement, review the latest records before trying again.</p></div>}
-    {previewing && <QueryState loading />}
     {empty && <EmptyState title="No profits to distribute" description="No undistributed profits were found for this project and period. Choose another date range to review." />}
     {completed && <SurfaceCard className="flex items-start gap-4 border-emerald-200 bg-emerald-50/80"><BadgeCheck size={28} className="shrink-0 text-emerald-600" aria-hidden="true" /><div><h2 className="font-semibold text-emerald-950">Disbursement completed</h2><p className="mt-2 text-sm text-emerald-800">For project {completed.criteria.projectId}, {money(completed.walletTotal)} went to wallet balances and {money(completed.reinvestedTotal)} was reinvested.</p></div></SurfaceCard>}
 

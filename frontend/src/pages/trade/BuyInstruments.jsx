@@ -1,7 +1,7 @@
 import { ProjectSearch } from '@/components/ui/project-search';
 import { getApiError } from '@/api/errors';
 import { useApiQuery } from '@/hooks/use-api-query';
-import { QueryState } from '@/components/ui/query-state';
+import { QueryFieldLabel } from '@/components/ui/query-field-label';
 import { useState } from "react";
 import BannerTitle from "@/components/BannerTitle.jsx";
 import ButtonSpinner from "@/components/ButtonSpinner.jsx";
@@ -141,7 +141,6 @@ const BuyInstruments = () => {
     return (
         <div>
             <BannerTitle title="Buy Instrument" />
-            {projectId && <QueryState loading={instrumentsQuery.loading} error={instrumentsQuery.error} onRetry={instrumentsQuery.refetch}><span /></QueryState>}
 
             {/* Search Form */}
             <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)} onSubmit={searchProject} loading={searching || loading} />
@@ -155,14 +154,16 @@ const BuyInstruments = () => {
                         </div>
                         {/* Instrument Dropdown */}
                         <div className="mb-4">
-                            <label htmlFor="instDropdown" className="field-label">Select Instrument</label>
+                            <QueryFieldLabel htmlFor="instDropdown" loading={instrumentsQuery.loading} error={instrumentsQuery.error} onRetry={instrumentsQuery.refetch}
+                                loadingLabel="Loading instruments…" errorLabel="Instruments unavailable.">Select Instrument</QueryFieldLabel>
                             <select
                                 id="instDropdown"
+                                disabled={instrumentsQuery.loading || !!instrumentsQuery.error}
                                 value={selectedInstrument}
                                 onChange={(e) => setSelectedInstrument(e.target.value)}
                                 className="field-select"
                             >
-                                <option>Select Instrument</option>
+                                <option value="">Select Instrument</option>
                                 {instruments.map((instrument) => (
                                     <option key={instrument.id} value={instrument.id}>
                                         {instrument.name}
@@ -229,7 +230,7 @@ const BuyInstruments = () => {
                             <button
                                 type="submit"
                                 className="primary-button"
-                                disabled={loading}
+                                disabled={loading || instrumentsQuery.loading || !!instrumentsQuery.error}
                             >
                                 {loading ? <ButtonSpinner /> : 'Submit'}
                             </button>

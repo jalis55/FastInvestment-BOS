@@ -120,6 +120,7 @@ const ProjectDetails = () => {
         });
     }, [instruments, priceSnapshot]);
 
+    const holdingsUnavailable = loadingInstruments || instrumentsError;
     const totalCost = rows.reduce((total, row) => total + row.totalCost, 0);
     const totalMarketValue = rows.every((row) => row.marketValue !== null)
         ? rows.reduce((total, row) => total + row.marketValue, 0)
@@ -177,29 +178,27 @@ const ProjectDetails = () => {
                             color="text-teal-800"
                         />
 
-                        {!loadingInstruments && !instrumentsError && (
-                            <dl className="metric-card-soft space-y-2 text-sm">
-                                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                                    <dt className="font-medium text-slate-500">Total Cost</dt>
-                                    <dd className="font-semibold tabular-nums text-slate-900">{money(totalCost)}</dd>
-                                </div>
-                                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                                    <dt className="font-medium text-slate-500">Total Market Value</dt>
-                                    <dd className="font-semibold tabular-nums text-slate-900">{totalMarketValue === null ? '—' : money(totalMarketValue)}</dd>
-                                </div>
-                                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                                    <dt className="font-medium text-slate-500">Unrealized Gain/Loss</dt>
-                                    <dd className={`font-semibold tabular-nums ${unrealizedGainLoss === null ? 'text-slate-400' : unrealizedGainLoss >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{unrealizedGainLoss === null ? '—' : money(unrealizedGainLoss)}</dd>
-                                </div>
-                            </dl>
-                        )}
+                        <dl aria-busy={loadingInstruments} className="metric-card-soft space-y-2 text-sm">
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                                <dt className="font-medium text-slate-500">Total Cost</dt>
+                                <dd className="font-semibold tabular-nums text-slate-900">{holdingsUnavailable ? '—' : money(totalCost)}</dd>
+                            </div>
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                                <dt className="font-medium text-slate-500">Total Market Value</dt>
+                                <dd className="font-semibold tabular-nums text-slate-900">{holdingsUnavailable || totalMarketValue === null ? '—' : money(totalMarketValue)}</dd>
+                            </div>
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                                <dt className="font-medium text-slate-500">Unrealized Gain/Loss</dt>
+                                <dd className={`font-semibold tabular-nums ${holdingsUnavailable || unrealizedGainLoss === null ? 'text-slate-400' : unrealizedGainLoss >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{holdingsUnavailable || unrealizedGainLoss === null ? '—' : money(unrealizedGainLoss)}</dd>
+                            </div>
+                        </dl>
                     </div>
                 </SurfaceCard>
             )}
             {projectBalance &&  (
                 <>
                     {loadingInstruments ? (
-                        <LoadingState label="Loading holdings and market prices…" description="Calculating current values for this project." />
+                        <LoadingState variant="compact" label="Loading holdings and market prices…" />
                     ) : instrumentsError ? (
                         <div role="alert" className="page-card border-red-200 text-sm text-red-700">Holdings could not be loaded. Search the project again to retry.</div>
                     ) : rows.length ? (

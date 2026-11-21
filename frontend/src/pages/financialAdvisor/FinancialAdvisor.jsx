@@ -1,7 +1,7 @@
 import { ProjectSearch } from '@/components/ui/project-search';
 import { getApiError } from '@/api/errors';
 import { useApiQuery } from '@/hooks/use-api-query';
-import { QueryState } from '@/components/ui/query-state';
+import { QueryFieldLabel } from '@/components/ui/query-field-label';
 import { useState } from "react";
 import BannerTitle from "../../components/BannerTitle";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
@@ -96,9 +96,8 @@ const FinancialAdvisor = () => {
     return (
         <div>
             <BannerTitle title="Add Financial Advisor" />
-            {Boolean(projectId) && <QueryState loading={customersQuery.loading} error={customersQuery.error} onRetry={customersQuery.refetch}><span /></QueryState>}
             <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)} onSubmit={searchProject} loading={searching} />
-            {customers.length > 0 && (
+            {projectId && (
                 <div className="mx-auto max-w-2xl page-card">
                     <div className="mb-6">
                         <h2 className="section-heading">Advisor Assignment</h2>
@@ -106,14 +105,16 @@ const FinancialAdvisor = () => {
                     </div>
 
                     <div className="mb-4">
-                        <label htmlFor="advisorDropdown" className="field-label">Select Advisor</label>
+                        <QueryFieldLabel htmlFor="advisorDropdown" loading={customersQuery.loading} error={customersQuery.error} onRetry={customersQuery.refetch}
+                            loadingLabel="Loading advisors…" errorLabel="Advisors unavailable.">Select Advisor</QueryFieldLabel>
                         <select
                             id="advisorDropdown"
+                            disabled={customersQuery.loading || !!customersQuery.error}
                             value={selectedCustomer ? selectedCustomer.id : ""}
                             onChange={handleInvestorChange}
                             className="field-select"
                         >
-                            <option>Select Advisor</option>
+                            <option value="">Select Advisor</option>
                             {customers.map((customer) => (
                                 <option key={customer.id} value={customer.id}>
                                     {customer.name}
@@ -121,6 +122,9 @@ const FinancialAdvisor = () => {
                             ))}
                         </select>
                     </div>
+                    {!customersQuery.loading && !customersQuery.error && customers.length === 0 && (
+                        <p className="text-sm text-slate-500">No advisors available.</p>
+                    )}
                     {selectedCustomer && (
                         <form onSubmit={handleSubmit}>
 
@@ -142,7 +146,7 @@ const FinancialAdvisor = () => {
                                 <button
                                     type="submit"
                                     className="primary-button"
-                                    disabled={loading}
+                                    disabled={loading || customersQuery.loading || !!customersQuery.error}
                                 >
                                     {loading ? <ButtonSpinner /> : 'Submit'}
                                 </button>

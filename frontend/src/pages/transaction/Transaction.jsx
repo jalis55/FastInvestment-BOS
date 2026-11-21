@@ -1,5 +1,5 @@
 import { useApiQuery } from '@/hooks/use-api-query';
-import { QueryState } from '@/components/ui/query-state';
+import { QueryFieldLabel } from '@/components/ui/query-field-label';
 import { getApiError } from '@/api/errors';
 import { useState } from "react";
 import BannerTitle from "../../components/BannerTitle";
@@ -17,14 +17,16 @@ const Transaction = () => {
     const [statusMessage, setStatusMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const balanceQuery = useApiQuery(selectedUser && transactionType === 'payment' ? `/api/acc/user/${selectedUser}/balance/` : null, { staleTime: 0 });
-    const availableWithdrawBal = balanceQuery.error || balanceQuery.loading || balanceQuery.refreshing ? 0 : Number(balanceQuery.data.balance || 0);
+    const balancePending = balanceQuery.loading || balanceQuery.refreshing;
+    const balanceUnavailable = balancePending || !!balanceQuery.error;
+    const availableWithdrawBal = balanceUnavailable ? null : Number(balanceQuery.data.balance || 0);
 
     const handleTransactionType = (type) => setTransactionType(type);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (loading) return;
+        if (loading || usersLoading || usersError || balanceUnavailable) return;
         setStatusMessage('');
         if (!Number.isFinite(Number(amount)) || Number(amount) <= 0 || !transactionType || !transMode) {
             setStatusMessage('Choose a transaction type and mode, and enter a valid positive amount.');
@@ -113,14 +115,14 @@ const Transaction = () => {
                     <h2 className="section-heading">Create Transaction</h2>
                     <p className="section-copy">Select a customer, choose the transaction type, and submit the amount.</p>
                 </div>
-            <QueryState loading={usersLoading} error={usersError} onRetry={retryUsers}><span /></QueryState>
-            {selectedUser && transactionType === 'payment' && <QueryState loading={balanceQuery.loading} error={balanceQuery.error} onRetry={balanceQuery.refetch}><span /></QueryState>}
             {statusMessage && <p role="status" className="mb-4 text-sm text-slate-700">{statusMessage}</p>}
             <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="mb-2">
-                    <label htmlFor="userSelect" className="field-label">Select Customer</label>
+                    <QueryFieldLabel htmlFor="userSelect" loading={usersLoading} error={usersError} onRetry={retryUsers}
+                        loadingLabel="Loading customers…" errorLabel="Customers unavailable.">Select Customer</QueryFieldLabel>
                     <select
                         id="userSelect"
+                        disabled={usersLoading || !!usersError}
                         value={selectedUser}
                         onChange={(e) => setSelectedUser(e.target.value)}
                         className="field-select">
@@ -151,7 +153,8 @@ const Transaction = () => {
                         </div>
                         {transactionType === 'payment' &&
                             <div className="mb-2">
-                                <label htmlFor="amountInput-1" className="field-label">Available Balance</label>
+                                <QueryFieldLabel htmlFor="amountInput-1" loading={balancePending} error={balanceQuery.error} onRetry={balanceQuery.refetch}
+                                    loadingLabel="Loading balance…" errorLabel="Balance unavailable.">Available Balance</QueryFieldLabel>
                                 <div className="flex">
                                     <span className="inline-flex items-center rounded-s-xl border border-e-0 border-slate-300 bg-slate-200 px-3 text-sm text-slate-700">
                                         {/* Money Icon */}
@@ -161,7 +164,7 @@ const Transaction = () => {
                                     </span>
                                     <input type="text"
                                         id="amountInput-1"
-                                        value={availableWithdrawBal}
+                                        value={availableWithdrawBal ?? ''}
                                         className="field-input"
                                         disabled />
                                 </div>
@@ -203,7 +206,7 @@ const Transaction = () => {
                             <button
                                 type="submit"
                                 className="primary-button"
-                                disabled={loading || usersLoading || !!usersError || balanceQuery.loading || balanceQuery.refreshing || !!balanceQuery.error}
+                                disabled={loading || usersLoading || !!usersError || balanceUnavailable}
                             >
                                 {loading ? <ButtonSpinner /> : 'Submit'}
                             </button>
