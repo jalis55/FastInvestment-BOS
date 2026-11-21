@@ -101,7 +101,8 @@ const ProjectDetails = () => {
             const qty = Number(item.available_quantity || 0);
             const cost = Number(item.average_buy_unit_price || 0);
             const rawPrice = priceSnapshot?.prices?.[item.instrument?.name?.toUpperCase()];
-            const price = rawPrice == null ? null : Number(rawPrice);
+            const numericPrice = rawPrice == null ? NaN : Number(rawPrice);
+            const price = Number.isFinite(numericPrice) ? numericPrice : null;
 
             const totalCost = Number(item.total_cost ?? qty * cost);
             const marketValue = price == null ? null : qty * price;
@@ -118,6 +119,12 @@ const ProjectDetails = () => {
             };
         });
     }, [instruments, priceSnapshot]);
+
+    const totalCost = rows.reduce((total, row) => total + row.totalCost, 0);
+    const totalMarketValue = rows.every((row) => row.marketValue !== null)
+        ? rows.reduce((total, row) => total + row.marketValue, 0)
+        : null;
+    const unrealizedGainLoss = totalMarketValue === null ? null : totalMarketValue - totalCost;
 
     /* -------------------------------------------------
      * Render
@@ -170,6 +177,22 @@ const ProjectDetails = () => {
                             color="text-teal-800"
                         />
 
+                        {!loadingInstruments && !instrumentsError && (
+                            <dl className="metric-card-soft space-y-2 text-sm">
+                                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                                    <dt className="font-medium text-slate-500">Total Cost</dt>
+                                    <dd className="font-semibold tabular-nums text-slate-900">{money(totalCost)}</dd>
+                                </div>
+                                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                                    <dt className="font-medium text-slate-500">Total Market Value</dt>
+                                    <dd className="font-semibold tabular-nums text-slate-900">{totalMarketValue === null ? '—' : money(totalMarketValue)}</dd>
+                                </div>
+                                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                                    <dt className="font-medium text-slate-500">Unrealized Gain/Loss</dt>
+                                    <dd className={`font-semibold tabular-nums ${unrealizedGainLoss === null ? 'text-slate-400' : unrealizedGainLoss >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{unrealizedGainLoss === null ? '—' : money(unrealizedGainLoss)}</dd>
+                                </div>
+                            </dl>
+                        )}
                     </div>
                 </SurfaceCard>
             )}
@@ -195,7 +218,7 @@ const ProjectDetails = () => {
                                         <th className="px-6 py-3">Instrument Name</th>
                                         <th className="px-6 py-3">QTY</th>
                                         <th className="px-6 py-3">Cost Rate</th>
-                                        <th className="px-6 py-3">Total Cost</th>
+                                        <th className="px-6 py-3">Cost</th>
                                         <th className="px-6 py-3">Market Price</th>
                                         <th className="px-6 py-3">Market Value</th>
                                         <th className="px-6 py-3">Unrealized Gain/Loss</th>
