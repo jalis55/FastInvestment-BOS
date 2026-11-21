@@ -3,7 +3,6 @@ import { useAuth } from '@/auth/use-auth';
 import { ProjectSearch } from '@/components/ui/project-search';
 import { getApiError } from '@/api/errors';
 import { useApiQuery } from '@/hooks/use-api-query';
-import { QueryState } from '@/components/ui/query-state';
 import { useState } from "react";
 import BannerTitle from "../../components/BannerTitle";
 import ButtonSpinner from "../../components/ButtonSpinner.jsx";
@@ -20,7 +19,10 @@ const AddInvestments = () => {
     const [projectBalance, setProjectBalance] = useState(0);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const balanceQuery = useApiQuery(selectedCustomer ? `/api/acc/user/${selectedCustomer.id}/balance/` : null, { staleTime: 0 });
-    const selectedCustomerBal = balanceQuery.loading || balanceQuery.refreshing || balanceQuery.error ? 0 : Number(balanceQuery.data.balance || 0);
+    const balancePending = balanceQuery.loading || balanceQuery.refreshing;
+    const balanceUnavailable = balancePending || !!balanceQuery.error;
+    const selectedCustomerBal = balanceUnavailable ? null : Number(balanceQuery.data.balance || 0);
+    const noInvestors = !customersQuery.loading && !customersQuery.error && customers.length === 0;
     const [amount, setAmount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
@@ -63,7 +65,7 @@ const AddInvestments = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (loading || !selectedCustomer || customersQuery.loading || customersQuery.error || balanceQuery.loading || balanceQuery.refreshing || balanceQuery.error) return;
+        if (loading || !selectedCustomer || customersQuery.loading || customersQuery.error || balanceUnavailable) return;
         if (!amount || amount <= 0) {
             Swal.fire({ icon: 'warning', title: 'Invalid Amount', text: 'Please enter a valid amount greater than 0.' });
             return;
@@ -104,17 +106,15 @@ const AddInvestments = () => {
     return (
         <div>
             <BannerTitle title="Add Investment" />
-            {selectedCustomer && <QueryState loading={balanceQuery.loading} error={balanceQuery.error} onRetry={balanceQuery.refetch}><span /></QueryState>}
-            {Boolean(projectId) && <QueryState loading={customersQuery.loading} error={customersQuery.error} onRetry={customersQuery.refetch}><span /></QueryState>}
             <ProjectSearch value={searchId} onChange={(event) => setSearchId(event.target.value)} onSubmit={searchProject} loading={searching} />
-            {projectId && !customersQuery.loading && !customersQuery.error && customers.length === 0 && (
+            {projectId && noInvestors && (
                 <div role="alert" className="page-card mx-auto max-w-2xl border-amber-200 bg-amber-50">
                     <h2 className="font-semibold text-amber-950">No investors available</h2>
                     <p className="mt-2 text-sm text-amber-900">This database has no customer accounts. Register an investor and deposit funds into their account before adding an investment to project {projectId}.</p>
                     {user?.is_super_admin ? <Link to="/user-registration" className="primary-button mt-4 inline-flex">Register investor</Link> : <p className="mt-3 text-sm text-amber-900">Ask a super administrator to register an investor.</p>}
                 </div>
             )}
-            {projectId && !customersQuery.loading && !customersQuery.error && customers.length > 0 && (
+            {projectId && !noInvestors && (
                 <div className="page-card max-w-2xl mx-auto space-y-6">
                     <div className="border p-4 flex justify-between items-center mb-4">
                         <h6 className="text-sm font-medium text-gray-900 dark:text-white">Project Id: {projectId}</h6>
@@ -124,12 +124,21 @@ const AddInvestments = () => {
                     <p>Add Investment</p>
 
                     <div className="mb-4">
-                        <label htmlFor="investorDropdown" className="field-label">Select Investor</label>
+                        <div className="flex items-baseline justify-between gap-2">
+                            <label htmlFor="investorDropdown" className="field-label">Select Investor</label>
+                            {customersQuery.loading && <span role="status" className="text-sm text-slate-500">Loading investors…</span>}
+                            {customersQuery.error && (
+                                <span role="alert" className="text-sm text-red-700">
+                                    Investors unavailable. <button type="button" onClick={customersQuery.refetch} className="underline">Retry</button>
+                                </span>
+                            )}
+                        </div>
                         <select
                             id="investorDropdown"
                             value={selectedCustomer ? selectedCustomer.id : ""}
                             onChange={handleInvestorChange}
                             className="field-select"
+                            disabled={customersQuery.loading || !!customersQuery.error}
                         >
                             <option value="">Select Investor</option>
                             {customers.map((customer) => (
@@ -142,12 +151,19 @@ const AddInvestments = () => {
                     {selectedCustomer && (
                         <form onSubmit={handleSubmit}>
                             <div className="mb-4">
-                                <label htmlFor="bal" className="field-label">Available Balance</label>
+                                <div className="flex items-baseline justify-between gap-2">
+                                    <label htmlFor="bal" className="field-label">Available Balance</label>
+                                    {balancePending && <span role="status" className="text-sm text-slate-500">Loading balance…</span>}
+                                    {balanceQuery.error && (
+                                        <span role="alert" className="text-sm text-red-700">
+                                            Balance unavailable. <button type="button" onClick={balanceQuery.refetch} className="underline">Retry</button>
+                                        </span>
+                                    )}
+                                </div>
                                 <input
                                     type="number"
                                     id="bal"
-                                    value={selectedCustomerBal}
-                                    aria-describedby="balance-helper"
+                                    value={selectedCustomerBal ?? ''}
                                     className="field-input"
                                     disabled
                                 />
@@ -166,17 +182,17 @@ const AddInvestments = () => {
                                     placeholder="Enter Amount"
                                 />
                             </div>
-                            {!balanceQuery.loading && !balanceQuery.refreshing && !balanceQuery.error && selectedCustomerBal <= 0 && (
+                            {!balanceUnavailable && selectedCustomerBal <= 0 && (
                                 <p role="alert" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">This investor has no available balance. Deposit funds into their account before adding an investment.</p>
                             )}
-                            {!balanceQuery.loading && !balanceQuery.refreshing && !balanceQuery.error && selectedCustomerBal > 0 && Number(amount) > selectedCustomerBal && (
+                            {!balanceUnavailable && selectedCustomerBal > 0 && Number(amount) > selectedCustomerBal && (
                                 <p role="alert" className="mb-4 text-sm text-red-700">The investment amount exceeds the investor’s available balance of {selectedCustomerBal.toFixed(2)} BDT.</p>
                             )}
                                 <div className="flex justify-center">
                                     <button
                                         type="submit"
                                         className="primary-button"
-                                        disabled={loading || balanceQuery.loading || balanceQuery.refreshing || !!balanceQuery.error || selectedCustomerBal <= 0 || Number(amount) <= 0 || Number(amount) > selectedCustomerBal}
+                                        disabled={loading || balanceUnavailable || selectedCustomerBal <= 0 || Number(amount) <= 0 || Number(amount) > selectedCustomerBal}
                                     >
                                         {loading ? <ButtonSpinner /> : 'Submit'}
                                     </button>
