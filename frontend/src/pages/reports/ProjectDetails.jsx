@@ -9,6 +9,7 @@ import { SurfaceCard } from '@/components/ui/surface-card';
 
 const currency = new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' });
 const money = (value) => currency.format(Number(value) || 0);
+const holdingMoney = (cents) => cents === null ? '—' : money(cents / 100);
 
 const ProjectDetails = () => {
     /* -------------------------------------------------
@@ -104,9 +105,10 @@ const ProjectDetails = () => {
             const numericPrice = rawPrice == null ? NaN : Number(rawPrice);
             const price = Number.isFinite(numericPrice) ? numericPrice : null;
 
-            const totalCost = Number(item.total_cost ?? qty * cost);
-            const marketValue = price == null ? null : qty * price;
-            const gainLoss = marketValue == null ? null : marketValue - totalCost;
+            const amount = item.total_cost == null || item.total_cost === '' ? NaN : Number(item.total_cost);
+            const totalCost = Number.isFinite(amount) ? Math.round(amount * 100) : null;
+            const marketValue = price == null ? null : Math.round(qty * price * 100);
+            const gainLoss = marketValue === null || totalCost === null ? null : marketValue - totalCost;
 
             return {
                 name: item.instrument?.name || 'N/A',
@@ -121,11 +123,13 @@ const ProjectDetails = () => {
     }, [instruments, priceSnapshot]);
 
     const holdingsUnavailable = loadingInstruments || instrumentsError;
-    const totalCost = rows.reduce((total, row) => total + row.totalCost, 0);
+    const totalCost = rows.every((row) => row.totalCost !== null)
+        ? rows.reduce((total, row) => total + row.totalCost, 0)
+        : null;
     const totalMarketValue = rows.every((row) => row.marketValue !== null)
         ? rows.reduce((total, row) => total + row.marketValue, 0)
         : null;
-    const unrealizedGainLoss = totalMarketValue === null ? null : totalMarketValue - totalCost;
+    const unrealizedGainLoss = totalMarketValue === null || totalCost === null ? null : totalMarketValue - totalCost;
 
     /* -------------------------------------------------
      * Render
@@ -181,15 +185,15 @@ const ProjectDetails = () => {
                         <dl aria-busy={loadingInstruments} className="metric-card-soft space-y-2 text-sm">
                             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                                 <dt className="font-medium text-slate-500">Total Cost</dt>
-                                <dd className="font-semibold tabular-nums text-slate-900">{holdingsUnavailable ? '—' : money(totalCost)}</dd>
+                                <dd className="font-semibold tabular-nums text-slate-900">{holdingMoney(holdingsUnavailable ? null : totalCost)}</dd>
                             </div>
                             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                                 <dt className="font-medium text-slate-500">Total Market Value</dt>
-                                <dd className="font-semibold tabular-nums text-slate-900">{holdingsUnavailable || totalMarketValue === null ? '—' : money(totalMarketValue)}</dd>
+                                <dd className="font-semibold tabular-nums text-slate-900">{holdingMoney(holdingsUnavailable ? null : totalMarketValue)}</dd>
                             </div>
                             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                                 <dt className="font-medium text-slate-500">Unrealized Gain/Loss</dt>
-                                <dd className={`font-semibold tabular-nums ${holdingsUnavailable || unrealizedGainLoss === null ? 'text-slate-400' : unrealizedGainLoss >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{holdingsUnavailable || unrealizedGainLoss === null ? '—' : money(unrealizedGainLoss)}</dd>
+                                <dd className={`font-semibold tabular-nums ${holdingsUnavailable || unrealizedGainLoss === null ? 'text-slate-400' : unrealizedGainLoss >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{holdingMoney(holdingsUnavailable ? null : unrealizedGainLoss)}</dd>
                             </div>
                         </dl>
                     </div>
@@ -229,10 +233,10 @@ const ProjectDetails = () => {
                                             <th className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{r.name}</th>
                                             <td className="px-6 py-4">{r.qty}</td>
                                             <td className="px-6 py-4 tabular-nums">{money(r.cost)}</td>
-                                            <td className="px-6 py-4 tabular-nums">{money(r.totalCost)}</td>
+                                            <td className="px-6 py-4 tabular-nums">{holdingMoney(r.totalCost)}</td>
                                             <td className="px-6 py-4 tabular-nums">{r.price == null ? '—' : money(r.price)}</td>
-                                            <td className="px-6 py-4 tabular-nums">{r.marketValue == null ? '—' : money(r.marketValue)}</td>
-                                            <td className={`px-6 py-4 font-semibold tabular-nums ${r.gainLoss == null ? 'text-slate-400' : r.gainLoss >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{r.gainLoss == null ? '—' : money(r.gainLoss)}</td>
+                                            <td className="px-6 py-4 tabular-nums">{holdingMoney(r.marketValue)}</td>
+                                            <td className={`px-6 py-4 font-semibold tabular-nums ${r.gainLoss == null ? 'text-slate-400' : r.gainLoss >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{holdingMoney(r.gainLoss)}</td>
                                         </tr>
                                     ))}
                                 </tbody>

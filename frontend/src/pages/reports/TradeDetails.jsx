@@ -83,16 +83,16 @@ export default function TradeDetailsPage() {
   const getTotalsByType = () => {
     const buyTotal = filteredTrades
       .filter((trade) => trade.trns_type === "buy")
-      .reduce((sum, trade) => sum + Number(trade.total_trade_value), 0)
+      .reduce((sum, trade) => sum + Math.round(Number(trade.total_trade_value) * 100), 0)
 
     const sellTotal = filteredTrades
       .filter((trade) => trade.trns_type === "sell")
-      .reduce((sum, trade) => sum + Number(trade.total_trade_value), 0)
+      .reduce((sum, trade) => sum + Math.round(Number(trade.total_trade_value) * 100), 0)
 
     return {
-      buy: formatCurrency(buyTotal),
-      sell: formatCurrency(sellTotal),
-      net: formatCurrency(sellTotal - buyTotal),
+      buy: buyTotal / 100,
+      sell: sellTotal / 100,
+      net: (sellTotal - buyTotal) / 100,
     }
   }
 
@@ -138,20 +138,20 @@ export default function TradeDetailsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="metric-card-soft">
             <h2 className="text-sm font-medium text-slate-500 mb-2">Buy value</h2>
-            <p className="text-2xl font-bold text-blue-700">{totals.buy}</p>
+            <p className="text-2xl font-bold text-blue-700">{formatCurrency(totals.buy)}</p>
           </div>
 
           <div className="metric-card-soft">
             <h2 className="text-sm font-medium text-slate-500 mb-2">Sell value</h2>
-            <p className="text-2xl font-bold text-emerald-700">{totals.sell}</p>
+            <p className="text-2xl font-bold text-emerald-700">{formatCurrency(totals.sell)}</p>
           </div>
 
           <div className="metric-card-soft">
             <h2 className="text-sm font-medium text-slate-500 mb-2">Net trade value</h2>
             <p
-              className={`text-2xl font-bold ${Number.parseFloat(totals.net.replace(/[^0-9.-]+/g, "")) >= 0 ? "text-emerald-700" : "text-rose-700"}`}
+              className={`text-2xl font-bold ${totals.net >= 0 ? "text-emerald-700" : "text-rose-700"}`}
             >
-              {totals.net}
+              {formatCurrency(totals.net)}
             </p>
           </div>
         </div>

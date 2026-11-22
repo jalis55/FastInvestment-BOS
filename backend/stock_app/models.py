@@ -126,7 +126,7 @@ class Trade(models.Model):
 
     @property
     def total_trade_value(self):
-        if self.commission_rate is None:
+        if self.total_commission is None:
             return self.qty * (self.actual_unit_price if self.actual_unit_price is not None else self.unit_price)
         commission = self.total_commission if self.trns_type == self.BUY else -self.total_commission
         return self.qty * self.unit_price + commission

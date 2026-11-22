@@ -93,7 +93,7 @@ class ProjectBalanceDetailsView(generics.RetrieveAPIView):
         gross = F('qty') * F('unit_price')
         trade_totals = project.trade_project_details.values('trns_type').annotate(
             total=Sum(Case(
-                When(commission_rate__isnull=True, then=F('qty') * F('actual_unit_price')),
+                When(total_commission__isnull=True, then=F('qty') * Coalesce('actual_unit_price', 'unit_price')),
                 When(trns_type=Trade.BUY, then=gross + F('total_commission')),
                 default=gross - F('total_commission'),
                 output_field=DecimalField(max_digits=100, decimal_places=2),

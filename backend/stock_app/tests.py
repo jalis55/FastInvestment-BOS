@@ -49,6 +49,23 @@ class TradeCommissionTests(TestCase):
         self.assertEqual(balances.data['total_buy_amount'], '12040.00')
         self.assertEqual(balances.data['total_sell_amount'], '9970.00')
 
+    @patch('user_app.signals.cache.delete_pattern')
+    def test_legacy_trade_details_and_balances_use_stored_commission(self, _delete_pattern):
+        for trade_type in (Trade.BUY, Trade.SELL):
+            response = self.trade(self.project.pk, trade_type, qty=1850, unit_price='10.83')
+            self.assertEqual(response.status_code, 201, response.data)
+        Trade.objects.filter(project=self.project).update(commission_rate=None)
+
+        details = self.client.get(f'/api/stock/trade/details/?project_id={self.project.pk}')
+        self.assertEqual(details.status_code, 200)
+        values = {row['trns_type']: row['total_trade_value'] for row in details.data}
+        self.assertEqual(values, {Trade.BUY: '20115.64', Trade.SELL: '19955.36'})
+
+        balances = self.client.get(f'/api/stock/project/balance/details/{self.project.pk}/')
+        self.assertEqual(balances.status_code, 200)
+        self.assertEqual(balances.data['total_buy_amount'], values[Trade.BUY])
+        self.assertEqual(balances.data['total_sell_amount'], values[Trade.SELL])
+
     def test_rate_update_preserves_existing_trades_and_rejects_stale_quotes(self):
         recorded = self.trade(self.project.pk)
         self.assertEqual(recorded.status_code, 201, recorded.data)
