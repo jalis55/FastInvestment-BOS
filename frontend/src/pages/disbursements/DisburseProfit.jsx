@@ -1,5 +1,6 @@
+import ButtonSpinner from '@/components/ButtonSpinner';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BadgeCheck, CalendarRange, Check, CircleDollarSign, Eye, LoaderCircle, Users, Wallet } from 'lucide-react';
+import { ArrowRight, BadgeCheck, CalendarRange, Check, CircleDollarSign, Eye, Users, Wallet } from 'lucide-react';
 import Swal from 'sweetalert2';
 import API from '@/api/axios';
 import { getApiError } from '@/api/errors';
@@ -299,7 +300,7 @@ export default function DisburseProfit() {
           <Field htmlFor="profit-to" label="To date"><input id="profit-to" type="date" className="field-input min-h-[52px]" min={criteria.from || undefined} value={criteria.to} onChange={(event) => change('to', event.target.value)} disabled={busy} required /></Field>
         </div>
         {validation && <p role="alert" className="mt-4 text-sm text-red-700">{validation}</p>}
-        <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-slate-500">Both dates are included in the selected period.</p><Button type="submit" disabled={busy} className="h-11 rounded-xl px-5">{previewing ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}{previewing ? 'Preparing preview…' : 'Preview distribution'}</Button></div>
+        <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-slate-500">Both dates are included in the selected period.</p><Button type="submit" disabled={busy} className="h-11 rounded-xl px-5">{previewing ? <ButtonSpinner label="Preparing preview…" /> : <><Eye size={16} aria-hidden="true" />Preview distribution</>}</Button></div>
       </form>
     </SurfaceCard>
 
@@ -326,7 +327,7 @@ export default function DisburseProfit() {
       <SurfaceCard className="border-slate-800 bg-slate-900 text-white xl:sticky xl:top-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">Distribution summary</p><h2 className="mt-3 text-lg font-semibold">Project {review.criteria.projectId}</h2><p className="mt-2 text-xs leading-5 text-slate-400">{dateLabel(review.criteria.from)} – {dateLabel(review.criteria.to)}</p>
         <dl className="my-6 space-y-4 text-sm"><div className="flex justify-between gap-3"><dt className="text-slate-400">Recipients</dt><dd className="font-medium">{review.recipientCount}</dd></div><div className="flex justify-between gap-3"><dt className="text-slate-400">Wallet balances</dt><dd className="tabular-nums">{money(walletTotal)}</dd></div><div className="flex justify-between gap-3"><dt className="text-slate-400">Reinvested</dt><dd className="tabular-nums">{money(reinvestedTotal)}</dd></div><div className="border-t border-white/10 pt-4"><dt className="text-xs text-slate-400">Total preview allocation</dt><dd className="mt-2 break-words text-2xl font-semibold tracking-tight tabular-nums">{money(review.advisorTotal + review.investorTotal)}</dd></div></dl>
-        <Button onClick={disburse} disabled={busy || !review.recipientCount || selectedIds.size > 0} className="h-11 w-full rounded-xl bg-cyan-300 text-slate-950 hover:bg-cyan-200">{submitting ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> : <ArrowRight size={16} aria-hidden="true" />}{submitting ? 'Processing…' : 'Disburse profits'}</Button><p className="mt-3 text-[11px] leading-5 text-slate-400">{selectedIds.size > 0 ? 'Apply or clear the selection before disbursing.' : 'You’ll confirm before proceeding. Final amounts are calculated when profits are disbursed.'}</p>
+        <Button onClick={disburse} disabled={busy || !review.recipientCount || selectedIds.size > 0} className="h-11 w-full rounded-xl bg-cyan-300 text-slate-950 hover:bg-cyan-200">{submitting ? <ButtonSpinner label="Disbursing profits…" /> : <><ArrowRight size={16} aria-hidden="true" />Disburse profits</>}</Button><p className="mt-3 text-[11px] leading-5 text-slate-400">{selectedIds.size > 0 ? 'Apply or clear the selection before disbursing.' : 'You’ll confirm before proceeding. Final amounts are calculated when profits are disbursed.'}</p>
       </SurfaceCard>
     </div>}
 

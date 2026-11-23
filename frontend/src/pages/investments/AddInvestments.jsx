@@ -126,7 +126,7 @@ const AddInvestments = () => {
                     <div className="mb-4">
                         <div className="flex items-baseline justify-between gap-2">
                             <label htmlFor="investorDropdown" className="field-label">Select Investor</label>
-                            {customersQuery.loading && <span role="status" className="text-sm text-slate-500">Loading investors…</span>}
+                            {customersQuery.loading && <span className="text-blue-700"><ButtonSpinner label="Loading investors…" /></span>}
                             {customersQuery.error && (
                                 <span role="alert" className="text-sm text-red-700">
                                     Investors unavailable. <button type="button" onClick={customersQuery.refetch} className="underline">Retry</button>
@@ -153,7 +153,7 @@ const AddInvestments = () => {
                             <div className="mb-4">
                                 <div className="flex items-baseline justify-between gap-2">
                                     <label htmlFor="bal" className="field-label">Available Balance</label>
-                                    {balancePending && <span role="status" className="text-sm text-slate-500">Loading balance…</span>}
+                                    {balancePending && <span className="text-blue-700"><ButtonSpinner label="Loading balance…" /></span>}
                                     {balanceQuery.error && (
                                         <span role="alert" className="text-sm text-red-700">
                                             Balance unavailable. <button type="button" onClick={balanceQuery.refetch} className="underline">Retry</button>

@@ -1,5 +1,6 @@
 import { getApiError } from '@/api/errors';
 import { useMemo, useState } from "react";
+import ButtonSpinner from "@/components/ButtonSpinner";
 import { Bell, ChevronsLeft, Menu, Sparkles, UserRound } from "lucide-react";
 import PropTypes from "prop-types";
 import { useMatches, useNavigate, Link } from "react-router-dom";
@@ -121,7 +122,7 @@ const Header = ({ collapsed, setCollapsed, isMobile, menuButtonRef }) => {
                                     disabled={loggingOut}
                             onClick={handleLogout}
                                 >
-                                    Logout
+                                    {loggingOut ? <ButtonSpinner label="Signing out…" /> : "Logout"}
                                 </button>
                             </div>
                         </div>

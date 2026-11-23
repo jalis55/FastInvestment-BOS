@@ -1,3 +1,4 @@
+import ButtonSpinner from '@/components/ButtonSpinner';
 import { useState } from 'react';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
@@ -87,7 +88,7 @@ function EditUserForm({ user, endpoint, refetch }) {
                 <div className="mt-6 flex justify-end border-t border-slate-200 pt-4">
                     <button type="submit" className="primary-button !w-auto gap-2" disabled={saving}>
                         <Save aria-hidden="true" className="size-4" />
-                        {saving ? 'Saving…' : 'Save changes'}
+                        {saving ? <ButtonSpinner label="Saving…" /> : 'Save changes'}
                     </button>
                 </div>
             </fieldset>

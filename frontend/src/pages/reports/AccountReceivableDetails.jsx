@@ -1,3 +1,4 @@
+import ButtonSpinner from '@/components/ButtonSpinner';
 import React, { useState } from 'react';
 import API from '@/api/axios';
 import Swal from 'sweetalert2';
@@ -153,7 +154,7 @@ const AccountReceivableDetails = () => {
           </div>
 
           <Button type="submit" disabled={searching || !searchId.trim()}>
-            {searching ? 'Searching…' : 'Search'}
+            {searching ? <ButtonSpinner label="Searching…" /> : 'Search'}
           </Button>
         </div>
       </form>

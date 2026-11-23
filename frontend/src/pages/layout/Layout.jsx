@@ -69,7 +69,7 @@ const Layout = () => {
                 <div className="h-[calc(100dvh-64px)] overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-4 sm:px-6 sm:py-6 lg:h-[calc(100dvh-72px)] lg:p-8">
                     <main className="mx-auto w-full min-w-0 max-w-7xl">
                         <ErrorBoundary key={location.pathname}>
-                            <Suspense fallback={<Spinner />}><Outlet /></Suspense>
+                            <Suspense fallback={<Spinner fullPage={false} />}><Outlet /></Suspense>
                         </ErrorBoundary>
                     </main>
                 </div>

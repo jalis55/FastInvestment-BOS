@@ -1,3 +1,4 @@
+import ButtonSpinner from '@/components/ButtonSpinner';
 import { LoadingState } from '@/components/ui/loading-state';
 import { useEffect, useRef, useState } from 'react';
 import API from '@/api/axios';
@@ -52,7 +53,7 @@ export default function DividendPanel({ projectId, onRecorded }) {
       <label className="field-label">Dividend type<select className="field-select mt-2" {...field('dividend_type')}><option value="cash">Cash</option><option value="share">Share (bonus)</option></select></label>
       <label className="field-label">{form.dividend_type === 'cash' ? 'Amount (BDT)' : 'Bonus shares received'}<input required type="number" min={form.dividend_type === 'cash' ? '0.01' : '1'} step={form.dividend_type === 'cash' ? '0.01' : '1'} className="field-input mt-2" {...field('value')} /></label>
       <label className="field-label">Received date<input required type="date" className="field-input mt-2" {...field('received_date')} /></label>
-      <button type="submit" disabled={busy || loading} className="primary-button">{busy ? 'Recording…' : 'Record dividend'}</button>
+      <button type="submit" disabled={busy || loading} className="primary-button">{busy ? <ButtonSpinner label="Recording…" /> : 'Record dividend'}</button>
     </form>}
     {loading ? <LoadingState variant="compact" label="Loading dividends and available holdings…" className="mt-5" /> : <div className="mt-6 overflow-x-auto"><table role="table" className="responsive-table w-full text-left text-sm"><thead role="rowgroup"><tr role="row" className="border-b text-slate-500">{['Received', 'Instrument', 'Type', 'Cash (BDT)', 'Bonus shares'].map((label) => <th role="columnheader" className="p-3" key={label}>{label}</th>)}</tr></thead><tbody role="rowgroup">{records.map((d) => <tr role="row" key={d.id} className="border-b border-slate-100"><td role="cell" data-mobile-label="Received" className="p-3"><div>{d.received_date}</div></td><td role="rowheader" data-mobile-heading className="p-3">{d.instrument_details.name}</td><td role="cell" data-mobile-label="Type" className="p-3 capitalize"><div>{d.dividend_type}</div></td><td role="cell" data-mobile-label="Cash (BDT)" className="p-3"><div>{d.dividend_type === 'cash' ? d.amount : '—'}</div></td><td role="cell" data-mobile-label="Bonus shares" className="p-3"><div>{d.dividend_type === 'share' ? d.qty : '—'}</div></td></tr>)}</tbody></table>{!records.length && <p className="mt-4 text-sm text-slate-500">No dividends recorded.</p>}</div>}
   </SurfaceCard>;

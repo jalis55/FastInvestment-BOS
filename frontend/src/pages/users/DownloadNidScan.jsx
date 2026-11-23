@@ -1,3 +1,4 @@
+import ButtonSpinner from '@/components/ButtonSpinner';
 import { useState } from 'react';
 import { Download } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -29,7 +30,7 @@ export default function DownloadNidScan({ endpoint }) {
     return (
         <button type="button" disabled={downloading} onClick={downloadScan} className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-blue-700 hover:underline disabled:opacity-60">
             <Download aria-hidden="true" className="size-4" />
-            {downloading ? 'Downloading…' : 'Download current scan'}
+            {downloading ? <ButtonSpinner label="Downloading…" /> : 'Download current scan'}
         </button>
     );
 }

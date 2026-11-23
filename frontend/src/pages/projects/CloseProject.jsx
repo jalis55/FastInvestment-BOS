@@ -1,6 +1,8 @@
+import ButtonSpinner from '@/components/ButtonSpinner';
+import { LoadingState } from '@/components/ui/loading-state';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, CircleDollarSign, Info, LoaderCircle, LockKeyhole, Search } from 'lucide-react';
+import { ArrowRight, Check, CircleDollarSign, Info, LockKeyhole, Search } from 'lucide-react';
 import Swal from 'sweetalert2';
 import API from '@/api/axios';
 import { getApiError } from '@/api/errors';
@@ -109,7 +111,7 @@ export default function CloseProject() {
     </ol>
     <ProjectSearch value={searchId} onChange={(event) => { setSearchId(event.target.value); setReview(null); setError(''); }} onSubmit={searchProject} loading={busy} />
     {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">{error}</p>}
-    {loading && <div role="status" className="page-card flex items-center justify-center gap-3 text-sm text-slate-600"><LoaderCircle size={20} className="animate-spin" aria-hidden="true" />Loading balances, payouts, and closure checks…</div>}
+    {loading && <LoadingState label="Loading balances, payouts, and closure checks…" />}
     {completed && <SurfaceCard className="border-emerald-200 bg-emerald-50/50 text-center">
       <Check className="mx-auto size-10 text-emerald-600" aria-hidden="true" />
       <h2 className="mt-4 text-xl font-semibold text-slate-900">Project closed. Capital returned.</h2>
@@ -162,7 +164,7 @@ export default function CloseProject() {
             <Readiness ready={!review.unpaidCount} title={!review.unpaidCount ? 'Profit disbursement complete' : 'Profit payout required'} detail={!review.unpaidCount ? `${money(review.paid)} already disbursed. Nothing remains unpaid.` : `${money(review.unpaid)} still needs to be disbursed.`} href="/disburse-profit" action="Go to profit disbursement" />
             <Readiness ready={review.investors.length > 0} title={review.investors.length ? 'Investor returns identified' : 'No investor contributions'} detail={review.investors.length ? `${review.investors.length} investors will share ${money(balance.available_balance)}.` : 'Add investor contributions before closing.'} />
           </ul>
-          <div className="mt-5 border-t border-slate-200 pt-5"><p className="text-sm font-semibold text-slate-900">What happens next?</p><p className="mt-2 text-xs leading-6 text-slate-500">Closing credits capital returns to investor accounts and marks this project closed. You will review the total once more before confirming.</p><Button onClick={closeProject} disabled={!ready || busy} className="mt-5 h-auto min-h-12 w-full whitespace-normal rounded-xl bg-slate-950 px-3 py-3 text-white hover:bg-slate-800">{submitting ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> : <LockKeyhole size={16} aria-hidden="true" />}{submitting ? 'Rechecking project…' : 'Review closure & return capital'}</Button>{!ready && <p className="mt-3 text-xs leading-5 text-amber-800">Complete the checks above, then search again to refresh this review.</p>}</div>
+          <div className="mt-5 border-t border-slate-200 pt-5"><p className="text-sm font-semibold text-slate-900">What happens next?</p><p className="mt-2 text-xs leading-6 text-slate-500">Closing credits capital returns to investor accounts and marks this project closed. You will review the total once more before confirming.</p><Button onClick={closeProject} disabled={!ready || busy} className="mt-5 h-auto min-h-12 w-full whitespace-normal rounded-xl bg-slate-950 px-3 py-3 text-white hover:bg-slate-800">{submitting ? <ButtonSpinner label="Rechecking project…" /> : <><LockKeyhole size={16} aria-hidden="true" />Review closure & return capital</>}</Button>{!ready && <p className="mt-3 text-xs leading-5 text-amber-800">Complete the checks above, then search again to refresh this review.</p>}</div>
         </SurfaceCard>
       </div>
     </>}

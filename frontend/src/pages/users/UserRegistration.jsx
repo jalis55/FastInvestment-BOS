@@ -1,3 +1,4 @@
+import ButtonSpinner from '@/components/ButtonSpinner';
 import { useState } from "react";
 import { IdCard, KeyRound, UserRound } from "lucide-react";
 import Swal from "sweetalert2";
@@ -182,7 +183,7 @@ export default function UserRegistration() {
                         <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
                             <button className={secondaryButton} type="reset">Reset form</button>
                             <button className="primary-button !w-auto" type="submit">
-                                {loading ? "Creating user…" : "Create user"}
+                                {loading ? <ButtonSpinner label="Creating user…" /> : "Create user"}
                             </button>
                         </div>
                     </fieldset>
