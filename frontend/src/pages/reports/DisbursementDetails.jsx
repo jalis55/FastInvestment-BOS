@@ -75,25 +75,25 @@ function DisbursementSummary({ report }) {
           <p className="mt-1 text-xs text-slate-600">Amounts and percentages come from recorded allocations.</p>
         </div>
         <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Recorded allocations by recipient">
-          <table className="w-full min-w-[38rem] text-left text-sm">
-            <thead className="border-y border-slate-100 bg-slate-50 text-xs text-slate-600">
-              <tr>
-                <th scope="col" className="px-5 py-3 font-medium">Recipient</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Investor profit / share</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium">Advisor commission / rate</th>
-                <th scope="col" className="px-5 py-3 text-right font-medium">Total allocation</th>
+          <table role="table" className="responsive-table w-full min-w-[38rem] text-left text-sm">
+            <thead role="rowgroup" className="border-y border-slate-100 bg-slate-50 text-xs text-slate-600">
+              <tr role="row">
+                <th role="columnheader" scope="col" className="px-5 py-3 font-medium">Recipient</th>
+                <th role="columnheader" scope="col" className="px-4 py-3 text-right font-medium">Investor profit / share</th>
+                <th role="columnheader" scope="col" className="px-4 py-3 text-right font-medium">Advisor commission / rate</th>
+                <th role="columnheader" scope="col" className="px-5 py-3 text-right font-medium">Total allocation</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody role="rowgroup" className="divide-y divide-slate-100">
               {recipients.map(({ user, investor, advisor, total }) => (
-                <tr key={user.id} className="hover:bg-slate-50/70">
-                  <th scope="row" className="px-5 py-3 text-left font-medium text-slate-900">
+                <tr role="row" key={user.id} className="hover:bg-slate-50/70">
+                  <th role="rowheader" data-mobile-heading scope="row" className="px-5 py-3 text-left font-medium text-slate-900">
                     <span className="block">{user.name || user.email}</span>
                     {user.name && <span className="block break-all text-xs font-normal text-slate-500">{user.email}</span>}
                   </th>
-                  <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-500"><RateAmount allocation={investor} /></td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-500"><RateAmount allocation={advisor} /></td>
-                  <td className="whitespace-nowrap px-5 py-3 text-right font-semibold tabular-nums text-slate-900">{money(total)}</td>
+                  <td role="cell" data-mobile-label="Investor profit / share" className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-500"><div><RateAmount allocation={investor} /></div></td>
+                  <td role="cell" data-mobile-label="Advisor commission / rate" className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-500"><div><RateAmount allocation={advisor} /></div></td>
+                  <td role="cell" data-mobile-label="Total allocation" className="whitespace-nowrap px-5 py-3 text-right font-semibold tabular-nums text-slate-900"><div>{money(total)}</div></td>
                 </tr>
               ))}
             </tbody>

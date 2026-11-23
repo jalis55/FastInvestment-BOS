@@ -52,52 +52,58 @@ const PendingPayments = () => {
                     <p className="text-center text-gray-600 p-5">No Pending Payments</p>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="min-w-full border-collapse bg-white text-left text-sm text-gray-500">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-4 py-3 font-medium text-gray-900">User</th>
-                                    <th className="px-4 py-3 font-medium text-gray-900">Amount</th>
-                                    <th className="px-4 py-3 font-medium text-gray-900">Issued by</th>
-                                    <th className="px-4 py-3 font-medium text-gray-900">Issue Date</th>
-                                    <th className="px-4 py-3 font-medium text-gray-900 text-right">Actions</th>
+                        <table role="table" className="responsive-table min-w-full border-collapse bg-white text-left text-sm text-gray-500">
+                            <thead role="rowgroup" className="bg-gray-50">
+                                <tr role="row">
+                                    <th role="columnheader" className="px-4 py-3 font-medium text-gray-900">User</th>
+                                    <th role="columnheader" className="px-4 py-3 font-medium text-gray-900">Amount</th>
+                                    <th role="columnheader" className="px-4 py-3 font-medium text-gray-900">Issued by</th>
+                                    <th role="columnheader" className="px-4 py-3 font-medium text-gray-900">Issue Date</th>
+                                    <th role="columnheader" className="px-4 py-3 font-medium text-gray-900 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 border-t border-gray-100">
+                            <tbody role="rowgroup" className="divide-y divide-gray-100 border-t border-gray-100">
                                 {pendingPaymentList.map((payment) => (
-                                    <tr key={payment.id} className="hover:bg-gray-50">
-                                        <td className="flex gap-3 px-4 py-3 font-normal text-gray-900">
-                                            <div className="relative h-10 w-10">
-                                                <img
-                                                    className="h-full w-full rounded-full object-cover"
-                                                    src={payment.user.profile_image || "https://e7.pngegg.com/pngimages/84/165/png-clipart-united-states-avatar-organization-information-user-avatar-service-computer-wallpaper-thumbnail.png"}
-                                                    alt={payment.user.name}
-                                                />
-                                            </div>
-                                            <div className="text-sm">
-                                                <div className="font-medium text-gray-700">{payment.user.email}</div>
-                                                <div className="text-gray-400">{payment.user.name}</div>
+                                    <tr role="row" key={payment.id} className="hover:bg-gray-50">
+                                        <td role="rowheader" data-mobile-heading className="px-4 py-3 font-normal text-gray-900">
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative size-10 shrink-0">
+                                                    <img
+                                                        className="h-full w-full rounded-full object-cover"
+                                                        src={payment.user.profile_image || "https://e7.pngegg.com/pngimages/84/165/png-clipart-united-states-avatar-organization-information-user-avatar-service-computer-wallpaper-thumbnail.png"}
+                                                        alt={payment.user.name}
+                                                    />
+                                                </div>
+                                                <div className="text-sm">
+                                                    <div className="font-medium text-gray-700">{payment.user.email}</div>
+                                                    <div className="text-gray-400">{payment.user.name}</div>
+                                                </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">${payment.amount}</td>
-                                        <td className="px-4 py-3">{payment.issued_by.email}</td>
-                                        <td className="px-4 py-3">
-                                            {format(parseISO(payment.issued_date), 'MMMM dd, yyyy')}
+                                        <td role="cell" data-mobile-label="Amount" className="px-4 py-3"><div>${payment.amount}</div></td>
+                                        <td role="cell" data-mobile-label="Issued by" className="px-4 py-3"><div>{payment.issued_by.email}</div></td>
+                                        <td role="cell" data-mobile-label="Issue date" className="px-4 py-3">
+                                            <div>
+                                                {format(parseISO(payment.issued_date), 'MMMM dd, yyyy')}
+                                            </div>
                                         </td>
-                                        <td className="px-4 py-3 text-right">
+                                        <td role="cell" className="px-4 py-3 text-right">
                                             <div className="flex justify-end gap-4">
                                                 <button
                                                     disabled={busy}
+                                                    aria-label="Approve payment"
                                                     title="Approve"
                                                     onClick={() => confirmAction(payment.id, 'approved')}
-                                                    className="text-green-600 hover:text-green-800"
+                                                    className="grid size-11 place-items-center rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                                                 >
                                                     <CheckCircleIcon size={20} />
                                                 </button>
                                                 <button
                                                     disabled={busy}
+                                                    aria-label="Decline payment"
                                                     title="Cancel"
                                                     onClick={() => confirmAction(payment.id, 'declined')}
-                                                    className="text-red-600 hover:text-red-800"
+                                                    className="grid size-11 place-items-center rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100"
                                                 >
                                                     <XCircleIcon size={20} />
                                                 </button>

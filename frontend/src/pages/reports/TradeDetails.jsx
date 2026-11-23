@@ -193,10 +193,28 @@ export default function TradeDetailsPage() {
                 ))}
               </select>
             </div>
+            <div className="xl:hidden">
+              <label htmlFor="trade-sort" className="field-label">Sort trades</label>
+              <select
+                id="trade-sort"
+                className="field-select"
+                value={`${sortConfig.key}:${sortConfig.direction}`}
+                onChange={(event) => {
+                  const [key, direction] = event.target.value.split(":");
+                  setSortConfig({ key, direction });
+                }}
+              >
+                {Object.entries({
+                  trade_date: "Date", trns_type: "Type", qty: "Quantity",
+                  unit_price: "Unit price", total_commission: "Commission", actual_unit_price: "Actual price",
+                }).flatMap(([key, label]) => [
+                  <option key={`${key}:desc`} value={`${key}:desc`}>{label} ↓</option>,
+                  <option key={`${key}:asc`} value={`${key}:asc`}>{label} ↑</option>,
+                ])}
+              </select>
+            </div>
           </div>
         </div>
-
-
 
         {/* Trades Table */}
         <div className="table-shell overflow-hidden">
@@ -205,58 +223,76 @@ export default function TradeDetailsPage() {
             <p className="mt-1 text-sm text-slate-500">Showing {filteredTrades.length} of {trades.length} trades</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-[860px] w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th
+            <table role="table" className="responsive-table min-w-[860px] w-full divide-y divide-slate-200">
+              <thead role="rowgroup" className="bg-slate-50">
+                <tr role="row">
+                  <th role="columnheader"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("trade_date")}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    aria-sort={sortConfig.key === "trade_date" ? (sortConfig.direction === "asc" ? "ascending" : "descending") : undefined}
                   >
-                    Date {getSortIndicator("trade_date")}
+                    <span className="xl:hidden">Date</span>
+                    <button type="button" className="hidden font-medium uppercase tracking-wider hover:text-slate-900 xl:inline" onClick={() => handleSort("trade_date")}>
+                      Date {getSortIndicator("trade_date")}
+                    </button>
                   </th>
-                  <th
+                  <th role="columnheader"
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     Instrument
                   </th>
-                  <th
+                  <th role="columnheader"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("trns_type")}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    aria-sort={sortConfig.key === "trns_type" ? (sortConfig.direction === "asc" ? "ascending" : "descending") : undefined}
                   >
-                    Type {getSortIndicator("trns_type")}
+                    <span className="xl:hidden">Type</span>
+                    <button type="button" className="hidden font-medium uppercase tracking-wider hover:text-slate-900 xl:inline" onClick={() => handleSort("trns_type")}>
+                      Type {getSortIndicator("trns_type")}
+                    </button>
                   </th>
-                  <th
+                  <th role="columnheader"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("qty")}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    aria-sort={sortConfig.key === "qty" ? (sortConfig.direction === "asc" ? "ascending" : "descending") : undefined}
                   >
-                    Quantity {getSortIndicator("qty")}
+                    <span className="xl:hidden">Quantity</span>
+                    <button type="button" className="hidden font-medium uppercase tracking-wider hover:text-slate-900 xl:inline" onClick={() => handleSort("qty")}>
+                      Quantity {getSortIndicator("qty")}
+                    </button>
                   </th>
-                  <th
+                  <th role="columnheader"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("unit_price")}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    aria-sort={sortConfig.key === "unit_price" ? (sortConfig.direction === "asc" ? "ascending" : "descending") : undefined}
                   >
-                    Unit Price {getSortIndicator("unit_price")}
+                    <span className="xl:hidden">Unit Price</span>
+                    <button type="button" className="hidden font-medium uppercase tracking-wider hover:text-slate-900 xl:inline" onClick={() => handleSort("unit_price")}>
+                      Unit Price {getSortIndicator("unit_price")}
+                    </button>
                   </th>
-                  <th
+                  <th role="columnheader"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("total_commission")}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    aria-sort={sortConfig.key === "total_commission" ? (sortConfig.direction === "asc" ? "ascending" : "descending") : undefined}
                   >
-                    Commission {getSortIndicator("total_commission")}
+                    <span className="xl:hidden">Commission</span>
+                    <button type="button" className="hidden font-medium uppercase tracking-wider hover:text-slate-900 xl:inline" onClick={() => handleSort("total_commission")}>
+                      Commission {getSortIndicator("total_commission")}
+                    </button>
                   </th>
-                  <th
+                  <th role="columnheader"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort("actual_unit_price")}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    aria-sort={sortConfig.key === "actual_unit_price" ? (sortConfig.direction === "asc" ? "ascending" : "descending") : undefined}
                   >
-                    Actual Price {getSortIndicator("actual_unit_price")}
+                    <span className="xl:hidden">Actual Price</span>
+                    <button type="button" className="hidden font-medium uppercase tracking-wider hover:text-slate-900 xl:inline" onClick={() => handleSort("actual_unit_price")}>
+                      Actual Price {getSortIndicator("actual_unit_price")}
+                    </button>
                   </th>
-                  <th
+                  <th role="columnheader"
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
@@ -264,40 +300,52 @@ export default function TradeDetailsPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-slate-100">
+              <tbody role="rowgroup" className="bg-white divide-y divide-slate-100">
                 {filteredTrades.map((trade) => (
-                  <tr key={trade.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(trade.trade_date).toLocaleDateString()}
+                  <tr role="row" key={trade.id} className="hover:bg-slate-50">
+                    <td role="cell" data-mobile-label="Date" className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>
+                          {new Date(trade.trade_date).toLocaleDateString()}
+                        </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{trade.instrument.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          trade.trns_type === "buy" ? "bg-blue-50 text-blue-700" : "bg-emerald-50 text-emerald-700"
-                        }`}
-                      >
-                        {trade.trns_type.toUpperCase()}
-                      </span>
+                    <td role="rowheader" data-mobile-heading className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{trade.instrument.name}</td>
+                    <td role="cell" data-mobile-label="Type" className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              trade.trns_type === "buy" ? "bg-blue-50 text-blue-700" : "bg-emerald-50 text-emerald-700"
+                            }`}
+                          >
+                            {trade.trns_type.toUpperCase()}
+                          </span>
+                        </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{trade.qty}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(trade.unit_price)}
+                    <td role="cell" data-mobile-label="Quantity" className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><div>{trade.qty}</div></td>
+                    <td role="cell" data-mobile-label="Unit price" className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>
+                          {formatCurrency(trade.unit_price)}
+                        </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(trade.total_commission)}
+                    <td role="cell" data-mobile-label="Commission" className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>
+                          {formatCurrency(trade.total_commission)}
+                        </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(trade.actual_unit_price)}
+                    <td role="cell" data-mobile-label="Actual price" className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>
+                          {formatCurrency(trade.actual_unit_price)}
+                        </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <span className={trade.trns_type === "buy" ? "text-teal-600" : "text-rose-600"}>
-                        {formatCurrency(trade.total_trade_value)}
-                      </span>
+                    <td role="cell" data-mobile-label="Total value" className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div>
+                          <span className={trade.trns_type === "buy" ? "text-teal-600" : "text-rose-600"}>
+                            {formatCurrency(trade.total_trade_value)}
+                          </span>
+                        </div>
                     </td>
                   </tr>
                 ))}
-                {!filteredTrades.length && <tr><td colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500">No trades match these filters.</td></tr>}
+                {!filteredTrades.length && <tr role="row"><td role="cell" colSpan={8} className="px-6 py-10 text-center text-sm text-slate-500">No trades match these filters.</td></tr>}
               </tbody>
             </table>
           </div>

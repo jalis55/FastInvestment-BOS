@@ -45,7 +45,7 @@ const Login = () => {
     };
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(145deg,#07111f_0%,#0f172a_42%,#1d4ed8_100%)] px-4 py-10">
+        <div className="relative min-h-dvh overflow-hidden bg-[linear-gradient(145deg,#07111f_0%,#0f172a_42%,#1d4ed8_100%)] px-4 py-5 sm:py-10">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.26),transparent_22%),radial-gradient(circle_at_bottom_right,rgba(96,165,250,0.22),transparent_26%)]" />
             <div className="relative mx-auto grid min-h-[86vh] max-w-6xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
                 <div className="hidden text-white lg:block">
@@ -74,7 +74,7 @@ const Login = () => {
                     </div>
                 </div>
                 <div className="mx-auto w-full max-w-md">
-                    <div className="rounded-[32px] border border-white/20 bg-white/92 px-6 pb-6 pt-8 shadow-[0_30px_80px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:px-8">
+                    <div className="rounded-[32px] border border-white/20 bg-white/92 px-4 pb-6 pt-6 sm:pt-8 shadow-[0_30px_80px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:px-8">
                         <div className="mb-8">
                             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
                                 Secure Access

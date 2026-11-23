@@ -54,6 +54,8 @@ export function ProjectPicker({ value, onChange, disabled = false, action, optio
     } else if (event.key === 'Enter' && open && activeProject) {
       event.preventDefault();
       select(activeProject);
+    } else if (event.key === 'Enter') {
+      setOpen(false);
     } else if (event.key === 'Escape' && open) {
       event.preventDefault();
       event.stopPropagation();
@@ -72,17 +74,16 @@ export function ProjectPicker({ value, onChange, disabled = false, action, optio
             <input ref={inputRef} id={id} role="combobox" aria-expanded={open} aria-controls={`${id}-projects`}
               aria-autocomplete="list" aria-activedescendant={open && activeProject ? `${id}-option-${activeProject.project_id}` : undefined}
               aria-describedby={`${id}-hint`} autoComplete="off" placeholder={placeholder}
-              className={cn('field-input min-h-[52px] pl-12', action ? 'pr-36' : 'pr-12')} required={required} disabled={disabled} value={value}
+              className={cn('field-input min-h-[52px] pl-12', action ? 'pr-14 sm:pr-40' : 'pr-14')} required={required} disabled={disabled} value={value}
               onClick={() => setOpen(true)} onKeyDown={handleKeyDown}
               onChange={(event) => { onChange(event); setActiveIndex(-1); setOpen(true); }} />
-            <div className="absolute inset-y-0 right-2 flex items-center gap-1">
+            <div className={cn("absolute inset-y-0 right-1 flex items-center", action && "sm:right-28")}>
               <button type="button" disabled={disabled} aria-label={open ? 'Hide projects' : 'Show projects'}
                 aria-expanded={open} aria-controls={`${id}-projects`}
                 onClick={() => { setOpen((previous) => !previous); setActiveIndex(-1); inputRef.current?.focus(); }}
-                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-50">
+                className="grid size-11 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-50">
                 <ChevronDown size={16} className={cn('transition-transform', open && 'rotate-180')} aria-hidden="true" />
               </button>
-              {action}
             </div>
           </div>
           {open && <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
@@ -101,6 +102,7 @@ export function ProjectPicker({ value, onChange, disabled = false, action, optio
             {projectsQuery.error && <div role="alert" className="space-y-2 px-4 pb-4 text-sm text-red-700"><p>{getApiError(projectsQuery.error)}</p><Button type="button" size="sm" variant="outline" onClick={projectsQuery.refetch}>Try again</Button></div>}
             {!projectsQuery.loading && !projectsQuery.error && !projects.length && <p role="status" className="px-4 pb-4 text-sm text-slate-500">No projects match your search.</p>}
           </div>}
+          {action && <div onClick={() => setOpen(false)} className="mt-2 grid sm:absolute sm:inset-y-0 sm:right-2 sm:mt-0 sm:w-24 sm:place-content-center">{action}</div>}
         </div>
         <p id={`${id}-hint`} className="mt-2 text-xs text-slate-500">{selected ? selected.project_title : emptyHint}</p>
     </div>
@@ -111,7 +113,7 @@ export function ProjectSearch({ value, onChange, onSubmit, loading = false, opti
   return <SurfaceCard className="relative z-20 mb-6 max-w-3xl">
     <form onSubmit={onSubmit} aria-label="Find a project" aria-busy={loading}>
       <ProjectPicker value={value} onChange={onChange} disabled={loading} options={options} includeClosed={includeClosed} emptyHint={emptyHint} action={
-        <Button type="submit" size="sm" disabled={loading || !value.trim()}>
+        <Button type="submit" className="min-h-11 sm:min-h-9" size="sm" disabled={loading || !value.trim()}>
           {loading && <LoaderCircle size={14} className="motion-safe:animate-spin" aria-hidden="true" />}
           {loading ? 'Searching…' : 'Search'}
         </Button>

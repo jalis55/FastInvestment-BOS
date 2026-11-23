@@ -18,7 +18,7 @@ const Dashboard = () => {
     <div className="text-slate-800">
       <BannerTitle title="Dashboard" />
 
-      <section className="mb-6 overflow-hidden rounded-[32px] border border-white/60 bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_55%,#22d3ee_140%)] p-8 text-white shadow-[0_28px_80px_rgba(15,23,42,0.2)]">
+      <section className="mb-6 overflow-hidden rounded-[32px] border border-white/60 bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_55%,#22d3ee_140%)] p-5 text-white sm:p-8 shadow-[0_28px_80px_rgba(15,23,42,0.2)]">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/90">
@@ -45,7 +45,7 @@ const Dashboard = () => {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
         <SurfaceCard tone="subtle">
           <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">

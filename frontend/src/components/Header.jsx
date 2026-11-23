@@ -1,11 +1,11 @@
 import { getApiError } from '@/api/errors';
 import { useMemo, useState } from "react";
-import { Bell, ChevronsLeft, Sparkles, UserRound } from "lucide-react";
+import { Bell, ChevronsLeft, Menu, Sparkles, UserRound } from "lucide-react";
 import PropTypes from "prop-types";
 import { useMatches, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/auth/use-auth";
 
-const Header = ({ collapsed, setCollapsed }) => {
+const Header = ({ collapsed, setCollapsed, isMobile, menuButtonRef }) => {
     const { userData, logout } = useAuth();
     const navigate = useNavigate();
     const pageTitle = useMatches().at(-1)?.handle?.pageTitle;
@@ -43,19 +43,20 @@ const Header = ({ collapsed, setCollapsed }) => {
     };
 
     return (
-        <header className="relative z-10 flex h-[72px] items-center justify-between gap-x-2 border-b border-white/50 bg-white/65 px-3 shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl sm:px-5">
+        <header className="relative z-10 flex h-16 items-center justify-between gap-x-2 border-b border-white/50 bg-white/65 px-3 shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl sm:px-5 lg:h-[72px]">
             <div className="flex min-w-0 flex-1 items-center gap-x-2 sm:gap-x-4">
                 <button
                     className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-white/60 bg-white/80 text-slate-600 transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-900"
+                    ref={menuButtonRef}
                     onClick={() => setCollapsed(!collapsed)}
-                    aria-label="Toggle sidebar"
+                    aria-label={isMobile ? "Open navigation" : "Toggle sidebar"}
                     aria-expanded={!collapsed}
                     aria-controls="main-sidebar"
                 >
-                    <ChevronsLeft className={collapsed && "rotate-180"} />
+                    {isMobile ? <Menu size={22} aria-hidden="true" /> : <ChevronsLeft aria-hidden="true" className={collapsed ? "rotate-180" : undefined} />}
                 </button>
                 <div className="min-w-0">
-                    <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs sm:tracking-[0.28em]">
+                    <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs sm:tracking-[0.2em]">
                         Operations Center
                     </p>
                     {pageTitle && <h1 className="truncate text-sm font-semibold text-slate-900 sm:text-base" title={pageTitle}>{pageTitle}</h1>}
@@ -66,7 +67,7 @@ const Header = ({ collapsed, setCollapsed }) => {
             <div className="flex shrink-0 items-center gap-x-2 sm:gap-x-3">
                 <button
                     type="button"
-                    className="hidden items-center gap-2 rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white md:inline-flex"
+                    className="hidden items-center gap-2 rounded-2xl border border-white/70 bg-white/80 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white lg:inline-flex"
                     aria-label="Workspace status"
                 >
                     <Sparkles size={16} className="text-cyan-600" />
@@ -134,6 +135,8 @@ const Header = ({ collapsed, setCollapsed }) => {
 Header.propTypes = {
     collapsed: PropTypes.bool,
     setCollapsed: PropTypes.func,
+    isMobile: PropTypes.bool,
+    menuButtonRef: PropTypes.object,
 };
 
 export default Header;

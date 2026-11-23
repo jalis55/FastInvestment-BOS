@@ -94,12 +94,12 @@ function RecipientDestinations({ recipients, selectedIds, onSelect, onApply, pro
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="border-y border-slate-100 bg-slate-50 text-xs text-slate-500">
-            <tr>
+        <table role="table" className="responsive-table w-full text-left text-sm">
+          <thead role="rowgroup" data-mobile-controls className="border-y border-slate-100 bg-slate-50 text-xs text-slate-500">
+            <tr role="row">
               {projectActive && (
-                <th scope="col" className="px-4 py-3">
-                  <label className="flex items-center gap-2 whitespace-nowrap font-medium">
+                <th role="columnheader" data-mobile-control scope="col" className="px-4 py-3">
+                  <label className="inline-flex min-h-11 items-center gap-2 whitespace-nowrap font-medium xl:min-h-0">
                     <input
                       ref={selectAll}
                       type="checkbox"
@@ -112,13 +112,13 @@ function RecipientDestinations({ recipients, selectedIds, onSelect, onApply, pro
                   </label>
                 </th>
               )}
-              <th scope="col" className="px-4 py-3 font-medium">Recipient</th>
-              <th scope="col" className="px-4 py-3 text-right font-medium">Total payout</th>
-              {projectActive && <th scope="col" className="px-4 py-3 font-medium">Amount to disburse</th>}
-              <th scope="col" className="px-4 py-3 font-medium">Planned payout</th>
+              <th role="columnheader" scope="col" className="px-4 py-3 font-medium">Recipient</th>
+              <th role="columnheader" scope="col" className="px-4 py-3 text-right font-medium">Total payout</th>
+              {projectActive && <th role="columnheader" scope="col" className="px-4 py-3 font-medium">Amount to disburse</th>}
+              <th role="columnheader" scope="col" className="px-4 py-3 font-medium">Planned payout</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody role="rowgroup" className="divide-y divide-slate-100">
             {recipients.map((recipient) => {
               const { user, totalCents, reinvestCents, walletCents } = recipient;
               const label = user.name || user.email;
@@ -127,48 +127,57 @@ function RecipientDestinations({ recipients, selectedIds, onSelect, onApply, pro
               const invalid = selected && parsePayoutCents(amount, totalCents) === null;
 
               return (
-                <tr key={user.id}>
+                <tr role="row" key={user.id}>
                   {projectActive && (
-                    <td className="px-4 py-4">
-                      <input
-                        type="checkbox"
-                        className="size-4 accent-blue-600"
-                        aria-label={`Select ${label}`}
-                        checked={selected}
-                        onChange={(event) => changeSelection(user.id, event.target.checked)}
-                        disabled={disabled}
-                      />
+                    <td role="cell" className="px-4 py-4">
+                      <label className="inline-flex min-h-11 items-center gap-2 text-sm text-slate-600 xl:min-h-0">
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-blue-600"
+                          aria-label={`Select ${label}`}
+                          checked={selected}
+                          onChange={(event) => changeSelection(user.id, event.target.checked)}
+                          disabled={disabled}
+                        />
+                        <span aria-hidden="true" className="xl:hidden">Select recipient</span>
+                      </label>
                     </td>
                   )}
-                  <td className="px-4 py-4">
+                  <td role="rowheader" data-mobile-heading className="px-4 py-4">
                     <p className="font-medium text-slate-800">{label}</p>
                     {user.name && <p className="mt-1 break-all text-xs text-slate-500">{user.email}</p>}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums text-slate-900">
-                    {money(totalCents / 100)}
+                  <td role="cell" data-mobile-label="Total payout" className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums text-slate-900">
+                      <div>
+                        {money(totalCents / 100)}
+                      </div>
                   </td>
                   {projectActive && (
-                    <td className="min-w-36 px-4 py-4">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        aria-label={`Amount to disburse for ${label} in BDT`}
-                        aria-invalid={invalid}
-                        aria-describedby={invalid ? `payout-error-${user.id}` : undefined}
-                        className="field-input min-w-24 py-2 disabled:opacity-60"
-                        value={amount}
-                        onChange={(event) => setDraftAmounts((previous) => ({ ...previous, [user.id]: event.target.value }))}
-                        min="0.01"
-                        max={(totalCents / 100).toFixed(2)}
-                        step="0.01"
-                        disabled={disabled || !selected}
-                      />
-                      {invalid && <p id={`payout-error-${user.id}`} className="mt-1 text-xs text-red-700">Enter a positive amount up to the total payout.</p>}
+                    <td role="cell" data-mobile-label="Amount to disburse" className="min-w-36 px-4 py-4">
+                        <div>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            aria-label={`Amount to disburse for ${label} in BDT`}
+                            aria-invalid={invalid}
+                            aria-describedby={invalid ? `payout-error-${user.id}` : undefined}
+                            className="field-input min-w-24 py-2 disabled:opacity-60"
+                            value={amount}
+                            onChange={(event) => setDraftAmounts((previous) => ({ ...previous, [user.id]: event.target.value }))}
+                            min="0.01"
+                            max={(totalCents / 100).toFixed(2)}
+                            step="0.01"
+                            disabled={disabled || !selected}
+                          />
+                          {invalid && <p id={`payout-error-${user.id}`} className="mt-1 text-xs text-red-700">Enter a positive amount up to the total payout.</p>}
+                        </div>
                     </td>
                   )}
-                  <td className="space-y-1 whitespace-nowrap px-4 py-4 text-xs tabular-nums text-slate-700">
-                    {walletCents > 0 && <p>Wallet {money(walletCents / 100)}</p>}
-                    {reinvestCents > 0 && <p>Project {money(reinvestCents / 100)}</p>}
+                  <td role="cell" data-mobile-label="Planned payout" className="space-y-1 whitespace-nowrap px-4 py-4 text-xs tabular-nums text-slate-700">
+                      <div>
+                        {walletCents > 0 && <p>Wallet {money(walletCents / 100)}</p>}
+                        {reinvestCents > 0 && <p>Project {money(reinvestCents / 100)}</p>}
+                      </div>
                   </td>
                 </tr>
               );

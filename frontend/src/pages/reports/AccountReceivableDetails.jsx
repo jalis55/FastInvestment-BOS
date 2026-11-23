@@ -159,21 +159,21 @@ const AccountReceivableDetails = () => {
       </form>
       </SurfaceCard>
       {recvableData.length > 0 && (
-        <div className="mt-6 flex space-x-4 justify-center">
+        <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:justify-center">
           <button
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="min-h-11 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
             onClick={downloadCSV}
           >
             Download CSV
           </button>
           <button
-            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="min-h-11 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
             onClick={() => handlePDF(true)}
           >
             Download PDF
           </button>
           <button
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="min-h-11 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             onClick={() => handlePDF(false)}
           >
             Preview

@@ -235,42 +235,44 @@ const ProjectDetails = ({ liveQuotes = false }) => {
                                 </p>
                             )}
                             {priceError && <p role="alert" className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-800">Market prices could not be loaded. Market value and gain/loss are unavailable.</p>}
-                            <div className="overflow-x-auto"><table className="min-w-[900px] w-full text-left text-sm text-slate-600">
-                                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                    <tr>
-                                        <th className="px-6 py-3">Instrument Name</th>
-                                        <th className="px-6 py-3">QTY</th>
-                                        <th className="px-6 py-3">Cost Rate</th>
-                                        <th className="px-6 py-3">Cost</th>
-                                        <th className="px-6 py-3">Market Price</th>
-                                        <th className="px-6 py-3">Market Value</th>
-                                        <th className="px-6 py-3">Unrealized Gain/Loss</th>
+                            <div className="overflow-x-auto"><table role="table" className="responsive-table min-w-[900px] w-full text-left text-sm text-slate-600">
+                                <thead role="rowgroup" className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                                    <tr role="row">
+                                        <th role="columnheader" className="px-6 py-3">Instrument Name</th>
+                                        <th role="columnheader" className="px-6 py-3">QTY</th>
+                                        <th role="columnheader" className="px-6 py-3">Cost Rate</th>
+                                        <th role="columnheader" className="px-6 py-3">Cost</th>
+                                        <th role="columnheader" className="px-6 py-3">Market Price</th>
+                                        <th role="columnheader" className="px-6 py-3">Market Value</th>
+                                        <th role="columnheader" className="px-6 py-3">Unrealized Gain/Loss</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody role="rowgroup">
                                     {rows.map((r, idx) => (
-                                        <tr key={idx} className="border-b border-slate-100 bg-white">
-                                            <th className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{r.name}</th>
-                                            <td className="px-6 py-4">{r.qty}</td>
-                                            <td className="px-6 py-4 tabular-nums">{money(r.cost)}</td>
-                                            <td className="px-6 py-4 tabular-nums">{holdingMoney(r.totalCost)}</td>
-                                            <td className="px-6 py-4 tabular-nums">
-                                                {r.price == null ? '—' : money(r.price)}
-                                                {r.quoteDate && <time dateTime={r.quoteDate} className="block whitespace-nowrap text-xs text-slate-500">{r.quoteDate}</time>}
+                                        <tr role="row" key={idx} className="border-b border-slate-100 bg-white">
+                                            <th role="rowheader" data-mobile-heading className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{r.name}</th>
+                                            <td role="cell" data-mobile-label="Quantity" className="px-6 py-4"><div>{r.qty}</div></td>
+                                            <td role="cell" data-mobile-label="Cost rate" className="px-6 py-4 tabular-nums"><div>{money(r.cost)}</div></td>
+                                            <td role="cell" data-mobile-label="Cost" className="px-6 py-4 tabular-nums"><div>{holdingMoney(r.totalCost)}</div></td>
+                                            <td role="cell" data-mobile-label="Market price" className="px-6 py-4 tabular-nums">
+                                                <div>
+                                                    {r.price == null ? '—' : money(r.price)}
+                                                    {r.quoteDate && <time dateTime={r.quoteDate} className="block whitespace-nowrap text-xs text-slate-500">{r.quoteDate}</time>}
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 tabular-nums">{holdingMoney(r.marketValue)}</td>
-                                            <td className={`px-6 py-4 font-semibold tabular-nums ${r.gainLoss == null ? 'text-slate-400' : r.gainLoss >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{holdingMoney(r.gainLoss)}</td>
+                                            <td role="cell" data-mobile-label="Market value" className="px-6 py-4 tabular-nums"><div>{holdingMoney(r.marketValue)}</div></td>
+                                            <td role="cell" data-mobile-label="Unrealized gain/loss" className={`px-6 py-4 font-semibold tabular-nums ${r.gainLoss == null ? 'text-slate-400' : r.gainLoss >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}><div>{holdingMoney(r.gainLoss)}</div></td>
                                         </tr>
                                     ))}
                                 </tbody>
                                 {liveQuotes && (
-                                    <tfoot className="bg-slate-50 font-semibold text-slate-900">
-                                        <tr>
-                                            <th scope="row" colSpan={3} className="px-6 py-4">Totals</th>
-                                            <td className="px-6 py-4 tabular-nums">{holdingMoney(totalCost)}</td>
-                                            <td />
-                                            <td className="px-6 py-4 tabular-nums">{holdingMoney(totalMarketValue)}</td>
-                                            <td className="px-6 py-4 tabular-nums">{holdingMoney(unrealizedGainLoss)}</td>
+                                    <tfoot role="rowgroup" className="bg-slate-50 font-semibold text-slate-900">
+                                        <tr role="row">
+                                            <th role="rowheader" data-mobile-heading scope="row" colSpan={3} className="px-6 py-4">Totals</th>
+                                            <td role="cell" data-mobile-label="Total cost" className="px-6 py-4 tabular-nums"><div>{holdingMoney(totalCost)}</div></td>
+                                            <td role="cell" />
+                                            <td role="cell" data-mobile-label="Total market value" className="px-6 py-4 tabular-nums"><div>{holdingMoney(totalMarketValue)}</div></td>
+                                            <td role="cell" data-mobile-label="Unrealized gain/loss" className="px-6 py-4 tabular-nums"><div>{holdingMoney(unrealizedGainLoss)}</div></td>
                                         </tr>
                                     </tfoot>
                                 )}

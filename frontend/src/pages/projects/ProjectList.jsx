@@ -64,45 +64,51 @@ const ProjectList = () => {
             <BannerTitle title="Project List" description="Review open and closed projects with operational ownership details." />
             <SurfaceCard tone="compact" className="p-0">
                 <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-gray-500">
-                    <thead className="bg-slate-50 text-xs uppercase text-slate-600">
-                        <tr>
-                            <th className="px-6 py-3">Project Id</th>
-                            <th className="px-6 py-3">Project Title</th>
-                            <th className="px-6 py-3">Project Status</th>
-                            <th className="px-6 py-3">Trade commission</th>
-                            <th className="px-6 py-3">Details</th>
+                <table role="table" className="responsive-table w-full text-sm text-left text-gray-500">
+                    <thead role="rowgroup" className="bg-slate-50 text-xs uppercase text-slate-600">
+                        <tr role="row">
+                            <th role="columnheader" className="px-6 py-3">Project Id</th>
+                            <th role="columnheader" className="px-6 py-3">Project Title</th>
+                            <th role="columnheader" className="px-6 py-3">Project Status</th>
+                            <th role="columnheader" className="px-6 py-3">Trade commission</th>
+                            <th role="columnheader" className="px-6 py-3">Details</th>
 
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody role="rowgroup">
                         {projectList.length > 0 ? (
                             projectList.map((project, index) => (
-                                <tr key={project.project_id || index} className="border-b border-slate-200 bg-white">
-                                    <td className="px-6 py-4 font-medium text-gray-900">
-                                        {project.project_id}
+                                <tr role="row" key={project.project_id || index} className="border-b border-slate-200 bg-white">
+                                    <td role="cell" data-mobile-label="Project ID" className="px-6 py-4 font-medium text-gray-900">
+                                        <div>
+                                            {project.project_id}
+                                        </div>
                                     </td>
-                                    <td className="px-6 py-4 text-slate-700">{project.project_title}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded text-xs ${project.project_active_status ?
-                                            'bg-green-100 text-green-800' :
-                                            'bg-red-100 text-red-800'
-                                            }`}>
-                                            {project.project_active_status ? 'Active' : 'Closed'}
-                                        </span>
+                                    <td role="rowheader" data-mobile-heading className="px-6 py-4 text-slate-700">{project.project_title}</td>
+                                    <td role="cell" data-mobile-label="Status" className="px-6 py-4">
+                                        <div>
+                                            <span className={`px-2 py-1 rounded text-xs ${project.project_active_status ?
+                                                'bg-green-100 text-green-800' :
+                                                'bg-red-100 text-red-800'
+                                                }`}>
+                                                {project.project_active_status ? 'Active' : 'Closed'}
+                                            </span>
+                                        </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="font-medium text-slate-900">{Number(project.trade_commission_rate)}%</span>
-                                        <button
-                                            type="button"
-                                            className="ml-3 text-sm font-medium text-blue-700 hover:underline"
-                                            aria-label={`Edit trade commission for ${project.project_title}`}
-                                            onClick={() => editCommission(project)}
-                                        >
-                                            Edit
-                                        </button>
+                                    <td role="cell" data-mobile-label="Trade commission" className="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <span className="font-medium text-slate-900">{Number(project.trade_commission_rate)}%</span>
+                                            <button
+                                                type="button"
+                                                className="ml-2 inline-flex min-h-11 items-center px-2 text-sm font-medium text-blue-700 hover:underline xl:ml-3 xl:min-h-0 xl:px-0"
+                                                aria-label={`Edit trade commission for ${project.project_title}`}
+                                                onClick={() => editCommission(project)}
+                                            >
+                                                Edit
+                                            </button>
+                                        </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td role="cell" className="px-6 py-4">
                                         <div className="space-y-1">
                                             {project.project_active_status ? (
                                                 <>
@@ -124,8 +130,8 @@ const ProjectList = () => {
                                 </tr>
                             ))
                         ) : (
-                            <tr>
-                                <td colSpan={5} className="px-6 py-8">
+                            <tr role="row">
+                                <td role="cell" colSpan={5} className="px-6 py-8">
                                     <EmptyState
                                         title="No projects found"
                                         description="Projects will appear here once they have been created."

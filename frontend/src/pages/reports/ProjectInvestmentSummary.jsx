@@ -37,24 +37,24 @@ function InvestmentBreakdown({ projectId, contributions }) {
       <SurfaceCard className="overflow-hidden !p-0">
         {rows.length ? (
           <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Investor contributions">
-            <table className="w-full min-w-[22rem] text-left text-sm">
+            <table role="table" className="responsive-table w-full min-w-[22rem] text-left text-sm">
               <caption className="sr-only">Investor contributions for project {projectId}</caption>
-              <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-600">
-                <tr>
-                  <th scope="col" className="px-4 py-3 font-medium sm:px-6">Investor</th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">Total investment</th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium sm:px-6">Share</th>
+              <thead role="rowgroup" className="border-b border-slate-200 bg-slate-50 text-xs text-slate-600">
+                <tr role="row">
+                  <th role="columnheader" scope="col" className="px-4 py-3 font-medium sm:px-6">Investor</th>
+                  <th role="columnheader" scope="col" className="px-4 py-3 text-right font-medium">Total investment</th>
+                  <th role="columnheader" scope="col" className="px-4 py-3 text-right font-medium sm:px-6">Share</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody role="rowgroup" className="divide-y divide-slate-100">
                 {rows.map(({ investor, amountCents, contribution_percentage }) => (
-                  <tr key={investor.id} className="hover:bg-slate-50/70">
-                    <th scope="row" className="min-w-0 px-4 py-3 text-left font-medium text-slate-900 sm:px-6">
+                  <tr role="row" key={investor.id} className="hover:bg-slate-50/70">
+                    <th role="rowheader" data-mobile-heading scope="row" className="min-w-0 px-4 py-3 text-left font-medium text-slate-900 sm:px-6">
                       <span className="block break-words">{investor.name || investor.email}</span>
                       {investor.name && <span className="block break-all text-xs font-normal text-slate-500">{investor.email}</span>}
                     </th>
-                    <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums text-slate-900">{formatBdtCents(amountCents)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-700 sm:px-6">{contribution_percentage}%</td>
+                    <td role="cell" data-mobile-label="Total investment" className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums text-slate-900"><div>{formatBdtCents(amountCents)}</div></td>
+                    <td role="cell" data-mobile-label="Share" className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-slate-700 sm:px-6"><div>{contribution_percentage}%</div></td>
                   </tr>
                 ))}
               </tbody>
