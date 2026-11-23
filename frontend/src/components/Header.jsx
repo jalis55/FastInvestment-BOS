@@ -1,37 +1,47 @@
-import { Bell, ChevronsLeft, Menu } from "lucide-react";
+import { Bell, PanelLeftClose, PanelLeftOpen, Menu } from "lucide-react";
 import PropTypes from "prop-types";
-import { useMatches } from "react-router-dom";
+import { useLocation, useMatches } from "react-router-dom";
+import menu from "@/constants/menu";
+
+const controlClass = "grid size-11 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/5 text-slate-200 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300";
 
 const Header = ({ collapsed, setCollapsed, isMobile, menuButtonRef }) => {
+    const { pathname } = useLocation();
     const pageTitle = useMatches().at(-1)?.handle?.pageTitle;
+    const section = menu.find((item) => item.children?.some(({ url }) =>
+        pathname === url || pathname.startsWith(url + "/"),
+    ));
+    const NavigationIcon = isMobile ? Menu : collapsed ? PanelLeftOpen : PanelLeftClose;
 
     return (
-        <header className="relative z-10 flex h-16 items-center justify-between gap-x-2 border-b border-[#b8cbe4] bg-linear-to-r from-[#e8eff8] to-[#dde9f8] px-3 sm:px-5 lg:h-[72px]">
-            <div className="flex min-w-0 flex-1 items-center gap-x-2 sm:gap-x-4">
-                <button
-                    className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-blue-200/80 bg-white/55 text-blue-900 transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
-                    ref={menuButtonRef}
-                    onClick={() => setCollapsed(!collapsed)}
-                    aria-label={isMobile ? "Open navigation" : "Toggle sidebar"}
-                    aria-expanded={!collapsed}
-                    aria-controls="main-sidebar"
-                >
-                    {isMobile ? <Menu size={22} aria-hidden="true" /> : <ChevronsLeft aria-hidden="true" className={collapsed ? "rotate-180" : undefined} />}
-                </button>
-                <div className="min-w-0">
-                    <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:text-xs sm:tracking-[0.2em]">
-                        Operations Center
-                    </p>
-                    {pageTitle && <h1 className="truncate text-sm font-semibold text-slate-900 sm:text-base" title={pageTitle}>{pageTitle}</h1>}
-                </div>
-            </div>
-
+        <header className="relative z-10 flex h-16 items-center gap-3 border-b border-slate-700 bg-linear-to-r from-[#101a2b] via-[#14233b] to-[#192d4a] px-4 text-white sm:gap-4 sm:px-6 lg:h-[72px] lg:px-8">
             <button
                 type="button"
-                className="flex size-11 items-center justify-center rounded-2xl border border-blue-200/80 bg-white/55 text-blue-900 transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
-                aria-label="Notifications"
+                className={controlClass}
+                ref={menuButtonRef}
+                onClick={() => setCollapsed(!collapsed)}
+                aria-label={isMobile ? "Open navigation" : "Toggle sidebar"}
+                aria-expanded={!collapsed}
+                aria-controls="main-sidebar"
             >
-                <Bell size={20} aria-hidden="true" />
+                <NavigationIcon size={19} aria-hidden="true" />
+            </button>
+
+            <div className="min-w-0 flex-1 border-l border-white/15 pl-3 sm:pl-4">
+                {section && (
+                    <p className="truncate text-xs font-medium leading-4 text-slate-300">
+                        {section.menuName}
+                    </p>
+                )}
+                {pageTitle && (
+                    <h1 className="truncate text-base font-semibold leading-tight tracking-tight sm:text-xl" title={pageTitle}>
+                        {pageTitle}
+                    </h1>
+                )}
+            </div>
+
+            <button type="button" className={controlClass} aria-label="Notifications">
+                <Bell size={19} aria-hidden="true" />
             </button>
         </header>
     );

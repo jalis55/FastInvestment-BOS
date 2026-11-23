@@ -43,10 +43,22 @@ async function changePassword() {
         focusConfirm: false,
         showLoaderOnConfirm: true,
         loaderHtml: `<span role="status" class="text-blue-700">
-            <span aria-hidden="true" class="folder-loader w-16"><span class="folder-loader-paper"></span></span>
+            <svg viewBox="0 0 80 40" aria-hidden="true" focusable="false" class="h-auto w-16">
+                <defs>
+                    <filter id="liquid-password-loader" x="-50%" y="-80%" width="200%" height="260%">
+                        <feGaussianBlur stdDeviation="2"/>
+                        <feComponentTransfer><feFuncA type="linear" slope="17" intercept="-7"/></feComponentTransfer>
+                    </filter>
+                </defs>
+                <g fill="currentColor" filter="url(#liquid-password-loader)">
+                    <circle cx="40" cy="20" r="7" class="liquid-loader-core"/>
+                    <circle cx="40" cy="20" r="6" class="liquid-loader-drop"/>
+                    <circle cx="40" cy="20" r="6" class="liquid-loader-drop liquid-loader-drop-reverse"/>
+                </g>
+            </svg>
             <span class="sr-only">Changing password…</span>
         </span>`,
-        customClass: { loader: 'folder-dialog-loader' },
+        customClass: { loader: 'liquid-dialog-loader' },
         allowOutsideClick: () => !Swal.isLoading(),
         allowEscapeKey: () => !Swal.isLoading(),
         didOpen: (popup) => popup.querySelector('#current-password').focus(),

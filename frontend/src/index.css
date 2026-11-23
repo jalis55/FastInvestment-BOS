@@ -189,57 +189,39 @@
   }
 }
 
-.folder-loader {
-  position: relative;
-  display: inline-block;
-  flex-shrink: 0;
-  aspect-ratio: 2;
-  isolation: isolate;
+.liquid-loader-core,
+.liquid-loader-drop {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.folder-loader::before,
-.folder-loader::after {
-  content: "";
-  position: absolute;
-  inset: 24% 19% 9%;
-  border-radius: 12% / 20%;
+.liquid-loader-drop {
+  --drop-x: 15px;
+  --drop-y: -4px;
+  transform: translate(var(--drop-x), var(--drop-y));
 }
 
-.folder-loader::before {
-  background: color-mix(in srgb, currentColor 45%, transparent);
-  clip-path: polygon(0 0, 38% 0, 50% 19%, 100% 19%, 100% 100%, 0 100%);
-}
-
-.folder-loader::after {
-  top: 46%;
-  background: currentColor;
-  transform-origin: bottom;
-}
-
-.folder-loader-paper {
-  position: absolute;
-  inset: 28% 30% 15%;
-  border-radius: 12%;
-  background: #eff6ff;
-  border: 1px solid currentColor;
+.liquid-loader-drop-reverse {
+  --drop-x: -15px;
+  --drop-y: 4px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .folder-loader-paper { animation: folder-paper 1.7s ease-in-out infinite; }
-  .folder-loader::after { animation: folder-flap 1.7s ease-in-out infinite; }
+  .liquid-loader-core { animation: liquid-loader-pulse 1.5s ease-in-out infinite; }
+  .liquid-loader-drop { animation: liquid-loader-flow 1.5s ease-in-out infinite; }
 }
 
-@keyframes folder-paper {
-  0%, 100% { transform: translateY(9%) rotate(0); }
-  42%, 58% { transform: translateY(-38%) rotate(-9deg); }
+@keyframes liquid-loader-pulse {
+  0%, 100% { transform: scale(1.18); }
+  45%, 55% { transform: scale(.84); }
 }
 
-@keyframes folder-flap {
-  0%, 100% { transform: scaleY(1); }
-  42%, 58% { transform: scaleY(.72) skewX(-7deg); }
+@keyframes liquid-loader-flow {
+  0%, 100% { transform: translate(0, 0) scale(.75); }
+  45%, 55% { transform: translate(var(--drop-x), var(--drop-y)); }
 }
 
-.swal2-loader.folder-dialog-loader {
+.swal2-loader.liquid-dialog-loader {
   width: auto;
   height: auto;
   border: 0;
