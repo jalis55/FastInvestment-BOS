@@ -74,12 +74,12 @@ const Login = () => {
                     </div>
                 </div>
                 <div className="mx-auto w-full max-w-md">
-                    <div className="rounded-[32px] border border-white/20 bg-white/92 px-4 pb-6 pt-6 sm:pt-8 shadow-[0_30px_80px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:px-8">
+                    <div className="rounded-[32px] border border-[#CBD9EC] bg-[#E8EFF8] px-4 pb-6 pt-6 sm:pt-8 shadow-[0_30px_80px_rgba(15,23,42,0.28)] backdrop-blur-xl sm:px-8">
                         <div className="mb-8">
                             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
                                 Secure Access
                             </p>
-                            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
                                 Sign in to continue
                             </h2>
                             <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -97,7 +97,7 @@ const Login = () => {
                                         type="text"
                                         data-testid="username"
                                         required
-                                        className="field-input"
+                                        className="field-input border-[#A9BDD8] bg-[#F8FBFF] placeholder:text-slate-500"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="demo@admin.com"
@@ -116,14 +116,14 @@ const Login = () => {
                                         data-testid="password"
                                         autoComplete="current-password"
                                         required
-                                        className="field-input"
+                                        className="field-input border-[#A9BDD8] bg-[#F8FBFF] pr-12 placeholder:text-slate-500"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="demo@123"
                                     />
                                     <button
                                         type="button"
-                                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition hover:text-slate-600"
+                                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-600 transition hover:text-slate-900"
                                         onClick={togglePasswordVisibility}
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                     >
@@ -148,10 +148,10 @@ const Login = () => {
                                 <button
                                     data-testid="login"
                                     type="submit"
-                                    className="primary-button"
+                                    className="relative inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-[#1D4ED8] px-12 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
                                 >
                                     <span className="absolute inset-y-0 left-0 flex items-center pl-4">
-                                        <svg className="h-5 w-5 text-blue-100/80 group-hover:text-white"
+                                        <svg className="h-5 w-5 text-blue-100"
                                             xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
                                             aria-hidden="true">
                                             <path fillRule="evenodd"
