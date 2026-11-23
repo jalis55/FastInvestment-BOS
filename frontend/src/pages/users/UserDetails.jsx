@@ -1,5 +1,4 @@
 import ButtonSpinner from '@/components/ButtonSpinner';
-import { heartbeatPath } from '@/components/ui/heartbeat';
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { KeyRound, Pencil, Save } from 'lucide-react';
@@ -44,13 +43,10 @@ async function changePassword() {
         focusConfirm: false,
         showLoaderOnConfirm: true,
         loaderHtml: `<span role="status" class="text-blue-700">
-            <svg viewBox="0 0 72 34" fill="none" aria-hidden="true" class="h-auto w-16">
-                <path d="${heartbeatPath}" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity=".24"/>
-                <path d="${heartbeatPath}" pathLength="100" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" class="heartbeat-trace"/>
-            </svg>
+            <span aria-hidden="true" class="folder-loader w-16"><span class="folder-loader-paper"></span></span>
             <span class="sr-only">Changing password…</span>
         </span>`,
-        customClass: { loader: 'heartbeat-dialog-loader' },
+        customClass: { loader: 'folder-dialog-loader' },
         allowOutsideClick: () => !Swal.isLoading(),
         allowEscapeKey: () => !Swal.isLoading(),
         didOpen: (popup) => popup.querySelector('#current-password').focus(),
