@@ -1,3 +1,4 @@
+import { useId, useRef } from 'react';
 import { Eye, MoreHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserImage from './UserImage';
@@ -8,10 +9,24 @@ const iconButton = 'grid size-9 cursor-pointer place-items-center rounded-xl bor
 export default function UserRow({ user, busy, onChangeAccess }) {
     const name = user.name || 'Unnamed user';
 
-    function selectAction(event, field) {
-        const details = event.currentTarget.closest('details');
-        details.open = false;
-        details.querySelector('summary').focus();
+    const actionsId = useId();
+    const triggerRef = useRef(null);
+    const popoverRef = useRef(null);
+
+    function positionActions(event) {
+        if (event.newState !== 'open') return;
+        const trigger = triggerRef.current.getBoundingClientRect();
+        const popover = event.currentTarget;
+        const { offsetWidth, offsetHeight } = popover;
+        const below = trigger.bottom + 8;
+        const above = trigger.top - offsetHeight - 8;
+        popover.style.left = `${Math.max(8, trigger.right - offsetWidth)}px`;
+        popover.style.top = `${below + offsetHeight <= window.innerHeight - 8 ? below : Math.max(8, above)}px`;
+    }
+
+    function selectAction(field) {
+        popoverRef.current.hidePopover();
+        triggerRef.current.focus();
         onChangeAccess(user, field);
     }
 
@@ -45,30 +60,19 @@ export default function UserRow({ user, busy, onChangeAccess }) {
                     <Link to={`/users/${user.id}`} className={iconButton} aria-label={`View details for ${name}`} title="View user details">
                         <Eye aria-hidden="true" className="size-4" />
                     </Link>
-                    <details
-                        className="relative"
-                        onBlur={(event) => {
-                            if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
-                        }}
-                        onKeyDown={(event) => {
-                            if (event.key === 'Escape' && event.currentTarget.open) {
-                                event.currentTarget.open = false;
-                                event.currentTarget.querySelector('summary').focus();
-                            }
-                        }}
-                    >
-                        <summary aria-label={`Actions for ${name}`} className={`${iconButton} list-none [&::-webkit-details-marker]:hidden`}>
-                            <MoreHorizontal aria-hidden="true" className="size-5" />
-                        </summary>
-                        <div className="absolute right-0 z-10 mt-2 w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
-                            <button type="button" disabled={busy} className={actionButton} onClick={(event) => selectAction(event, 'is_active')}>
-                                {user.is_active ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button type="button" disabled={busy} className={actionButton} onClick={(event) => selectAction(event, 'is_staff')}>
-                                {user.is_staff ? 'Remove admin' : 'Make admin'}
-                            </button>
-                        </div>
-                    </details>
+                    <button type="button" ref={triggerRef} popoverTarget={actionsId}
+                        aria-label={`Actions for ${name}`} className={iconButton}>
+                        <MoreHorizontal aria-hidden="true" className="size-5" />
+                    </button>
+                    <div id={actionsId} ref={popoverRef} popover="auto" onToggle={positionActions}
+                        className="fixed inset-auto m-0 w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                        <button type="button" disabled={busy} className={actionButton} onClick={() => selectAction('is_active')}>
+                            {user.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button type="button" disabled={busy} className={actionButton} onClick={() => selectAction('is_staff')}>
+                            {user.is_staff ? 'Remove admin' : 'Make admin'}
+                        </button>
+                    </div>
                 </div>
             </td>
         </tr>

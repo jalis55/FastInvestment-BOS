@@ -76,7 +76,7 @@ const router = createBrowserRouter([
 
 
           /* ---- User Management ---- */
-    { path: 'users', handle: { pageTitle: 'Users' }, element: <RoleRoute roles={['super_admin']}><Users /></RoleRoute> },
+    { path: 'users', handle: { pageTitle: 'Users', fillContent: true }, element: <RoleRoute roles={['super_admin']}><Users /></RoleRoute> },
     { path: 'users/:userId', handle: { pageTitle: 'User details' }, element: <RoleRoute roles={['super_admin']}><AdminUserDetails /></RoleRoute> },
     { path: 'user-details', handle: { pageTitle: 'My profile' },element: <RoleRoute roles={['user', 'admin', 'super_admin']}><UserDetails /></RoleRoute> },
     { path: 'user-registration', handle: { pageTitle: 'Register a user' },element: <RoleRoute roles={['super_admin']}><UserRegistration /></RoleRoute> },

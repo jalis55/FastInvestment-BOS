@@ -60,8 +60,9 @@ export default function Users() {
     }
 
     return (
-        <>
+        <div className="flex h-full flex-col">
             <PageIntro
+                className="shrink-0"
                 as="h1"
                 title="Users"
                 actions={(
@@ -72,8 +73,8 @@ export default function Users() {
                 )}
             />
 
-            <SurfaceCard className="!p-4 sm:!p-6">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <SurfaceCard className="flex min-h-0 flex-col !p-4 sm:!p-6">
+                <div className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
                     <SearchBar
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
@@ -96,7 +97,7 @@ export default function Users() {
                 </div>
 
                 {!loading && !error && (
-                    <p role="status" className="mb-3 text-sm text-slate-600">
+                    <p role="status" className="mb-3 shrink-0 text-sm text-slate-600">
                         Showing {filteredUsers.length} of {users.length} {users.length === 1 ? 'user' : 'users'}
                     </p>
                 )}
@@ -110,9 +111,11 @@ export default function Users() {
                     emptyTitle={users.length ? 'No matching users' : 'No registered users'}
                     emptyDescription={users.length ? 'Try a different search or clear a filter.' : 'Use Register user to create an account.'}
                 >
-                    <div className="rounded-2xl border border-slate-200 bg-white">
+                    <div role="region" aria-label="User list" tabIndex={0}
+                        className="relative min-h-24 overflow-y-auto overscroll-y-contain rounded-2xl border border-slate-200 bg-white [scrollbar-gutter:stable] focus-visible:outline-2 focus-visible:outline-blue-500"
+                        onScroll={(event) => event.currentTarget.querySelector('[popover]:popover-open')?.hidePopover()}>
                         <table role="table" aria-label="Registered users" className="block w-full text-left lg:table">
-                            <thead role="rowgroup" className="sr-only lg:not-sr-only lg:table-header-group">
+                            <thead role="rowgroup" className="sr-only lg:not-sr-only lg:sticky lg:top-0 lg:z-10 lg:table-header-group">
                                 <tr role="row" className="bg-slate-50 text-xs font-semibold text-slate-600">
                                     {columns.map((column) => (
                                         <th role="columnheader" scope="col" key={column} className={`px-5 py-3 first:rounded-tl-2xl last:rounded-tr-2xl ${column === 'Actions' ? 'text-right' : ''}`}>
@@ -128,6 +131,6 @@ export default function Users() {
                     </div>
                 </QueryState>
             </SurfaceCard>
-        </>
+        </div>
     );
 }

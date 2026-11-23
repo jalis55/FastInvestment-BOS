@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import ErrorBoundary from '@/components/errors/ErrorBoundary';
 import Spinner from '@/components/Spinner';
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useMatches } from "react-router-dom";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 
 const Layout = () => {
     const location = useLocation();
+    const fillContent = useMatches().at(-1)?.handle?.fillContent;
     const isDesktopDevice = useMediaQuery("(min-width: 1024px)");
     const [collapsed, setCollapsed] = useState(!isDesktopDevice);
 
@@ -67,7 +68,7 @@ const Layout = () => {
                     menuButtonRef={menuButtonRef}
                 />
                 <div className="h-[calc(100dvh-64px)] overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-4 sm:px-6 sm:py-6 lg:h-[calc(100dvh-72px)] lg:p-8">
-                    <main className="mx-auto w-full min-w-0 max-w-7xl">
+                    <main className={cn("mx-auto w-full min-w-0 max-w-7xl", fillContent && "h-full")}>
                         <ErrorBoundary key={location.pathname}>
                             <Suspense fallback={<Spinner fullPage={false} />}><Outlet /></Suspense>
                         </ErrorBoundary>
