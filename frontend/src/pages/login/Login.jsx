@@ -82,9 +82,6 @@ const Login = () => {
                             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
                                 Sign in to continue
                             </h2>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">
-                                Enter your account credentials to open the backoffice dashboard.
-                            </p>
                         </div>
                         <form className="space-y-6" onSubmit={handleSubmit}>
 
@@ -140,9 +137,6 @@ const Login = () => {
                                         )}
                                     </button>
                                 </div>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-slate-500">Session secured with HttpOnly cookies</span>
                             </div>
                             <div>
                                 <button
