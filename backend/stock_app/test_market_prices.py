@@ -13,13 +13,13 @@ class MarketPriceTests(SimpleTestCase):
     def setUp(self):
         cache.clear()
 
-    def test_parse_close_and_fall_back_to_previous_close(self):
+    def test_parse_ycp_regardless_of_close(self):
         result = parse_prices({
             'aa': [' ACI ', 'BEXIMCO', 'MISSING'],
-            'ee': [176.2, 0, None],
+            'ee': [176.2, 0, 42],
             'aj': [178.1, 99.1, 0],
         })
-        self.assertEqual(result, {'ACI': '176.2', 'BEXIMCO': '99.1'})
+        self.assertEqual(result, {'ACI': '178.1', 'BEXIMCO': '99.1'})
 
     def test_reject_malformed_feed(self):
         with self.assertRaises(MarketPriceError):
@@ -33,19 +33,22 @@ class MarketPriceTests(SimpleTestCase):
         feed.json.return_value = {'aa': ['ACI'], 'ee': [176.2], 'aj': [178.1]}
         get.side_effect = [page, script, feed]
 
-        self.assertEqual(scrape_prices(), {'ACI': '176.2'})
+        self.assertEqual(scrape_prices(), {'ACI': '178.1'})
         self.assertEqual(get.call_args_list[2].args[0], 'https://www.amarstock.com/823af3f1ebdd')
 
     @patch('stock_app.market_prices.datetime')
     @patch('stock_app.market_prices.scrape_prices')
     def test_one_fetch_per_dhaka_day(self, scrape, clock):
         clock.now.return_value = datetime(2026, 11, 5, 8, tzinfo=ZoneInfo('Asia/Dhaka'))
-        scrape.return_value = {'ACI': '176.2'}
+        old_snapshot = {'prices': {'ACI': '176.2'}, 'fetched_on': '2026-11-05', 'stale': False}
+        cache.set('amarstock:close:2026-11-05', old_snapshot)
+        scrape.return_value = {'ACI': '178.1'}
 
         first = get_daily_prices()
         second = get_daily_prices()
 
         self.assertEqual(first, second)
+        self.assertEqual(first['prices'], {'ACI': '178.1'})
         self.assertEqual(first['fetched_on'], '2026-11-05')
         self.assertFalse(first['stale'])
         scrape.assert_called_once_with()
@@ -70,6 +73,7 @@ class MarketPriceTests(SimpleTestCase):
     @patch('stock_app.market_prices.scrape_prices', side_effect=MarketPriceError('Source unavailable'))
     def test_failure_without_snapshot_is_not_retried_that_day(self, scrape, clock):
         clock.now.return_value = datetime(2026, 11, 5, 8, tzinfo=ZoneInfo('Asia/Dhaka'))
+        cache.set('amarstock:close:latest', {'prices': {'ACI': '176.2'}, 'stale': False})
         with self.assertRaises(MarketPriceError):
             get_daily_prices()
         with self.assertRaises(MarketPriceError):

@@ -1,4 +1,4 @@
-"""Daily AmarStock closing prices for project valuations."""
+"""Daily AmarStock previous closing prices (YCP) for project valuations."""
 
 import re
 import time
@@ -31,26 +31,21 @@ def positive_decimal(value):
 
 
 def parse_prices(payload):
-    """Map AmarStock's columnar trading codes to positive closing prices.
-
-    ``ee`` is the displayed Close column; ``aj`` is YCP, used when Close is
-    zero because the instrument did not trade in the current session.
-    """
+    """Map AmarStock trading codes (aa) to positive YCP values (aj)."""
     if not isinstance(payload, dict):
         raise MarketPriceError('Unexpected price data format.')
     symbols = payload.get('aa')
-    closes = payload.get('ee')
     previous_closes = payload.get('aj')
-    if not all(isinstance(column, list) for column in (symbols, closes, previous_closes)):
+    if not all(isinstance(column, list) for column in (symbols, previous_closes)):
         raise MarketPriceError('Price columns are missing.')
-    if not symbols or len(symbols) != len(closes) or len(symbols) != len(previous_closes):
+    if not symbols or len(symbols) != len(previous_closes):
         raise MarketPriceError('Price columns have different lengths.')
 
     prices = {}
-    for symbol, close, previous_close in zip(symbols, closes, previous_closes):
+    for symbol, previous_close in zip(symbols, previous_closes):
         if not isinstance(symbol, str) or not symbol.strip():
             continue
-        value = positive_decimal(close) or positive_decimal(previous_close)
+        value = positive_decimal(previous_close)
         if value is not None:
             prices[symbol.strip().upper()] = str(value)
     if not prices or len(prices) < len(symbols) // 2:
@@ -93,8 +88,8 @@ def scrape_prices():
 def get_daily_prices():
     """Fetch once per Dhaka date across workers; retain the last good prices."""
     today = datetime.now(MARKET_TIME_ZONE).date().isoformat()
-    daily_key = f'amarstock:close:{today}'
-    latest_key = 'amarstock:close:latest'
+    daily_key = f'amarstock:ycp:{today}'
+    latest_key = 'amarstock:ycp:latest'
     snapshot = cache.get(daily_key)
     if snapshot:
         if snapshot.get('error'):

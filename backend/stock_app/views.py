@@ -223,7 +223,7 @@ class InstrumentListView(generics.ListAPIView):
     serializer_class = InstrumentSerializer
     permission_classes = [IsAdminUser]  # Allow any user to view instruments
 
-@extend_schema(summary='Get daily market reference prices', description='Returns AmarStock Close prices, falling back to YCP when Close is zero. The source is fetched at most once per Asia/Dhaka calendar day. A stale flag indicates the last successful snapshot is being served after an upstream failure.')
+@extend_schema(summary='Get daily market reference prices', description='Returns AmarStock YCP (previous closing prices). The source is fetched at most once per Asia/Dhaka calendar day. A stale flag indicates the last successful snapshot is being served after an upstream failure.')
 @extend_schema(responses={200: {'type': 'object', 'properties': {
     'prices': {'type': 'object', 'additionalProperties': {'type': 'string'}},
     'fetched_on': {'type': 'string', 'format': 'date'},
