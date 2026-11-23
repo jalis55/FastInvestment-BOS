@@ -9,12 +9,12 @@ from .views import (AccountReceivableCreateApiView,
                     AccountRecivableDetailsListApiView,
                     AddFinancialAdvisorListCreateView,
                     ClientInvestmentDetailsListView, DisbursementDetailsView, FinancialAdvisorListView,
-                    InstrumentListView, InvestmentCreateAPIView,InstrumentClosePriceView,
+                    InstrumentListView, InvestmentCreateAPIView, InstrumentClosePriceView, InstrumentLivePriceView,
                     InvestorContributionRetrieveAPI, InvestorProfitDetailsView,
                     ProfitCreateView, ProfitDisburse,
                     ProjectBalanceDetailsView, ProjectCloseView, ProjectCommissionView,
                     ProjectCreateView, ProjectInvestmentHistoryView, ProjectProfitTotalListApiView,ProjectListView,
-                    ProjectStatusRetriveView, SellableInstrumentView,
+                    ProjectStatusRetriveView, RefreshMarketPricesView, SellableInstrumentView,
                     TradeCreateView, TradeDeleteView, TradeDetailsListView)
 
 urlpatterns = [
@@ -26,6 +26,8 @@ urlpatterns = [
 
     path('instruments/', menu_api(InstrumentListView, '/buy-instruments'), name='instrument-list'),
     path('instruments/close/price/',menu_api(InstrumentClosePriceView, '/project-details'),name='instrument-close-price'),
+    path('instruments/live/price/<str:project_id>/', menu_api(InstrumentLivePriceView, '/live-share-update'), name='instrument-live-price'),
+    path('instruments/close/refresh/', RefreshMarketPricesView.as_view(), name='refresh-market-prices'),
     path('create/trade/', menu_api(TradeCreateView, '/buy-instruments', '/sell-instruments'), name='create-trade'),
     path('delete/trade/<str:trade_id>/',menu_api(TradeDeleteView, '/sell-instruments'),name='delete-trade'),
     path('trade/details/',menu_api(TradeDetailsListView, '/trade-details'),name='trade-details-ason'),

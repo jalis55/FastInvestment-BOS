@@ -5,7 +5,6 @@ import API from '@/api/axios';
 import { useApiQuery } from '@/hooks/use-api-query';
 import Swal from 'sweetalert2';
 import { ProjectSearch } from '@/components/ui/project-search';
-import { fetchStockChartQuotes } from '@/api/stockchartbd';
 import { SurfaceCard } from '@/components/ui/surface-card';
 
 const currency = new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT' });
@@ -23,7 +22,6 @@ const ProjectDetails = ({ liveQuotes = false }) => {
     const [loadingProject, setLoadingProject] = useState(false);
     const [loadingInstruments, setLoadingInstruments] = useState(false);
     const [priceSnapshot, setPriceSnapshot] = useState(null);
-    const [quotes, setQuotes] = useState({});
     const [priceError, setPriceError] = useState(false);
     const [instrumentsError, setInstrumentsError] = useState(false);
 
@@ -39,14 +37,20 @@ const ProjectDetails = ({ liveQuotes = false }) => {
         return data ?? [];
     }, []);
 
-    const fetchClosePrices = useCallback(async () => {
+    const fetchClosePrices = useCallback(async (pid) => {
         try {
-            const { data } = await API.get('/api/stock/instruments/close/price/');
+            const path = liveQuotes
+                ? `/api/stock/instruments/live/price/${encodeURIComponent(pid)}/`
+                : '/api/stock/instruments/close/price/';
+            const { data } = await API.get(path, {
+                timeout: 55_000,
+                ...(liveQuotes ? {} : { params: { project_id: pid } }),
+            });
             return data;
         } catch {
             return null;
         }
-    }, []);
+    }, [liveQuotes]);
 
     /* -------------------------------------------------
      * Search handler
@@ -60,7 +64,6 @@ const ProjectDetails = ({ liveQuotes = false }) => {
             setProjectBalance(null);
             setInstruments([]);
             setPriceSnapshot(null);
-            setQuotes({});
             setPriceError(false);
             setInstrumentsError(false);
             setLoadingProject(true);
@@ -78,14 +81,11 @@ const ProjectDetails = ({ liveQuotes = false }) => {
 
                 // now load instruments
                 setLoadingInstruments(true);
-                const [instrumentsData, snapshot] = await Promise.all([
-                    fetchSellable(balance.project_id), liveQuotes ? null : fetchClosePrices(),
-                ]);
+                const instrumentsData = await fetchSellable(balance.project_id);
                 setInstruments(instrumentsData);
-                setPriceSnapshot(snapshot);
-                if (liveQuotes) {
-                    setQuotes(await fetchStockChartQuotes(instrumentsData));
-                } else {
+                if (instrumentsData.length) {
+                    const snapshot = await fetchClosePrices(balance.project_id);
+                    setPriceSnapshot(snapshot);
                     setPriceError(!snapshot);
                 }
             } catch (err) {
@@ -97,7 +97,7 @@ const ProjectDetails = ({ liveQuotes = false }) => {
                 setLoadingInstruments(false);
             }
         },
-        [searchId, fetchSellable, fetchClosePrices, liveQuotes, toast]
+        [searchId, fetchSellable, fetchClosePrices, toast]
     );
 
     /* -------------------------------------------------
@@ -108,9 +108,9 @@ const ProjectDetails = ({ liveQuotes = false }) => {
         return instruments.map((item) => {
             const qty = Number(item.available_quantity || 0);
             const cost = Number(item.average_buy_unit_price || 0);
-            const symbol = item.instrument?.name?.toUpperCase();
-            const quote = quotes[symbol?.trim()];
-            const rawPrice = liveQuotes ? quote?.price : priceSnapshot?.prices?.[symbol];
+            const symbol = item.instrument?.name?.trim().toUpperCase();
+            const quote = priceSnapshot?.quotes?.[symbol];
+            const rawPrice = quote?.price ?? priceSnapshot?.prices?.[symbol];
             const numericPrice = rawPrice == null ? NaN : Number(rawPrice);
             const price = Number.isFinite(numericPrice) ? numericPrice : null;
 
@@ -130,7 +130,7 @@ const ProjectDetails = ({ liveQuotes = false }) => {
                 gainLoss,
             };
         });
-    }, [instruments, liveQuotes, priceSnapshot, quotes]);
+    }, [instruments, priceSnapshot]);
 
     const holdingsUnavailable = loadingInstruments || instrumentsError;
     const totalCost = rows.every((row) => row.totalCost !== null)
@@ -225,13 +225,17 @@ const ProjectDetails = ({ liveQuotes = false }) => {
                             <div className="border-b border-slate-200 px-6 py-4">
                                 <h2 className="text-lg font-semibold text-slate-900">Current holdings</h2>
                                 <p className="mt-1 text-sm text-slate-500">
-                                    {liveQuotes ? "Latest available closing quotes from StockChartBD (DSE Intelligence, dsebd.org)." : priceSnapshot ? `AmarStock reference prices fetched ${priceSnapshot.fetched_on}${priceSnapshot.stale ? ' · previous snapshot' : ''}. A dash means no price is available for that instrument.` : 'Market prices unavailable. Cost values are still shown.'}
+                                    StockChartBD closing quotes (DSE Intelligence, dsebd.org).
+                                    {priceSnapshot?.fetched_on && ` Snapshot fetched ${priceSnapshot.fetched_on}.`}
+                                    {priceSnapshot?.mode === 'overnight' && (priceSnapshot.fetched_on
+                                        ? ' Overnight cache until 9:00 AM Bangladesh time.'
+                                        : ' The first overnight snapshot is not available yet.')}
                                 </p>
                             </div>
-                            {priceSnapshot?.stale && <p role="status" className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-800">Today’s price refresh failed. Showing the last available snapshot.</p>}
-                            {liveQuotes && rows.some((row) => row.price === null) && (
+                            {priceSnapshot?.stale && <p role="status" className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-800">The latest snapshot is pending or unavailable. Showing the previous snapshot.</p>}
+                            {!priceError && rows.some((row) => row.price === null) && (
                                 <p role="status" className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-800">
-                                    Quotes are missing for one or more holdings. Market value and gain/loss totals require every quote.
+                                    Quotes are unavailable for one or more holdings. Market value and gain/loss totals require every quote.
                                 </p>
                             )}
                             {priceError && <p role="alert" className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-800">Market prices could not be loaded. Market value and gain/loss are unavailable.</p>}

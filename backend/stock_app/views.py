@@ -2,8 +2,10 @@ from .schema import ErrorSerializer, ProfitDisbursementResultSerializer, Project
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 import json
 import logging
+from secrets import compare_digest
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.db import transaction
@@ -21,7 +23,7 @@ from rest_framework.views import APIView
 
 from accounting.models import Account, Transaction
 from stock_app.utils import investor_contributions_map, projects_visible_to, update_customer_balance
-from stock_app.market_prices import MarketPriceError, get_daily_prices
+from stock_app.market_prices import MarketPriceError, get_daily_prices, get_live_prices, refresh_daily_prices
 from user_app.permissions import IsSuperUser
 from user_app.menu_access import require_menu_access
 
@@ -224,22 +226,59 @@ class InstrumentListView(generics.ListAPIView):
     serializer_class = InstrumentSerializer
     permission_classes = [IsAdminUser]  # Allow any user to view instruments
 
-@extend_schema(summary='Get daily market reference prices', description='Returns AmarStock YCP (previous closing prices). The source is fetched at most once per Asia/Dhaka calendar day. A stale flag indicates the last successful snapshot is being served after an upstream failure.')
+@extend_schema(parameters=[OpenApiParameter('project_id', OpenApiTypes.STR, description='Limit quotes to this visible project.')], summary='Get daily market reference prices', description='Returns the shared StockChartBD Close snapshot refreshed daily at 19:00 Asia/Dhaka. A stale flag marks an older snapshot.')
 @extend_schema(responses={200: {'type': 'object', 'properties': {
     'prices': {'type': 'object', 'additionalProperties': {'type': 'string'}},
     'fetched_on': {'type': 'string', 'format': 'date'},
     'stale': {'type': 'boolean'},
+    'quotes': {'type': 'object', 'additionalProperties': {'type': 'object', 'properties': {
+        'price': {'type': 'string'}, 'date': {'type': 'string', 'format': 'date'},
+    }}},
 }}, 503: {'type': 'object', 'properties': {'detail': {'type': 'string'}}}})
 class InstrumentClosePriceView(APIView):
     permission_classes=[AllowAny]
 
     def get(self, request):
+        projects = projects_visible_to(request.user)
+        project_id = request.query_params.get('project_id')
+        if project_id:
+            projects = [get_object_or_404(projects, pk=project_id)]
         try:
-            return Response(get_daily_prices())
+            return Response(get_daily_prices(projects))
         except MarketPriceError:
             return Response({'detail': 'Market prices are temporarily unavailable.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+
+
+@extend_schema(summary='Get closing quotes for Live Share Update')
+class InstrumentLivePriceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, project_id):
+        project = get_object_or_404(projects_visible_to(request.user), pk=project_id)
+        return Response(get_live_prices(project))
+
+
+@extend_schema(exclude=True)
+class RefreshMarketPricesView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        secret = settings.CRON_SECRET
+        authorization = request.headers.get('Authorization', '')
+        if not secret or not compare_digest(authorization.encode(), f'Bearer {secret}'.encode()):
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            snapshot = refresh_daily_prices()
+        except MarketPriceError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({
+            'fetched_on': snapshot['fetched_on'],
+            'quote_count': len(snapshot['quotes']),
+            'missing_count': snapshot['missing_count'],
+        })
 
 
 @extend_schema(summary='List sellable holdings', description='Returns instruments with positive remaining quantity for the project. Moving average cost includes bonus shares at zero added cost and removes sold quantities at their average cost.')

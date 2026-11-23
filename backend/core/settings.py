@@ -32,6 +32,7 @@ if default_env.exists():
 # ============================================================
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
+CRON_SECRET = env("CRON_SECRET", default="")
 
 DEBUG = env.bool("DEBUG", default=False)
 
