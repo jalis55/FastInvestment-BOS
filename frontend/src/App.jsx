@@ -82,35 +82,35 @@ const router = createBrowserRouter([
     { path: 'user-registration', handle: { pageTitle: 'Register a user' },element: <RoleRoute roles={['super_admin']}><UserRegistration /></RoleRoute> },
 
       /* ---- Trade ---- */
-      { path: 'buy-instruments', handle: { pageTitle: 'Buy Instrument' }, element: <RoleRoute roles={['admin']}><BuyInstruments /></RoleRoute> },
-      { path: 'sell-instruments', handle: { pageTitle: 'Sell Instrument' }, element: <RoleRoute roles={['admin']}><SellInstruments /></RoleRoute> },
+      { path: 'buy-instruments', handle: { pageTitle: 'Buy Instrument' }, element: <RoleRoute menuPath="/buy-instruments" roles={['admin']}><BuyInstruments /></RoleRoute> },
+      { path: 'sell-instruments', handle: { pageTitle: 'Sell Instrument' }, element: <RoleRoute menuPath="/sell-instruments" roles={['admin']}><SellInstruments /></RoleRoute> },
       /* ---- Project ---- */
-      { path: 'project-list', handle: { pageTitle: 'Project List' }, element: <RoleRoute roles={['admin']}><ProjectList/></RoleRoute> },
-      { path: 'create-project', handle: { pageTitle: 'Create Project' }, element: <RoleRoute roles={['admin']}><CreateProject /></RoleRoute> },
-      { path: 'add-advisor', handle: { pageTitle: 'Add Financial Advisor' }, element: <RoleRoute roles={['admin']}><FinancialAdvisor /></RoleRoute> },
-      { path: 'add-investments', handle: { pageTitle: 'Add Investment' }, element: <RoleRoute roles={['admin']}><AddInvestments /></RoleRoute> },
-      { path: 'close-project', handle: { pageTitle: 'Close a project' }, element: <RoleRoute roles={['admin']}><CloseProject /></RoleRoute> },
-      { path: 'dividends', handle: { pageTitle: 'Dividend' }, element: <RoleRoute roles={['admin']}><Dividends /></RoleRoute> },
-      { path: 'disburse-profit', handle: { pageTitle: 'Disbursement' }, element: <RoleRoute roles={['admin']}><DisburseProfit /></RoleRoute> },
+      { path: 'project-list', handle: { pageTitle: 'Project List' }, element: <RoleRoute menuPath="/project-list" roles={['admin']}><ProjectList/></RoleRoute> },
+      { path: 'create-project', handle: { pageTitle: 'Create Project' }, element: <RoleRoute menuPath="/create-project" roles={['admin']}><CreateProject /></RoleRoute> },
+      { path: 'add-advisor', handle: { pageTitle: 'Add Financial Advisor' }, element: <RoleRoute menuPath="/add-advisor" roles={['admin']}><FinancialAdvisor /></RoleRoute> },
+      { path: 'add-investments', handle: { pageTitle: 'Add Investment' }, element: <RoleRoute menuPath="/add-investments" roles={['admin']}><AddInvestments /></RoleRoute> },
+      { path: 'close-project', handle: { pageTitle: 'Close a project' }, element: <RoleRoute menuPath="/close-project" roles={['admin']}><CloseProject /></RoleRoute> },
+      { path: 'dividends', handle: { pageTitle: 'Dividend' }, element: <RoleRoute menuPath="/dividends" roles={['admin']}><Dividends /></RoleRoute> },
+      { path: 'disburse-profit', handle: { pageTitle: 'Disbursement' }, element: <RoleRoute menuPath="/disburse-profit" roles={['admin']}><DisburseProfit /></RoleRoute> },
 
 
       /* Accounting */
-      { path: 'transaction', handle: { pageTitle: 'Transaction' }, element: <RoleRoute roles={['admin']}><Transaction /></RoleRoute> },
-      { path: 'fund-transfer', handle: { pageTitle: 'Fund Transfer' }, element: <RoleRoute roles={['admin']}><FundTransfer /></RoleRoute> },
+      { path: 'transaction', handle: { pageTitle: 'Transaction' }, element: <RoleRoute menuPath="/transaction" roles={['admin']}><Transaction /></RoleRoute> },
+      { path: 'fund-transfer', handle: { pageTitle: 'Fund Transfer' }, element: <RoleRoute menuPath="/fund-transfer" roles={['admin']}><FundTransfer /></RoleRoute> },
       { path: 'pending-payments', handle: { pageTitle: 'Pending Payments' }, element: <RoleRoute roles={['super_admin']}><PendingPayments /></RoleRoute> },
 
 
       /* ---- Reports ---- */
-      { path: 'allocation-details', handle: { pageTitle: 'Allocation Details' }, element: <RoleRoute roles={['user', 'admin']}><AllocationDetails /></RoleRoute> },
-      { path: 'disbursement-details', handle: { pageTitle: 'Disbursement Details' }, element: <RoleRoute roles={['admin']}><DisbursementDetails /></RoleRoute> },
-      { path: 'project-investment-summary', handle: { pageTitle: 'Project Investment Summary' }, element: <RoleRoute roles={['admin']}><ProjectInvestmentSummary /></RoleRoute> },
-      { path: 'acc-rec-details', handle: { pageTitle: 'Account Receivable Details' }, element: <RoleRoute roles={['admin']}><AccountReceivableDetails /></RoleRoute> },
-      { path: 'trade-details', handle: { pageTitle: 'Trade Details' }, element: <RoleRoute roles={['admin']}><TradeDetails /></RoleRoute> },
-      { path: 'trans-history', handle: { pageTitle: 'Transaction History' }, element: <RoleRoute roles={['user']}><TransactionHistory/> </RoleRoute> },
-      { path: 'investment-history', handle: { pageTitle: 'Investment History' }, element: <RoleRoute roles={['user', 'admin']}><InvestmentHistory/></RoleRoute> },
-      { path: 'profit-details', handle: { pageTitle: 'Profit Details' }, element: <RoleRoute roles={['user', 'admin']}><ProfitDetails/></RoleRoute> },
-      { path: 'project-details', handle: { pageTitle: 'Project Details' }, element: <RoleRoute roles={['user', 'admin']}><ProjectDetails/></RoleRoute> },
-      { path: 'live-share-update', handle: { pageTitle: 'Live Share Update' }, element: <RoleRoute roles={['user', 'admin']}><ProjectDetails key="live-share-update" liveQuotes /></RoleRoute> },
+      { path: 'allocation-details', handle: { pageTitle: 'Allocation Details' }, element: <RoleRoute menuPath="/allocation-details" roles={['user', 'admin']}><AllocationDetails /></RoleRoute> },
+      { path: 'disbursement-details', handle: { pageTitle: 'Disbursement Details' }, element: <RoleRoute menuPath="/disbursement-details" roles={['admin']}><DisbursementDetails /></RoleRoute> },
+      { path: 'project-investment-summary', handle: { pageTitle: 'Project Investment Summary' }, element: <RoleRoute menuPath="/project-investment-summary" roles={['admin']}><ProjectInvestmentSummary /></RoleRoute> },
+      { path: 'acc-rec-details', handle: { pageTitle: 'Account Receivable Details' }, element: <RoleRoute menuPath="/acc-rec-details" roles={['admin']}><AccountReceivableDetails /></RoleRoute> },
+      { path: 'trade-details', handle: { pageTitle: 'Trade Details' }, element: <RoleRoute menuPath="/trade-details" roles={['admin']}><TradeDetails /></RoleRoute> },
+      { path: 'trans-history', handle: { pageTitle: 'Transaction History' }, element: <RoleRoute menuPath="/trans-history" roles={['user']}><TransactionHistory/> </RoleRoute> },
+      { path: 'investment-history', handle: { pageTitle: 'Investment History' }, element: <RoleRoute menuPath="/investment-history" roles={['user', 'admin']}><InvestmentHistory/></RoleRoute> },
+      { path: 'profit-details', handle: { pageTitle: 'Profit Details' }, element: <RoleRoute menuPath="/profit-details" roles={['user', 'admin']}><ProfitDetails/></RoleRoute> },
+      { path: 'project-details', handle: { pageTitle: 'Project Details' }, element: <RoleRoute menuPath="/project-details" roles={['user', 'admin']}><ProjectDetails/></RoleRoute> },
+      { path: 'live-share-update', handle: { pageTitle: 'Live Share Update' }, element: <RoleRoute menuPath="/live-share-update" roles={['user', 'admin']}><ProjectDetails key="live-share-update" liveQuotes /></RoleRoute> },
       
     ],
   },

@@ -6,11 +6,12 @@ from .serializers import UserSerializer
 class SessionUserSerializer(UserSerializer):
     is_admin = serializers.BooleanField(read_only=True)
     is_super_admin = serializers.BooleanField(read_only=True)
+    menu_access = serializers.ListField(child=serializers.CharField(), allow_null=True, read_only=True)
     role = serializers.ChoiceField(choices=['superadmin', 'admin', 'user'], read_only=True)
 
     class Meta(UserSerializer.Meta):
         fields = [field for field in UserSerializer.Meta.fields if field != 'password'] + [
-            'is_admin', 'is_super_admin', 'role',
+            'is_admin', 'is_super_admin', 'role', 'menu_access',
         ]
 
 

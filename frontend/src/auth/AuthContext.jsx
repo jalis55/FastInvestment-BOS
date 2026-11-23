@@ -31,6 +31,7 @@ export default function AuthProvider({ children }) {
       is_admin: Boolean(currentUser.is_admin),
       is_super_admin: Boolean(currentUser.is_super_admin),
       roles: currentUser.role ? [currentUser.role] : [],
+      menuAccess: currentUser.menu_access ?? null,
     });
     setUserData(currentUser);
     return true;

@@ -6,8 +6,9 @@ from django.core.cache import cache
 from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import (CreateAPIView, ListAPIView,
                                      RetrieveAPIView, RetrieveUpdateAPIView,
@@ -19,6 +20,7 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from user_app.menu_access import effective_menu_access, role_menus
 from user_app.models import CustomUser, ProfilePhoto, UserIdentityDocument
 from user_app.photo_storage import PHOTO_PREFIX
 from user_app.authentication import CookieJWTAuthentication
@@ -50,6 +52,7 @@ def _session_payload(user, request):
             'is_admin': user.is_staff,
             'is_super_admin': user.is_superuser,
             'role': role,
+            'menu_access': effective_menu_access(user),
         },
     }
 
@@ -269,6 +272,41 @@ class UpdateUserStatusView(RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.filter(is_superuser=False)
     serializer_class=AdminUserDetailsSerializer
     permission_classes=[IsSuperUser]
+
+
+
+class UserMenuAccessSerializer(serializers.Serializer):
+    allowed_menus = serializers.ListField(
+        child=serializers.CharField(), allow_null=True, max_length=30,
+    )
+
+
+@method_decorator(never_cache, name='dispatch')
+class UserMenuAccessView(APIView):
+    permission_classes = [IsSuperUser]
+    serializer_class = UserMenuAccessSerializer
+
+    def get(self, request, pk):
+        user = get_object_or_404(CustomUser, pk=pk, is_superuser=False)
+        return self.access_response(user)
+
+    @transaction.atomic
+    def put(self, request, pk):
+        user = get_object_or_404(CustomUser.objects.select_for_update(), pk=pk, is_superuser=False)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        access = serializer.validated_data['allowed_menus']
+        if access is not None:
+            if set(access) - set(role_menus(user)):
+                raise ValidationError({'allowed_menus': 'Choose menus available to this user’s role.'})
+            access = [route for route in role_menus(user) if route in access]
+        user.menu_access = access
+        user.save(update_fields=['menu_access'])
+        return self.access_response(user)
+
+    @staticmethod
+    def access_response(user):
+        return Response({'available_menus': role_menus(user), 'allowed_menus': effective_menu_access(user)})
 
 
 def nid_scan_download(documents):

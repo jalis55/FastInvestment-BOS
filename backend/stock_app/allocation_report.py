@@ -1,3 +1,4 @@
+from user_app.menu_access import require_menu_access
 from collections import defaultdict
 from decimal import Decimal
 
@@ -43,8 +44,10 @@ class AllocationReportView(APIView):
         status = criteria['status']
         scope = 'project' if staff else 'personal'
         if criteria['projects_only']:
+            require_menu_access(request.user, '/allocation-details', '/project-details', '/live-share-update')
             projects = projects_visible_to(request.user).order_by('-project_active_status', 'project_title', 'project_id')
             return Response({'scope': scope, 'projects': list(projects.values('project_id', 'project_title'))})
+        require_menu_access(request.user, '/allocation-details')
         if status == 'all':
             return Response({
                 'status': status,

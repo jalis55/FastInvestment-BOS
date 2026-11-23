@@ -14,10 +14,13 @@ const Sidebar = forwardRef(({ collapsed, isMobile, onClose, onNavigate }, ref) =
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState('');
   const compact = collapsed && !isMobile;
+  const canOpen = (item) => hasRole(item.roles) && (
+    user?.is_super_admin || item.url === '/' || user?.menuAccess == null || user.menuAccess.includes(item.url)
+  );
   const items = menu.filter((item) => hasRole(item.roles)).map((item) => ({
     ...item,
-    children: item.children?.filter((child) => hasRole(child.roles)),
-  })).filter((item) => !item.children || item.children.length);
+    children: item.children?.filter(canOpen),
+  })).filter((item) => item.children ? item.children.length > 0 : canOpen(item));
 
   if (!user) return null;
 

@@ -48,6 +48,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     dob = models.DateField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    menu_access = models.JSONField(null=True, blank=True, default=None)
     date_joined = models.DateTimeField(default=timezone.now)
 
     USERNAME_FIELD = 'email'

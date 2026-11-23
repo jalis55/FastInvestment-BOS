@@ -23,6 +23,7 @@ from accounting.models import Account, Transaction
 from stock_app.utils import investor_contributions_map, projects_visible_to, update_customer_balance
 from stock_app.market_prices import MarketPriceError, get_daily_prices
 from user_app.permissions import IsSuperUser
+from user_app.menu_access import require_menu_access
 
 from .distribution import allocation_row, calculate_distribution, recorded_allocation_rows
 from .models import (AccountReceivable, FinAdvisorCommission, FinancialAdvisor,
@@ -260,6 +261,11 @@ class TradeCreateView(generics.CreateAPIView):
     permission_classes = [IsAdminUser]
 
     def perform_create(self, serializer):
+        trade_menu = {
+            Trade.BUY: '/buy-instruments',
+            Trade.SELL: '/sell-instruments',
+        }[serializer.validated_data['trns_type']]
+        require_menu_access(self.request.user, trade_menu)
         serializer.save(authorized_by=self.request.user)
 
 @extend_schema(summary='Delete a trade', description='Deletes a trade by UUID. Returns HTTP 204 without a response body.')
@@ -268,6 +274,12 @@ class TradeDeleteView(generics.DestroyAPIView):
     serializer_class=TradeSerializer
     permission_classes=[IsAdminUser]
     lookup_url_kwarg = 'trade_id'
+
+    def perform_destroy(self, instance):
+        if instance.trns_type != Trade.SELL:
+            require_menu_access(self.request.user)
+        super().perform_destroy(instance)
+
 
 
 

@@ -10,6 +10,7 @@ import { PageIntro } from '@/components/ui/page-intro';
 import { QueryState } from '@/components/ui/query-state';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import ProfileField from './ProfileField';
+import UserMenuAccess from './UserMenuAccess';
 import DownloadNidScan from './DownloadNidScan';
 import ProfilePhotoPicker from './ProfilePhotoPicker';
 
@@ -111,9 +112,12 @@ export default function AdminUserDetails() {
             )} />
             <QueryState loading={loading} error={error} onRetry={refetch} loadingLabel="Loading user…">
                 {user.id && (
-                    <SurfaceCard className="max-w-4xl !p-4 sm:!p-6">
-                        <EditUserForm key={user.id} user={user} endpoint={endpoint} refetch={refetch} />
-                    </SurfaceCard>
+                    <div className="max-w-4xl space-y-5">
+                        <SurfaceCard className="!p-4 sm:!p-6">
+                            <EditUserForm key={user.id} user={user} endpoint={endpoint} refetch={refetch} />
+                        </SurfaceCard>
+                        <UserMenuAccess key={user.id} endpoint={`${endpoint}menu-access/`} />
+                    </div>
                 )}
             </QueryState>
         </>
