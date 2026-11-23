@@ -202,6 +202,12 @@ const menu = [
         roles:["user", "admin", "super_admin"],
         icon:BadgeInfoIcon
       },
+      {
+        menuName:"Live Share Update",
+        url:"/live-share-update",
+        roles:["user", "admin", "super_admin"],
+        icon:BadgeInfoIcon
+      },
     ],
   },
 ];

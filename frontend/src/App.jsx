@@ -110,6 +110,7 @@ const router = createBrowserRouter([
       { path: 'investment-history', handle: { pageTitle: 'Investment History' }, element: <RoleRoute roles={['user', 'admin']}><InvestmentHistory/></RoleRoute> },
       { path: 'profit-details', handle: { pageTitle: 'Profit Details' }, element: <RoleRoute roles={['user', 'admin']}><ProfitDetails/></RoleRoute> },
       { path: 'project-details', handle: { pageTitle: 'Project Details' }, element: <RoleRoute roles={['user', 'admin']}><ProjectDetails/></RoleRoute> },
+      { path: 'live-share-update', handle: { pageTitle: 'Live Share Update' }, element: <RoleRoute roles={['user', 'admin']}><ProjectDetails key="live-share-update" liveQuotes /></RoleRoute> },
       
     ],
   },
