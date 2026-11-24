@@ -65,24 +65,19 @@ class MarketPriceTests(SimpleTestCase):
         self.assertFalse(get_daily_prices([])['stale'])
         self.assertEqual(fetch.call_count, 2)
 
-    @patch('stock_app.market_prices.market_now')
     @patch('stock_app.market_prices.holding_symbols', return_value={'GP'})
-    @patch('stock_app.market_prices.fetch_quote', return_value=QUOTE)
-    def test_overnight_uses_snapshot_without_api_calls_until_nine(self, fetch, symbols, clock):
-        clock.return_value = dhaka(23, 19)
-        self.assertEqual(get_live_prices(object())['quotes'], {})
-        fetch.assert_not_called()
-        refresh_daily_prices()
+    @patch('stock_app.market_prices.fetch_quote')
+    def test_live_requests_fetch_fresh_quotes_even_with_saved_snapshot(self, fetch, symbols):
+        cache.set(SNAPSHOT_KEY, {'cycle': '2026-11-23', 'quotes': {'GP': QUOTE}})
+        newer_quote = {'price': '230', 'date': '2026-11-24'}
+        fetch.side_effect = [QUOTE, newer_quote]
+        project = object()
 
-        self.assertEqual(get_live_prices(object())['mode'], 'overnight')
-        clock.return_value = dhaka(24, 8, 59)
-        self.assertEqual(get_live_prices(object())['quotes'], {'GP': QUOTE})
-        fetch.assert_called_once()
-
-        clock.return_value = dhaka(24, 9)
-        self.assertEqual(get_live_prices(object())['mode'], 'daytime')
-        self.assertEqual(get_live_prices(object())['quotes'], {'GP': QUOTE})
+        self.assertEqual(get_live_prices(project), {'quotes': {'GP': QUOTE}})
+        self.assertEqual(get_live_prices(project), {'quotes': {'GP': newer_quote}})
         self.assertEqual(fetch.call_count, 2)
+        symbols.assert_called_with([project])
+        self.assertEqual(cache.get(SNAPSHOT_KEY)['quotes'], {'GP': QUOTE})
 
     @patch('stock_app.market_prices.market_now')
     @patch('stock_app.market_prices.holding_symbols', return_value={'GP'})
@@ -97,7 +92,7 @@ class MarketPriceTests(SimpleTestCase):
         with self.assertRaises(MarketPriceError):
             refresh_daily_prices()
         self.assertEqual(get_daily_prices([])['prices'], {'GP': '226.7'})
-        self.assertTrue(get_live_prices(object())['stale'])
+        self.assertTrue(get_daily_prices([])['stale'])
 
 
 @override_settings(CACHES=LOC_MEM)
@@ -113,6 +108,19 @@ class MarketPriceEndpointTests(TestCase):
         response = client.get(url, HTTP_AUTHORIZATION='Bearer test-cron-secret')
         self.assertEqual(response.status_code, 200)
         refresh.assert_called_once()
+
+    @patch('stock_app.views.get_live_prices', return_value={'quotes': {'GP': QUOTE}})
+    def test_live_endpoint_disallows_http_caching(self, prices):
+        staff = CustomUser.objects.create_user('live-market@example.test', name='Staff', is_staff=True)
+        project = Project.objects.create(project_title='Live Market', created_by=staff)
+        client = APIClient()
+        client.force_authenticate(staff)
+
+        response = client.get(f'/api/stock/instruments/live/price/{project.pk}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('no-store', response.headers['Cache-Control'])
+        prices.assert_called_once_with(project)
 
     def test_holdings_symbols_exclude_sold_out_instruments(self):
         staff = CustomUser.objects.create_user('market-staff@example.test', name='Staff', is_staff=True)

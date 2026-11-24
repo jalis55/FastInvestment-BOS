@@ -101,10 +101,10 @@ login and a protected API request. Local SQLite data is not uploaded or copied
 into Supabase. Existing hosted records are preserved.
 
 Set a random `CRON_SECRET` in Vercel’s Production environment before deploying
-the market-price cron. It refreshes the shared StockChartBD Close snapshot at
-13:00 UTC (19:00 Asia/Dhaka). Project Details can seed an empty cache on its
-first lookup. Live Share Update reads the snapshot from 19:00 until 09:00 and
-uses recent quotes during the day.
+the market-price cron. It refreshes the StockChartBD Close snapshot for
+Project Details at 13:00 UTC (19:00 Asia/Dhaka). Project Details can seed an
+empty cache on its first lookup. Live Share Update fetches quotes directly
+from StockChartBD on each project search.
 
 Django uses secure cookies by default when debug is disabled. Vercel's generated
 hosts are included in the allowed host list, and Django recognizes forwarded

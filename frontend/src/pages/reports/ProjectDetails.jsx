@@ -227,9 +227,6 @@ const ProjectDetails = ({ liveQuotes = false }) => {
                                 <p className="mt-1 text-sm text-slate-500">
                                     StockChartBD closing quotes (DSE Intelligence, dsebd.org).
                                     {priceSnapshot?.fetched_on && ` Snapshot fetched ${priceSnapshot.fetched_on}.`}
-                                    {priceSnapshot?.mode === 'overnight' && (priceSnapshot.fetched_on
-                                        ? ' Overnight cache until 9:00 AM Bangladesh time.'
-                                        : ' The first overnight snapshot is not available yet.')}
                                 </p>
                             </div>
                             {priceSnapshot?.stale && <p role="status" className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-800">The latest snapshot is pending or unavailable. Showing the previous snapshot.</p>}

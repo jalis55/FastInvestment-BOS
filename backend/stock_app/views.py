@@ -15,6 +15,8 @@ from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -226,7 +228,7 @@ class InstrumentListView(generics.ListAPIView):
     serializer_class = InstrumentSerializer
     permission_classes = [IsAdminUser]  # Allow any user to view instruments
 
-@extend_schema(parameters=[OpenApiParameter('project_id', OpenApiTypes.STR, description='Limit quotes to this visible project.')], summary='Get daily market reference prices', description='Returns the shared StockChartBD Close snapshot refreshed daily at 19:00 Asia/Dhaka. A stale flag marks an older snapshot.')
+@extend_schema(parameters=[OpenApiParameter('project_id', OpenApiTypes.STR, description='Limit quotes to this visible project.')], summary='Get daily market reference prices', description='Returns the StockChartBD Close snapshot for Project Details refreshed daily at 19:00 Asia/Dhaka. A stale flag marks an older snapshot.')
 @extend_schema(responses={200: {'type': 'object', 'properties': {
     'prices': {'type': 'object', 'additionalProperties': {'type': 'string'}},
     'fetched_on': {'type': 'string', 'format': 'date'},
@@ -251,6 +253,7 @@ class InstrumentClosePriceView(APIView):
 
 
 
+@method_decorator(never_cache, name='dispatch')
 @extend_schema(summary='Get closing quotes for Live Share Update')
 class InstrumentLivePriceView(APIView):
     permission_classes = [IsAuthenticated]

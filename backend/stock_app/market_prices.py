@@ -1,4 +1,4 @@
-"""StockChartBD closing quotes and the shared Dhaka evening snapshot."""
+"""StockChartBD closing quotes and the Dhaka evening snapshot for Project Details."""
 
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -16,10 +16,8 @@ from .models import Dividend, Instrument, Trade
 QUOTE_URL = 'https://stockchartbd.com/api/v1.php'
 MARKET_TIME_ZONE = ZoneInfo('Asia/Dhaka')
 EVENING_REFRESH = time(19)
-LIVE_RESUMES = time(9)
 SNAPSHOT_TTL = 24 * 60 * 60
 FALLBACK_TTL = 7 * SNAPSHOT_TTL
-QUOTE_TTL = 60
 RETRY_TTL = 60
 REQUEST_BUDGET = 110
 CACHE_PREFIX = 'stockchartbd:close:v1'
@@ -99,28 +97,11 @@ def fetch_quote(symbol):
         return None
 
 
-def get_live_quote(symbol):
-    key = f'{CACHE_PREFIX}:live:{symbol}'
-    quote = cache.get(key)
-    if quote is not None:
-        return quote or None
-    if not cache.add(f'{key}:lock', True, timeout=8):
-        return None
-    try:
-        quote = cache.get(key)
-        if quote is None:
-            quote = fetch_quote(symbol)
-            cache.set(key, quote or {}, timeout=QUOTE_TTL)
-        return quote or None
-    finally:
-        cache.delete(f'{key}:lock')
-
-
-def collect_quotes(symbols, fetch):
+def collect_quotes(symbols):
     with ThreadPoolExecutor(max_workers=12) as pool:
         return {
             symbol: quote
-            for symbol, quote in zip(symbols, pool.map(fetch, symbols))
+            for symbol, quote in zip(symbols, pool.map(fetch_quote, symbols))
             if quote is not None
         }
 
@@ -140,7 +121,7 @@ def refresh_daily_prices(now=None):
             return current
 
         symbols = sorted(holding_symbols())
-        quotes = collect_quotes(symbols, fetch_quote)
+        quotes = collect_quotes(symbols)
         if symbols and not quotes:
             cache.set(RETRY_KEY, True, timeout=RETRY_TTL)
             raise MarketPriceError('StockChartBD did not return valid closing quotes.')
@@ -183,16 +164,5 @@ def get_daily_prices(projects):
 
 
 def get_live_prices(project):
-    now = market_now()
     symbols = sorted(holding_symbols([project]))
-    if LIVE_RESUMES <= now.time() < EVENING_REFRESH:
-        return {'mode': 'daytime', 'quotes': collect_quotes(symbols, get_live_quote), 'stale': False}
-
-    snapshot = read_snapshot(now)
-    return {
-        'mode': 'overnight',
-        'quotes': {symbol: quote for symbol, quote in (snapshot or {}).get('quotes', {}).items()
-                   if symbol in symbols},
-        'fetched_on': (snapshot or {}).get('fetched_on'),
-        'stale': bool(snapshot and snapshot['stale']),
-    }
+    return {'quotes': collect_quotes(symbols)}
