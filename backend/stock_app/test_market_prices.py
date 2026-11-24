@@ -50,14 +50,14 @@ class MarketPriceTests(SimpleTestCase):
     @patch('stock_app.market_prices.market_now')
     @patch('stock_app.market_prices.holding_symbols', return_value={'GP'})
     @patch('stock_app.market_prices.fetch_quote', return_value=QUOTE)
-    def test_bootstrap_then_refresh_once_at_seven(self, fetch, symbols, clock):
-        clock.return_value = dhaka(23, 18, 59)
+    def test_bootstrap_then_refresh_once_at_five_pm(self, fetch, symbols, clock):
+        clock.return_value = dhaka(23, 16, 59)
         self.assertEqual(get_daily_prices([])['quotes'], {'GP': QUOTE})
         self.assertEqual(cache.get(SNAPSHOT_KEY)['cycle'], '2026-11-22')
         self.assertFalse(get_daily_prices([])['stale'])
         fetch.assert_called_once_with('GP')
 
-        clock.return_value = dhaka(23, 19)
+        clock.return_value = dhaka(23, 17)
         self.assertTrue(get_daily_prices([])['stale'])
         refresh_daily_prices()
         refresh_daily_prices()
@@ -83,11 +83,11 @@ class MarketPriceTests(SimpleTestCase):
     @patch('stock_app.market_prices.holding_symbols', return_value={'GP'})
     @patch('stock_app.market_prices.fetch_quote', return_value=QUOTE)
     def test_failed_refresh_preserves_previous_snapshot(self, fetch, symbols, clock):
-        clock.return_value = dhaka(23, 19)
+        clock.return_value = dhaka(23, 17)
         refresh_daily_prices()
         cache.delete(SNAPSHOT_KEY)
         self.assertIsNotNone(cache.get(FALLBACK_KEY))
-        clock.return_value = dhaka(24, 19)
+        clock.return_value = dhaka(24, 17)
         fetch.return_value = None
         with self.assertRaises(MarketPriceError):
             refresh_daily_prices()

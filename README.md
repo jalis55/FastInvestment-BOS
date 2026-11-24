@@ -102,7 +102,7 @@ into Supabase. Existing hosted records are preserved.
 
 Set a random `CRON_SECRET` in Vercel’s Production environment before deploying
 the market-price cron. It refreshes the StockChartBD Close snapshot for
-Project Details at 13:00 UTC (19:00 Asia/Dhaka). Project Details can seed an
+Project Details at 11:00 UTC (17:00 Asia/Dhaka). Project Details can seed an
 empty cache on its first lookup. Live Share Update fetches quotes directly
 from StockChartBD on each project search.
 

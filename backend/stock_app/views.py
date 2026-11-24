@@ -228,7 +228,7 @@ class InstrumentListView(generics.ListAPIView):
     serializer_class = InstrumentSerializer
     permission_classes = [IsAdminUser]  # Allow any user to view instruments
 
-@extend_schema(parameters=[OpenApiParameter('project_id', OpenApiTypes.STR, description='Limit quotes to this visible project.')], summary='Get daily market reference prices', description='Returns the StockChartBD Close snapshot for Project Details refreshed daily at 19:00 Asia/Dhaka. A stale flag marks an older snapshot.')
+@extend_schema(parameters=[OpenApiParameter('project_id', OpenApiTypes.STR, description='Limit quotes to this visible project.')], summary='Get daily market reference prices', description='Returns the StockChartBD Close snapshot for Project Details refreshed daily at 17:00 Asia/Dhaka. A stale flag marks an older snapshot.')
 @extend_schema(responses={200: {'type': 'object', 'properties': {
     'prices': {'type': 'object', 'additionalProperties': {'type': 'string'}},
     'fetched_on': {'type': 'string', 'format': 'date'},

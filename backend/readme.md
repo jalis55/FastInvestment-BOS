@@ -23,7 +23,7 @@ This is the backend API for Fast Investment Limited. It is built using Django an
    - Manage financial instruments and live trades.
    - Create and track investment projects and investor contributions.
    - Financial advisor commissions and profit disbursement.
-   - StockChartBD Close snapshot for Project Details, cached for 24 hours. Live Share Update requests the latest available Close on each project search. Set Vercel Production’s `CRON_SECRET` before deployment to enable the 19:00 refresh.
+   - StockChartBD Close snapshot for Project Details, cached for 24 hours. Live Share Update requests the latest available Close on each project search. Set Vercel Production’s `CRON_SECRET` before deployment to enable the 17:00 Asia/Dhaka refresh.
 
 ## ⚙️ Setup and Installation
 

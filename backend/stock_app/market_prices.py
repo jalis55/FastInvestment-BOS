@@ -15,7 +15,7 @@ from .models import Dividend, Instrument, Trade
 
 QUOTE_URL = 'https://stockchartbd.com/api/v1.php'
 MARKET_TIME_ZONE = ZoneInfo('Asia/Dhaka')
-EVENING_REFRESH = time(19)
+EVENING_REFRESH = time(17)
 SNAPSHOT_TTL = 24 * 60 * 60
 FALLBACK_TTL = 7 * SNAPSHOT_TTL
 RETRY_TTL = 60
